@@ -3,20 +3,18 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createTrip } from "@/lib/api";
-import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 export default function CreatePage() {
-  const ready = useRequireAuth();
   const router = useRouter();
   const started = useRef(false);
 
   useEffect(() => {
-    if (!ready || started.current) return;
+    if (started.current) return;
     started.current = true;
     createTrip("Untitled Trip", "")
       .then((trip) => router.replace(`/trips/${trip.id}/upload`))
-      .catch(() => router.replace("/login"));
-  }, [ready, router]);
+      .catch(() => router.replace("/login?next=/create"));
+  }, [router]);
 
   return (
     <div style={{

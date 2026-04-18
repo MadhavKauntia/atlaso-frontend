@@ -1,25 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import AppShell from "@/components/AppShell";
 import { googleAuth } from "@/lib/api";
 import { getToken, setToken } from "@/lib/auth";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/create";
 
   useEffect(() => {
-    if (getToken()) router.replace("/create");
-  }, [router]);
+    if (getToken()) router.replace(next);
+  }, [router, next]);
 
   async function handleSuccess(response: CredentialResponse) {
     if (!response.credential) return;
     try {
       const { token } = await googleAuth(response.credential);
       setToken(token);
-      router.push("/create");
+      router.push(next);
     } catch {
       alert("Sign-in failed. Please try again.");
     }
@@ -72,5 +74,13 @@ export default function LoginPage() {
         </p>
       </div>
     </AppShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
