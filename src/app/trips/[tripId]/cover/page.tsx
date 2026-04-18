@@ -9,7 +9,9 @@ import { TEMPLATES, ArchIllustration, SunIllustration, RidgeIllustration } from 
 import { PAIRINGS, type CoverPairing } from "@/lib/covers/palette";
 import { sanitizeCoverTitle, sanitizeCoverSubtitle } from "@/lib/covers/text-utils";
 import { suggestTemplate } from "@/lib/covers/suggest";
-import { getTrip, getBook, saveCoverConfig, updateTrip } from "@/lib/api";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { getToken, setToken } from "@/lib/auth";
+import { googleAuth, getTrip, getBook, saveCoverConfig, updateTrip, claimTrip } from "@/lib/api";
 import type { CoverTemplate } from "@/lib/covers/types";
 
 const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
@@ -38,6 +40,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const template: CoverTemplate = TEMPLATES[selectedTemplateId] ?? TEMPLATE_LIST[0];
@@ -148,20 +151,44 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   }, [bookId, selectedTemplateId, selectedPaletteId]);
 
   const handleGenerate = async () => {
+    // Save cover prefs now so generating page has them regardless of login timing
+    const title = sanitizeCoverTitle(destination) || "TRIP";
+    localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
+      title,
+      subtitle: coverSubtitle,
+      templateId: selectedTemplateId,
+      paletteId: selectedPaletteId,
+    }));
+
+    if (!getToken()) {
+      setShowLoginModal(true);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
-      const title = sanitizeCoverTitle(destination) || "TRIP";
-      await updateTrip(tripId, title, title);
-      localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
-        title,
-        subtitle: coverSubtitle,
-        templateId: selectedTemplateId,
-        paletteId: selectedPaletteId,
-      }));
+      await claimTrip(tripId);
       router.push(`/trips/${tripId}/generating`);
     } catch {
       setError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoginSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+    setSaving(true);
+    setShowLoginModal(false);
+    setError(null);
+    try {
+      const { token } = await googleAuth(response.credential);
+      setToken(token);
+      await claimTrip(tripId);
+      router.push(`/trips/${tripId}/generating`);
+    } catch {
+      setError("Sign-in failed. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -183,6 +210,59 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 100, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
+
+      {showLoginModal && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(10,26,58,0.65)",
+            zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--paper)", borderRadius: 20, padding: "48px 52px",
+              maxWidth: 420, width: "90%", textAlign: "center",
+              boxShadow: "0 32px 80px rgba(10,26,58,0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              width: 48, height: 48, background: "var(--blue)", borderRadius: "50%",
+              margin: "0 auto 24px", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            </div>
+            <h2 style={{
+              fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 300,
+              letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 12, lineHeight: 1.1,
+            }}>
+              One last step
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.65 }}>
+              Your photos and cover are ready. Sign in to generate your photobook — it takes one click.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <GoogleLogin
+                onSuccess={handleLoginSuccess}
+                onError={() => { setError("Sign-in failed. Please try again."); setShowLoginModal(false); }}
+                size="large"
+                shape="pill"
+                text="continue_with"
+              />
+            </div>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              style={{ background: "none", border: "none", fontSize: 13, color: "var(--ink-soft)", cursor: "pointer", opacity: 0.7 }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <FlowTopbar
         currentStep={2}
@@ -387,7 +467,11 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       )}
 
       <FlowBottomBar
-        leftContent={null}
+        leftContent={
+          !bookId ? (
+            <span>Next: our AI will generate your photobook — <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)", fontWeight: 500 }}>sign in takes one click</strong></span>
+          ) : null
+        }
         rightButton={
           <button
             onClick={bookId ? handleSaveThenPreview : handleGenerate}

@@ -93,6 +93,12 @@ export async function createTrip(name: string, destination: string): Promise<Tri
   return res.json();
 }
 
+export async function claimTrip(tripId: string): Promise<Trip> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/claim`, { method: "POST" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function getTrip(tripId: string): Promise<Trip> {
   const res = await apiFetch(`${BASE}/trips/${tripId}`);
   if (!res.ok) throw new Error(await res.text());
