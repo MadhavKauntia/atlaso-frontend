@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exportCoverSVG, type ExportCoverConfig } from "@/lib/covers/export";
+import path from "path";
+import fs from "fs";
 
 export async function POST(req: NextRequest) {
   const format = req.nextUrl.searchParams.get("format") ?? "png";
@@ -34,7 +36,17 @@ export async function POST(req: NextRequest) {
   // PNG via resvg-js
   try {
     const { Resvg } = await import("@resvg/resvg-js");
-    const resvg = new Resvg(svg, { font: { loadSystemFonts: true } });
+
+    // Load bundled Fraunces font — works on any platform without system fonts
+    const fontPath = path.join(process.cwd(), "public", "fraunces.ttf");
+    const fontBuffer = fs.readFileSync(fontPath);
+
+    const resvg = new Resvg(svg, {
+      font: {
+        loadSystemFonts: false,
+        fontBuffers: [fontBuffer],
+      },
+    });
     const pngData = resvg.render();
     const buffer = Buffer.from(pngData.asPng());
 

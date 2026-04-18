@@ -240,8 +240,41 @@ export async function getBook(bookId: string): Promise<Book> {
   return res.json();
 }
 
-export async function exportBook(bookId: string): Promise<Book> {
-  const res = await apiFetch(`${BASE}/books/${bookId}/export`, { method: "POST" });
+export async function exportBook(book: Book): Promise<Book> {
+  let coverImageBase64: string | undefined;
+
+  if (book.coverTemplateId && book.coverPaletteId) {
+    try {
+      const coverRes = await fetch("/api/covers/export?format=png", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: book.coverTemplateId,
+          paletteId: book.coverPaletteId,
+          title: book.title,
+          subtitle: book.subtitle ?? "",
+          volumeNumber: book.version,
+        }),
+      });
+      if (coverRes.ok) {
+        const blob = await coverRes.blob();
+        coverImageBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+    } catch {
+      // Fall through — backend will use plain text cover
+    }
+  }
+
+  const res = await apiFetch(`${BASE}/books/${book.id}/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ coverImageBase64: coverImageBase64 ?? null }),
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

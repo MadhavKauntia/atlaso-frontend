@@ -58,11 +58,11 @@ export function exportCoverSVG(config: ExportCoverConfig): string {
     </g>`.trim();
 
   const subtitleEl = config.subtitle
-    ? `<text x="${s(subtitleConfig.x)}" y="${s(subtitleConfig.y)}" fill="${pairing.textSecondary}" font-size="${fs(subtitleConfig.fontSize)}" letter-spacing="${fs(0.5)}" font-family="Georgia, serif" font-style="italic">\u2014 ${escapeXml(config.subtitle)}</text>`
+    ? `<text x="${s(subtitleConfig.x)}" y="${s(subtitleConfig.y)}" fill="${pairing.textSecondary}" font-size="${fs(subtitleConfig.fontSize)}" letter-spacing="${fs(0.5)}" font-family="Fraunces, Georgia, serif" font-style="italic">\u2014 ${escapeXml(config.subtitle)}</text>`
     : "";
 
   const coordEl = config.coordinates
-    ? `<text x="${s(coordinateLabel.x)}" y="${s(coordinateLabel.y)}" fill="${pairing.textSecondary}" font-size="${fs(7)}" letter-spacing="${fs(1)}" font-family="Georgia, serif" opacity="0.5">${escapeXml(config.coordinates)}</text>`
+    ? `<text x="${s(coordinateLabel.x)}" y="${s(coordinateLabel.y)}" fill="${pairing.textSecondary}" font-size="${fs(7)}" letter-spacing="${fs(1)}" font-family="Fraunces, Georgia, serif" opacity="0.5">${escapeXml(config.coordinates)}</text>`
     : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -77,8 +77,8 @@ export function exportCoverSVG(config: ExportCoverConfig): string {
   <rect x="0" y="0" width="${vbW}" height="${vbH}" fill="${pairing.background}"/>
   <rect x="0" y="0" width="${vbW}" height="${vbH}" fill="url(#grain)"/>
   ${illustrationSVG}
-  <text x="${s(volumeLabel.x)}" y="${s(volumeLabel.y)}" fill="${pairing.accent}" font-size="${fs(8)}" letter-spacing="${fs(2.5)}" font-family="Georgia, serif" font-weight="400">${escapeXml(volText)}</text>
-  <text x="${s(titleConfig.x)}" y="${s(titleConfig.y)}" fill="${pairing.textPrimary}" font-size="${titleFontSize}" letter-spacing="${fs(1)}" font-family="Georgia, serif" font-weight="700">${escapeXml(displayTitle)}</text>
+  <text x="${s(volumeLabel.x)}" y="${s(volumeLabel.y)}" fill="${pairing.accent}" font-size="${fs(8)}" letter-spacing="${fs(2.5)}" font-family="Fraunces, Georgia, serif" font-weight="400">${escapeXml(volText)}</text>
+  <text x="${s(titleConfig.x)}" y="${s(titleConfig.y)}" fill="${pairing.textPrimary}" font-size="${titleFontSize}" letter-spacing="${fs(1)}" font-family="Fraunces, Georgia, serif" font-weight="700">${escapeXml(displayTitle)}</text>
   ${subtitleEl}
   ${coordEl}
   ${cropMarks}

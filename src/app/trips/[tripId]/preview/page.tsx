@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { Book, PageData, PhotoSlot, exportBook, getBook, getBookPdfUrl, getPhotoImageUrl, updateSlotOffset } from "@/lib/api";
+import { exportBook, getBook, getBookPdfUrl, getPhotoImageUrl, updateSlotOffset, type Book, type PageData, type PhotoSlot } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 export default function PreviewPage({ params }: { params: Promise<{ tripId: string }> }) {
@@ -38,7 +38,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     setExporting(true);
     setError(null);
     try {
-      const updated = await exportBook(book.id);
+      const updated = await exportBook(book);
       setBook(updated);
     } catch {
       setError("Export failed. Please try again.");
