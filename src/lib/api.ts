@@ -1,4 +1,22 @@
+import { getToken } from "@/lib/auth";
+
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
+
+function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const existingHeaders = (options.headers as Record<string, string>) ?? {};
+  const headers = token
+    ? { ...existingHeaders, Authorization: `Bearer ${token}` }
+    : existingHeaders;
+  return fetch(url, { ...options, headers });
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  pictureUrl: string | null;
+}
 
 export interface Trip {
   id: string;
@@ -53,8 +71,18 @@ export interface BulkUploadResponse {
   failed: { filename: string; error: string }[];
 }
 
+export async function googleAuth(idToken: string): Promise<{ token: string; user: User }> {
+  const res = await fetch(`${BASE}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function createTrip(name: string, destination: string): Promise<Trip> {
-  const res = await fetch(`${BASE}/trips`, {
+  const res = await apiFetch(`${BASE}/trips`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, destination }),
@@ -66,7 +94,7 @@ export async function createTrip(name: string, destination: string): Promise<Tri
 export async function uploadPhoto(tripId: string, file: File): Promise<Photo> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch(`${BASE}/trips/${tripId}/photos`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos`, {
     method: "POST",
     body: formData,
   });
@@ -79,7 +107,7 @@ export async function uploadPhotos(tripId: string, files: File[]): Promise<BulkU
   for (const file of files) {
     formData.append("files", file);
   }
-  const res = await fetch(`${BASE}/trips/${tripId}/photos/bulk`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/bulk`, {
     method: "POST",
     body: formData,
   });
@@ -111,7 +139,7 @@ export interface ConfirmUploadRequest {
 }
 
 export async function initiateUploads(tripId: string, files: { filename: string; contentType: string; fileSize: number }[]): Promise<InitiateUploadResponse[]> {
-  const res = await fetch(`${BASE}/trips/${tripId}/photos/initiate`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/initiate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(files),
@@ -138,7 +166,7 @@ export function uploadToS3(uploadUrl: string, file: File, onProgress: (pct: numb
 }
 
 export async function confirmUploads(tripId: string, confirmations: ConfirmUploadRequest[]): Promise<Photo[]> {
-  const res = await fetch(`${BASE}/trips/${tripId}/photos/confirm`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(confirmations),
@@ -148,7 +176,7 @@ export async function confirmUploads(tripId: string, confirmations: ConfirmUploa
 }
 
 export async function getPhotos(tripId: string): Promise<Photo[]> {
-  const res = await fetch(`${BASE}/trips/${tripId}/photos`);
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -158,7 +186,7 @@ export function getPhotoImageUrl(tripId: string, photoId: string): string {
 }
 
 export async function rotatePhoto(tripId: string, photoId: string, degrees = 90): Promise<Photo> {
-  const res = await fetch(`${BASE}/trips/${tripId}/photos/${photoId}/rotate?degrees=${degrees}`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/${photoId}/rotate?degrees=${degrees}`, {
     method: "PUT",
   });
   if (!res.ok) throw new Error(await res.text());
@@ -166,32 +194,32 @@ export async function rotatePhoto(tripId: string, photoId: string, degrees = 90)
 }
 
 export async function deletePhoto(tripId: string, photoId: string): Promise<void> {
-  const res = await fetch(`${BASE}/trips/${tripId}/photos/${photoId}`, {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/${photoId}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error(await res.text());
 }
 
 export async function generateBook(tripId: string): Promise<Book> {
-  const res = await fetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function regenerateBook(bookId: string): Promise<Book> {
-  const res = await fetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function getBook(bookId: string): Promise<Book> {
-  const res = await fetch(`${BASE}/books/${bookId}`);
+  const res = await apiFetch(`${BASE}/books/${bookId}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function exportBook(bookId: string): Promise<Book> {
-  const res = await fetch(`${BASE}/books/${bookId}/export`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/books/${bookId}/export`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -206,7 +234,7 @@ export async function updateSlotOffset(
   offsetX: number,
   offsetY: number
 ): Promise<void> {
-  const res = await fetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/offset`, {
+  const res = await apiFetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/offset`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ offsetX, offsetY }),

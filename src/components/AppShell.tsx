@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getToken, removeToken } from "@/lib/auth";
 
 interface Props {
   children: React.ReactNode;
@@ -6,6 +10,15 @@ interface Props {
 }
 
 export default function AppShell({ children, maxWidth = "900px" }: Props) {
+  const router = useRouter();
+
+  function signOut() {
+    removeToken();
+    router.push("/login");
+  }
+
+  const isLoggedIn = getToken() !== null;
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
       <header style={{
@@ -14,6 +27,7 @@ export default function AppShell({ children, maxWidth = "900px" }: Props) {
         background: "var(--white)",
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
       }}>
         <Link href="/" style={{
           fontFamily: "var(--font-fraunces), serif",
@@ -34,6 +48,24 @@ export default function AppShell({ children, maxWidth = "900px" }: Props) {
           }} />
           Atlaso
         </Link>
+
+        {isLoggedIn && (
+          <button
+            onClick={signOut}
+            style={{
+              background: "none",
+              border: "1px solid rgba(10,26,58,0.15)",
+              borderRadius: 100,
+              padding: "6px 16px",
+              fontSize: 13,
+              color: "var(--ink-soft)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Sign out
+          </button>
+        )}
       </header>
       <main style={{ maxWidth, margin: "0 auto", padding: "40px 24px" }}>
         {children}

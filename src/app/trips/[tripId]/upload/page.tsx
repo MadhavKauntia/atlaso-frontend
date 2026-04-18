@@ -15,6 +15,7 @@ import {
   confirmUploads,
   ConfirmUploadRequest,
 } from "@/lib/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
@@ -27,6 +28,7 @@ interface UploadStatus {
 }
 
 export default function UploadPage({ params }: { params: Promise<{ tripId: string }> }) {
+  const ready = useRequireAuth();
   const { tripId } = use(params);
   const router = useRouter();
 
@@ -156,6 +158,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     disabled: uploading,
     multiple: true,
   });
+
+  if (!ready) return null;
 
   const markBusy = (id: string) => setBusyIds((prev) => new Set(prev).add(id));
   const clearBusy = (id: string) => setBusyIds((prev) => { const n = new Set(prev); n.delete(id); return n; });

@@ -4,8 +4,10 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { Book, PageData, PhotoSlot, exportBook, getBook, getBookPdfUrl, getPhotoImageUrl, updateSlotOffset } from "@/lib/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 export default function PreviewPage({ params }: { params: Promise<{ tripId: string }> }) {
+  const ready = useRequireAuth();
   const { tripId } = use(params);
   const searchParams = useSearchParams();
   const bookId = searchParams.get("bookId") ?? "";
@@ -24,6 +26,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       .catch(() => setError("Could not load book"))
       .finally(() => setLoading(false));
   }, [bookId]);
+
+  if (!ready) return null;
 
   const handleRegenerate = () => {
     router.push(`/trips/${tripId}/generating?regenerateFrom=${bookId}`);

@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { generateBook, regenerateBook } from "@/lib/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const PHASES = [
   { upTo: 5, label: "Analysing your photos…" },
@@ -12,6 +13,7 @@ const PHASES = [
 ];
 
 export default function GeneratingPage({ params }: { params: Promise<{ tripId: string }> }) {
+  const ready = useRequireAuth();
   const { tripId } = use(params);
   const searchParams = useSearchParams();
   const regenerateFrom = searchParams.get("regenerateFrom");
@@ -40,6 +42,8 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       .then((book) => router.push(`/trips/${tripId}/preview?bookId=${book.id}`))
       .catch((err) => setError(err instanceof Error ? err.message : "Generation failed"));
   }, [tripId, regenerateFrom, router]);
+
+  if (!ready) return null;
 
   if (error) {
     return (
