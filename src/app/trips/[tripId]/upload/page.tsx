@@ -63,7 +63,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
     const initialCards: PendingCard[] = files.map((f, i) => ({
       tempId: tempIds[i],
-      previewUrl: URL.createObjectURL(f),
+      previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
       name: f.name,
       progress: 0,
       error: null,
@@ -111,7 +111,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         error: null,
       }));
       // Replace initial cards with real ones (revoke old previews)
-      initialCards.forEach((c) => URL.revokeObjectURL(c.previewUrl));
+      initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
       setPendingCards((prev) => [
         ...prev.filter((c) => !tempIds.includes(c.tempId)),
         ...cards,
@@ -207,7 +207,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const dismissPending = (tempId: string) => {
     setPendingCards((prev) => {
       const card = prev.find((c) => c.tempId === tempId);
-      if (card) URL.revokeObjectURL(card.previewUrl);
+      if (card?.previewUrl) URL.revokeObjectURL(card.previewUrl);
       return prev.filter((c) => c.tempId !== tempId);
     });
   };
@@ -356,13 +356,15 @@ function CircularProgress({ progress }: { progress: number }) {
 
 function PendingPhotoCard({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
   return (
-    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={card.previewUrl}
-        alt={card.name}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-      />
+    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1", background: "var(--wash)" }}>
+      {card.previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={card.previewUrl}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      )}
 
       {card.error ? (
         /* Error overlay */
