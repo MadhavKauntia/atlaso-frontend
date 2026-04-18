@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createTrip } from "@/lib/api";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -11,9 +10,9 @@ export default function CreatePage() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    createTrip("Untitled Trip", "")
-      .then((trip) => router.replace(`/trips/${trip.id}/upload`))
-      .catch(() => router.replace("/login?next=/create"));
+    const draftId = crypto.randomUUID();
+    sessionStorage.setItem("atlaso_draft_id", draftId);
+    router.replace(`/trips/${draftId}/upload`);
   }, [router]);
 
   return (

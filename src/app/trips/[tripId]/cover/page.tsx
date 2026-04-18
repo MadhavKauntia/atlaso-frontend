@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import CoverRenderer from "@/components/covers/CoverRenderer";
@@ -9,10 +10,24 @@ import { TEMPLATES, ArchIllustration, SunIllustration, RidgeIllustration } from 
 import { PAIRINGS, type CoverPairing } from "@/lib/covers/palette";
 import { sanitizeCoverTitle, sanitizeCoverSubtitle } from "@/lib/covers/text-utils";
 import { suggestTemplate } from "@/lib/covers/suggest";
-import { getTrip, getBook, saveCoverConfig, updateTrip } from "@/lib/api";
+import { draftStore } from "@/lib/draftStore";
+import { getToken, setToken } from "@/lib/auth";
+import {
+  googleAuth,
+  getTrip,
+  getBook,
+  saveCoverConfig,
+  updateTrip,
+  createTrip,
+  initiateUploads,
+  uploadToS3,
+  confirmUploads,
+  type ConfirmUploadRequest,
+} from "@/lib/api";
 import type { CoverTemplate } from "@/lib/covers/types";
 
 const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
+const MAX_CONCURRENT_UPLOADS = 5;
 
 const TEMPLATE_LIST = Object.values(TEMPLATES);
 const ILLUSTRATION_MAP: Record<string, React.ComponentType<{ accentColor: string; backgroundColor: string }>> = {
@@ -36,8 +51,10 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [inferred, setInferred] = useState<{ place: string; coordStr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingMessage, setSavingMessage] = useState("Starting…");
   const [error, setError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const template: CoverTemplate = TEMPLATES[selectedTemplateId] ?? TEMPLATE_LIST[0];
@@ -50,7 +67,6 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   useEffect(() => {
     const run = async () => {
       try {
-        // Read inferred location from sessionStorage (set by upload page)
         const raw = sessionStorage.getItem("atlaso_inferred");
         if (raw) {
           const inf = JSON.parse(raw);
@@ -63,8 +79,11 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           }
         }
 
+        const draftId = sessionStorage.getItem("atlaso_draft_id");
+        const isDraftMode = draftId === tripId;
+
         if (bookId) {
-          // With bookId: editing existing cover from preview page
+          // Editing existing cover from preview page
           const [trip, book] = await Promise.all([getTrip(tripId), getBook(bookId)]);
           setDestination(book.title || trip.name || "");
           setSubtitle(book.subtitle || "");
@@ -73,8 +92,26 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             setSelectedPaletteId(book.coverPaletteId || TEMPLATES[book.coverTemplateId].paletteId);
             setUserPickedStyle(true);
           }
+        } else if (isDraftMode) {
+          // Draft mode: no real trip yet, use inferred + localStorage prefs
+          if (raw) {
+            const inf = JSON.parse(raw);
+            setDestination(inf.place?.split(",")[0]?.trim() || "");
+          }
+          const prefsRaw = localStorage.getItem("atlaso_cover_prefs");
+          if (prefsRaw) {
+            const prefs = JSON.parse(prefsRaw);
+            if (prefs.title) setDestination(prefs.title);
+            if (prefs.subtitle) setSubtitle(prefs.subtitle);
+            if (prefs.templateId && TEMPLATES[prefs.templateId]) {
+              setSelectedTemplateId(prefs.templateId);
+              setSelectedPaletteId(prefs.paletteId || TEMPLATES[prefs.templateId].paletteId);
+              setUserPickedStyle(true);
+              setSuggestToast(false);
+            }
+          }
         } else {
-          // Without bookId: first-time design before generation
+          // Real trip, no bookId: first-time design
           const trip = await getTrip(tripId);
           const tripName = (trip.name && trip.name !== "Untitled Trip") ? trip.name : "";
           if (raw) {
@@ -83,7 +120,6 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           } else {
             setDestination(tripName);
           }
-          // Check localStorage for existing prefs (if user came back)
           const prefsRaw = localStorage.getItem("atlaso_cover_prefs");
           if (prefsRaw) {
             const prefs = JSON.parse(prefsRaw);
@@ -139,7 +175,6 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     setSelectedPaletteId(id);
   };
 
-  // When bookId exists, auto-save on changes
   useEffect(() => {
     if (!bookId || loading) return;
     const t = setTimeout(async () => {
@@ -153,23 +188,93 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   }, [bookId, selectedTemplateId, selectedPaletteId]);
 
   const handleGenerate = async () => {
+    if (!getToken()) {
+      setShowLoginModal(true);
+      return;
+    }
+
     setSaving(true);
     setError(null);
+
     try {
       const title = sanitizeCoverTitle(destination) || "TRIP";
-      // Update trip name now so book.title is set correctly at generation time
-      await updateTrip(tripId, title, title);
-      localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
-        title,
-        subtitle: coverSubtitle,
-        templateId: selectedTemplateId,
-        paletteId: selectedPaletteId,
-      }));
-      router.push(`/trips/${tripId}/generating`);
+      const draftId = sessionStorage.getItem("atlaso_draft_id");
+      const isDraftMode = draftId === tripId;
+
+      if (isDraftMode) {
+        // Create real trip, upload draft files, then navigate to generating
+        setSavingMessage("Creating your trip…");
+        const trip = await createTrip(title, title);
+        const realTripId = trip.id;
+
+        const all = draftStore.getAll();
+        if (all.length > 0) {
+          setSavingMessage("Uploading your photos…");
+          const initiated = await initiateUploads(realTripId, all.map((d) => ({
+            filename: d.file.name,
+            contentType: d.file.type,
+            fileSize: d.file.size,
+          })));
+
+          for (let i = 0; i < all.length; i += MAX_CONCURRENT_UPLOADS) {
+            await Promise.all(
+              initiated.slice(i, i + MAX_CONCURRENT_UPLOADS).map((init, j) =>
+                uploadToS3(init.uploadUrl, all[i + j].file, () => {})
+              )
+            );
+          }
+
+          await confirmUploads(realTripId, initiated.map((init, i) => ({
+            photoId: init.photoId,
+            storageKey: init.storageKey,
+            originalFilename: all[i].file.name,
+            contentType: all[i].file.type,
+            fileSize: all[i].file.size,
+            width: all[i].width,
+            height: all[i].height,
+            takenAt: all[i].takenAt,
+          } as ConfirmUploadRequest)));
+        }
+
+        sessionStorage.removeItem("atlaso_draft_id");
+        draftStore.clear();
+
+        localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
+          title,
+          subtitle: coverSubtitle,
+          templateId: selectedTemplateId,
+          paletteId: selectedPaletteId,
+        }));
+        router.push(`/trips/${realTripId}/generating`);
+      } else {
+        // Real trip already exists
+        await updateTrip(tripId, title, title);
+        localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
+          title,
+          subtitle: coverSubtitle,
+          templateId: selectedTemplateId,
+          paletteId: selectedPaletteId,
+        }));
+        router.push(`/trips/${tripId}/generating`);
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
+      setSavingMessage("Starting…");
+    }
+  };
+
+  const handleLoginSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+    try {
+      const { token } = await googleAuth(response.credential);
+      setToken(token);
+      setShowLoginModal(false);
+      await handleGenerate();
+    } catch {
+      setError("Sign-in failed. Please try again.");
+      setShowLoginModal(false);
     }
   };
 
@@ -189,6 +294,63 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 100, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
+
+      {/* Login modal */}
+      {showLoginModal && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(10,26,58,0.65)",
+            zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--paper)", borderRadius: 20, padding: "48px 52px",
+              maxWidth: 420, width: "90%", textAlign: "center",
+              boxShadow: "0 32px 80px rgba(10,26,58,0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              width: 48, height: 48, background: "var(--blue)", borderRadius: "50%",
+              margin: "0 auto 24px", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            </div>
+            <h2 style={{
+              fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 300,
+              letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 12, lineHeight: 1.1,
+            }}>
+              One last step
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.65 }}>
+              Your photos and cover design are saved. Sign in to generate your photobook — it only takes a second.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <GoogleLogin
+                onSuccess={handleLoginSuccess}
+                onError={() => { setError("Sign-in failed. Please try again."); setShowLoginModal(false); }}
+                size="large"
+                shape="pill"
+                text="continue_with"
+              />
+            </div>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                background: "none", border: "none", fontSize: 13,
+                color: "var(--ink-soft)", cursor: "pointer", opacity: 0.7,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <FlowTopbar
         currentStep={2}
@@ -412,7 +574,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               fontFamily: "inherit",
             }}
           >
-            {bookId ? (saving ? "Saving…" : "Continue →") : (saving ? "Starting…" : "Generate my photobook")}
+            {bookId
+              ? (saving ? "Saving…" : "Continue →")
+              : (saving ? savingMessage : "Generate my photobook")}
             {!saving && (
               <span style={{ width: 24, height: 24, background: "white", color: "var(--ink)", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>→</span>
             )}

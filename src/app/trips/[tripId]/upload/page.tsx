@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
+import { draftStore } from "@/lib/draftStore";
 import {
   getPhotos,
   getPhotoImageUrl,
@@ -27,6 +28,12 @@ interface PendingCard {
   name: string;
   progress: number;
   error: string | null;
+}
+
+interface DraftPhoto {
+  id: string; // previewUrl used as stable identity
+  previewUrl: string;
+  name: string;
 }
 
 interface InferredLocation {
@@ -76,12 +83,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const router = useRouter();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [draftPhotos, setDraftPhotos] = useState<DraftPhoto[]>([]);
   const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inferred, setInferred] = useState<InferredLocation | null>(null);
 
-  // collected coords/dates from EXIF across all upload batches
+  const isDraftMode = useRef(false);
   const allCoords = useRef<{ lat: number; lon: number }[]>([]);
   const allDates = useRef<number[]>([]);
   const initialFetch = useRef(false);
@@ -89,7 +97,19 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   useEffect(() => {
     if (initialFetch.current) return;
     initialFetch.current = true;
-    getPhotos(tripId).then(setPhotos).catch(() => {});
+
+    const draftId = sessionStorage.getItem("atlaso_draft_id");
+    if (draftId === tripId) {
+      isDraftMode.current = true;
+      // Restore any files already in draftStore (user navigated back)
+      const existing = draftStore.getAll();
+      if (existing.length > 0) {
+        setDraftPhotos(existing.map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
+      }
+    } else {
+      isDraftMode.current = false;
+      getPhotos(tripId).then(setPhotos).catch(() => {});
+    }
   }, [tripId]);
 
   const runInference = useCallback(async () => {
@@ -106,16 +126,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     }
     setUploading(true);
     setError(null);
-
-    const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
-    const initialCards: PendingCard[] = files.map((f, i) => ({
-      tempId: tempIds[i],
-      previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
-      name: f.name,
-      progress: 0,
-      error: null,
-    }));
-    setPendingCards((prev) => [...prev, ...initialCards]);
 
     try {
       const heic2any = (await import("heic2any")).default;
@@ -149,62 +159,85 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         if (p.takenAt) allDates.current.push(p.takenAt);
       }
 
-      const initiated = await initiateUploads(tripId, prepared.map((p) => ({
-        filename: p.file.name,
-        contentType: p.file.type,
-        fileSize: p.file.size,
-      })));
+      if (isDraftMode.current) {
+        // Draft mode: store in memory, no API calls
+        draftStore.add(prepared.map((p) => ({
+          file: p.file,
+          width: p.width,
+          height: p.height,
+          takenAt: p.takenAt ?? null,
+        })));
+        const all = draftStore.getAll();
+        setDraftPhotos(all.map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
+        runInference();
+      } else {
+        // Real mode: show pending cards, upload to S3, confirm with backend
+        const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
+        const initialCards: PendingCard[] = files.map((f, i) => ({
+          tempId: tempIds[i],
+          previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
+          name: f.name,
+          progress: 0,
+          error: null,
+        }));
+        setPendingCards((prev) => [...prev, ...initialCards]);
 
-      const cards: PendingCard[] = prepared.map((p, i) => ({
-        tempId: initiated[i].photoId,
-        previewUrl: URL.createObjectURL(p.file),
-        name: p.file.name,
-        progress: 0,
-        error: null,
-      }));
-      initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
-      setPendingCards((prev) => [
-        ...prev.filter((c) => !tempIds.includes(c.tempId)),
-        ...cards,
-      ]);
+        const initiated = await initiateUploads(tripId, prepared.map((p) => ({
+          filename: p.file.name,
+          contentType: p.file.type,
+          fileSize: p.file.size,
+        })));
 
-      const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
-      const processItem = async ({ p, init, card }: typeof queue[0]) => {
-        try {
-          await uploadToS3(init.uploadUrl, p.file, (pct) => {
-            setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
-          });
-          const [photo] = await confirmUploads(tripId, [{
-            photoId: init.photoId,
-            storageKey: init.storageKey,
-            originalFilename: p.file.name,
-            contentType: p.file.type,
-            fileSize: p.file.size,
-            width: p.width,
-            height: p.height,
-            takenAt: p.takenAt,
-          } as ConfirmUploadRequest]);
-          URL.revokeObjectURL(card.previewUrl);
-          setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
-          setPhotos((prev) => [...prev, photo]);
-        } catch (e) {
-          setPendingCards((prev) => prev.map((c) =>
-            c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
-          ));
+        const cards: PendingCard[] = prepared.map((p, i) => ({
+          tempId: initiated[i].photoId,
+          previewUrl: URL.createObjectURL(p.file),
+          name: p.file.name,
+          progress: 0,
+          error: null,
+        }));
+        initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
+        setPendingCards((prev) => [
+          ...prev.filter((c) => !tempIds.includes(c.tempId)),
+          ...cards,
+        ]);
+
+        const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
+        const processItem = async ({ p, init, card }: typeof queue[0]) => {
+          try {
+            await uploadToS3(init.uploadUrl, p.file, (pct) => {
+              setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
+            });
+            const [photo] = await confirmUploads(tripId, [{
+              photoId: init.photoId,
+              storageKey: init.storageKey,
+              originalFilename: p.file.name,
+              contentType: p.file.type,
+              fileSize: p.file.size,
+              width: p.width,
+              height: p.height,
+              takenAt: p.takenAt,
+            } as ConfirmUploadRequest]);
+            URL.revokeObjectURL(card.previewUrl);
+            setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
+            setPhotos((prev) => [...prev, photo]);
+          } catch {
+            setPendingCards((prev) => prev.map((c) =>
+              c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
+            ));
+          }
+        };
+
+        for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
+          await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
         }
-      };
 
-      for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
-        await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
+        runInference();
       }
-
-      // Run inference after batch completes
-      runInference();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      setPendingCards((prev) => prev.map((c) =>
-        tempIds.includes(c.tempId) && !c.error ? { ...c, error: "Upload failed" } : c
-      ));
+      if (!isDraftMode.current) {
+        setPendingCards((prev) => prev.map((c) => c.error ? c : { ...c, error: "Upload failed" }));
+      }
     } finally {
       setUploading(false);
     }
@@ -223,14 +256,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     multiple: true,
   });
 
-
-
-  const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
-  const canContinue = photos.length >= 10 && !uploading;
-
-  const locationHint = inferred
-    ? `From what we can tell, your photos were taken around `
-    : null;
+  const confirmedCount = isDraftMode.current ? draftPhotos.length : photos.length;
+  const totalCount = confirmedCount + pendingCards.filter((c) => !c.error).length;
+  const canContinue = confirmedCount >= 10 && !uploading;
 
   const handleContinue = () => {
     if (inferred) {
@@ -330,14 +358,25 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: 10,
             }}>
-              {photos.map((photo, i) => (
-                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
-                  onDelete={(id) => {
-                    deletePhoto(tripId, id).catch(() => {});
-                    setPhotos((prev) => prev.filter((p) => p.id !== id));
-                  }}
-                />
-              ))}
+              {isDraftMode.current ? (
+                draftPhotos.map((photo, i) => (
+                  <DraftTile key={photo.id} photo={photo} index={i}
+                    onDelete={(id) => {
+                      draftStore.remove(id);
+                      setDraftPhotos(draftStore.getAll().map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
+                    }}
+                  />
+                ))
+              ) : (
+                photos.map((photo, i) => (
+                  <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
+                    onDelete={(id) => {
+                      deletePhoto(tripId, id).catch(() => {});
+                      setPhotos((prev) => prev.filter((p) => p.id !== id));
+                    }}
+                  />
+                ))
+              )}
               {pendingCards.map((card) => (
                 <PendingTile key={card.tempId} card={card}
                   onDismiss={(id) => {
@@ -363,12 +402,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               {inferred.startDate && (
                 <> in{" "}
                   <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>
-                    {inferred.startDate === inferred.endDate ? inferred.startDate : inferred.startDate}
+                    {inferred.startDate}
                   </strong>
                 </>
               )}
             </span>
-          ) : photos.length >= 10 ? (
+          ) : confirmedCount >= 10 ? (
             <span>Looking good — ready to design your cover.</span>
           ) : null
         }
@@ -402,10 +441,41 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
-        @keyframes progressBar {
-          from { width: 20%; } to { width: 95%; }
-        }
       `}</style>
+    </div>
+  );
+}
+
+function DraftTile({ photo, index, onDelete }: { photo: DraftPhoto; index: number; onDelete: (id: string) => void }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div
+      style={{
+        aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
+        background: "var(--muted, #e6ecf5)",
+        animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photo.previewUrl}
+        alt=""
+        onLoad={() => setLoaded(true)}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
+      />
+      <button
+        onClick={() => onDelete(photo.id)}
+        style={{
+          position: "absolute", top: 6, right: 6,
+          width: 22, height: 22, borderRadius: "50%",
+          background: "rgba(10,26,58,0.7)", color: "white",
+          border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
+          opacity: 0, transition: "opacity 0.2s",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+        className="remove-btn"
+      >×</button>
+      <style>{`.remove-btn { opacity: 0 !important; } div:hover > .remove-btn { opacity: 1 !important; }`}</style>
     </div>
   );
 }
