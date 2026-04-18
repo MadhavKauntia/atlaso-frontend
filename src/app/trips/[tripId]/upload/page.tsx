@@ -21,10 +21,12 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/h
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
 const MAX_CONCURRENT_UPLOADS = 5;
 
-interface UploadStatus {
+interface PendingCard {
+  tempId: string;
+  previewUrl: string;
   name: string;
-  progress?: number;
-  error?: string;
+  progress: number;
+  error: string | null;
 }
 
 export default function UploadPage({ params }: { params: Promise<{ tripId: string }> }) {
@@ -33,8 +35,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const router = useRouter();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const initialFetch = useRef(false);
@@ -56,10 +58,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
     setUploading(true);
     setError(null);
-    setUploadStatuses(files.map((f) => ({ name: f.name, progress: 0 })));
 
     try {
-      // Step 1: Convert HEIC → JPEG in-browser, extract metadata
       const heic2any = (await import("heic2any")).default;
       const exifr = await import("exifr");
 
@@ -70,7 +70,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
           file = new File([converted as Blob], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
         }
-
         const [dims, exif] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve) => {
             const url = URL.createObjectURL(file);
@@ -81,63 +80,62 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           }),
           exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
         ]);
-
         const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
         return { file, width: dims.width, height: dims.height, takenAt };
       }));
 
-      // Step 2: Request pre-signed upload URLs from backend
+      // Get upload URLs
       const initiated = await initiateUploads(tripId, prepared.map((p) => ({
         filename: p.file.name,
         contentType: p.file.type,
         fileSize: p.file.size,
       })));
 
-      // Step 3: Upload directly to S3 in parallel (max 5 concurrent)
-      const confirmations: ConfirmUploadRequest[] = [];
-      const errors: { name: string; error: string }[] = [];
+      // Create pending cards with local previews — show in grid immediately
+      const cards: PendingCard[] = prepared.map((p, i) => ({
+        tempId: initiated[i].photoId,
+        previewUrl: URL.createObjectURL(p.file),
+        name: p.file.name,
+        progress: 0,
+        error: null,
+      }));
+      setPendingCards((prev) => [...prev, ...cards]);
 
-      const queue = initiated.map((init, i) => ({ init, prepared: prepared[i] }));
-      const runBatch = async (items: typeof queue) => {
-        await Promise.all(items.map(async ({ init, prepared: p }) => {
-          try {
-            await uploadToS3(init.uploadUrl, p.file, (pct) => {
-              setUploadStatuses((prev) => prev.map((s) => s.name === p.file.name ? { ...s, progress: pct } : s));
-            });
-            confirmations.push({
-              photoId: init.photoId,
-              storageKey: init.storageKey,
-              originalFilename: p.file.name,
-              contentType: p.file.type,
-              fileSize: p.file.size,
-              width: p.width,
-              height: p.height,
-              takenAt: p.takenAt,
-            });
-          } catch (e) {
-            errors.push({ name: p.file.name, error: e instanceof Error ? e.message : "Upload failed" });
-          }
-        }));
+      // Upload each file; confirm and graduate to real photo card as soon as it finishes
+      const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
+
+      const processItem = async ({ p, init, card }: typeof queue[0]) => {
+        try {
+          await uploadToS3(init.uploadUrl, p.file, (pct) => {
+            setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
+          });
+
+          const [photo] = await confirmUploads(tripId, [{
+            photoId: init.photoId,
+            storageKey: init.storageKey,
+            originalFilename: p.file.name,
+            contentType: p.file.type,
+            fileSize: p.file.size,
+            width: p.width,
+            height: p.height,
+            takenAt: p.takenAt,
+          } as ConfirmUploadRequest]);
+
+          URL.revokeObjectURL(card.previewUrl);
+          setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
+          setPhotos((prev) => [...prev, photo]);
+        } catch (e) {
+          setPendingCards((prev) => prev.map((c) =>
+            c.tempId === card.tempId ? { ...c, error: e instanceof Error ? e.message : "Upload failed", progress: 0 } : c
+          ));
+        }
       };
 
       for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
-        await runBatch(queue.slice(i, i + MAX_CONCURRENT_UPLOADS));
-      }
-
-      // Step 4: Confirm successful uploads with backend
-      if (confirmations.length > 0) {
-        const newPhotos = await confirmUploads(tripId, confirmations);
-        setPhotos((prev) => [...prev, ...newPhotos]);
-      }
-
-      if (errors.length > 0) {
-        setUploadStatuses(errors.map((e) => ({ name: e.name, error: e.error })));
-      } else {
-        setUploadStatuses([]);
+        await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      setUploadStatuses([]);
     } finally {
       setUploading(false);
     }
@@ -145,9 +143,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFiles,
-    onDropRejected: () => {
-      setError("Only photos are allowed (JPEG, PNG, WebP, HEIC).");
-    },
+    onDropRejected: () => setError("Only photos are allowed (JPEG, PNG, WebP, HEIC)."),
     accept: {
       "image/jpeg": [".jpg", ".jpeg"],
       "image/png": [".png"],
@@ -186,11 +182,15 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     }
   };
 
-  const handleGenerate = () => {
-    router.push(`/trips/${tripId}/generating`);
+  const dismissPending = (tempId: string) => {
+    setPendingCards((prev) => {
+      const card = prev.find((c) => c.tempId === tempId);
+      if (card) URL.revokeObjectURL(card.previewUrl);
+      return prev.filter((c) => c.tempId !== tempId);
+    });
   };
 
-  const failedUploads = uploadStatuses.filter((s) => s.error);
+  const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
 
   return (
     <AppShell maxWidth="960px">
@@ -226,9 +226,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       >
         <input {...getInputProps()} />
         <div style={{ fontSize: 28, marginBottom: 10 }}>📷</div>
-        {uploading ? (
-          <p style={{ color: "var(--ink-soft)", fontSize: 15 }}>Uploading…</p>
-        ) : isDragActive ? (
+        {isDragActive ? (
           <p style={{ color: "var(--blue)", fontSize: 15, fontWeight: 500 }}>Drop to upload</p>
         ) : (
           <>
@@ -236,65 +234,45 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               Drag photos here, or click to select
             </p>
             <p style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-              JPEG, PNG, WebP, HEIC — up to 20 MB each
+              JPEG, PNG, WebP, HEIC
             </p>
           </>
         )}
       </div>
 
-      {uploading && uploadStatuses.length > 0 && (
-        <div style={{ marginBottom: 16, padding: "12px 16px", background: "var(--wash)", borderRadius: 10, fontSize: 13 }}>
-          {uploadStatuses.map((s, i) => (
-            <div key={i} style={{ marginBottom: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, color: "var(--ink-soft)" }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>{s.name}</span>
-                <span>{s.progress ?? 0}%</span>
-              </div>
-              <div style={{ height: 4, background: "rgba(10,26,58,0.1)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${s.progress ?? 0}%`, background: "var(--blue)", borderRadius: 2, transition: "width 0.2s" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {failedUploads.length > 0 && (
-        <div style={{ marginBottom: 16, padding: "12px 16px", background: "#fef2f2", borderRadius: 10, fontSize: 13, color: "#b91c1c" }}>
-          {failedUploads.map((f, i) => (
-            <div key={i}>{f.name}: {f.error}</div>
-          ))}
-        </div>
+      {error && (
+        <p style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>{error}</p>
       )}
 
       {/* Photo grid */}
-      {photos.length > 0 && (
+      {(photos.length > 0 || pendingCards.length > 0) && (
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 16px" }}>
             <p style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-soft)", fontWeight: 500 }}>
-              {photos.length} photo{photos.length !== 1 ? "s" : ""}
+              {totalCount} photo{totalCount !== 1 ? "s" : ""}
+              {uploading && pendingCards.filter((c) => !c.error).length > 0 && (
+                <span style={{ marginLeft: 8, color: "var(--blue)" }}>
+                  · uploading {pendingCards.filter((c) => !c.error).length}…
+                </span>
+              )}
             </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 32 }}>
-            {photos.map((photo) => {
-              const busy = busyIds.has(photo.id);
-              return (
-                <PhotoCard key={photo.id} photo={photo} tripId={tripId} busy={busy} onRotate={handleRotate} onDelete={handleDelete} />
-              );
-            })}
+            {photos.map((photo) => (
+              <PhotoCard key={photo.id} photo={photo} tripId={tripId} busy={busyIds.has(photo.id)} onRotate={handleRotate} onDelete={handleDelete} />
+            ))}
+            {pendingCards.map((card) => (
+              <PendingPhotoCard key={card.tempId} card={card} onDismiss={dismissPending} />
+            ))}
           </div>
         </>
-      )}
-
-      {error && (
-        <p style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>{error}</p>
       )}
 
       {photos.length > 0 && (
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
-            onClick={handleGenerate}
-            disabled={photos.length < 1}
+            onClick={() => router.push(`/trips/${tripId}/generating`)}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -311,7 +289,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               boxShadow: "0 2px 0 var(--blue-deep), 0 8px 24px rgba(10,26,58,0.15)",
             }}
           >
-              Generate my photobook →
+            Generate my photobook →
           </button>
         </div>
       )}
@@ -321,7 +299,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           opacity: 1 !important;
           background: rgba(0,0,0,0.35) !important;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes shimmer {
           0% { opacity: 1; }
           50% { opacity: 0.5; }
@@ -330,6 +307,82 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
       `}</style>
     </AppShell>
+  );
+}
+
+function CircularProgress({ progress }: { progress: number }) {
+  const r = 22;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - progress / 100);
+  return (
+    <svg width="56" height="56" style={{ transform: "rotate(-90deg)" }}>
+      <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3.5" />
+      <circle
+        cx="28" cy="28" r={r}
+        fill="none"
+        stroke="white"
+        strokeWidth="3.5"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.15s ease" }}
+      />
+    </svg>
+  );
+}
+
+function PendingPhotoCard({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
+  return (
+    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={card.previewUrl}
+        alt={card.name}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+
+      {card.error ? (
+        /* Error overlay */
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "rgba(185,28,28,0.82)",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: 8, gap: 6,
+        }}>
+          <span style={{ color: "white", fontSize: 20, lineHeight: 1 }}>✕</span>
+          <span style={{ color: "white", fontSize: 10, textAlign: "center", lineHeight: 1.3, wordBreak: "break-word" }}>
+            Upload failed
+          </span>
+          <button
+            onClick={() => onDismiss(card.tempId)}
+            style={{
+              marginTop: 2,
+              background: "rgba(255,255,255,0.2)",
+              border: "1px solid rgba(255,255,255,0.4)",
+              borderRadius: 4,
+              color: "white",
+              fontSize: 10,
+              padding: "3px 8px",
+              cursor: "pointer",
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : (
+        /* Progress overlay */
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "rgba(0,0,0,0.35)",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 4,
+        }}>
+          <CircularProgress progress={card.progress} />
+          <span style={{ color: "white", fontSize: 11, fontWeight: 500 }}>{card.progress}%</span>
+        </div>
+      )}
+    </div>
   );
 }
 
