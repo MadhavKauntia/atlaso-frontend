@@ -43,7 +43,7 @@ export default function LandingPage() {
           </p>
 
           <div className={s.ctaRow}>
-            <Link href="/login" className={s.cta}>
+            <Link href="/create" className={s.cta}>
               <span>Start your photobook</span>
               <span className={s.ctaArrow}>→</span>
             </Link>
