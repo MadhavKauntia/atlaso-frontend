@@ -59,6 +59,17 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     setUploading(true);
     setError(null);
 
+    // Show cards in grid immediately using original files as previews
+    const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
+    const initialCards: PendingCard[] = files.map((f, i) => ({
+      tempId: tempIds[i],
+      previewUrl: URL.createObjectURL(f),
+      name: f.name,
+      progress: 0,
+      error: null,
+    }));
+    setPendingCards((prev) => [...prev, ...initialCards]);
+
     try {
       const heic2any = (await import("heic2any")).default;
       const exifr = await import("exifr");
@@ -91,7 +102,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         fileSize: p.file.size,
       })));
 
-      // Create pending cards with local previews — show in grid immediately
+      // Update cards with real tempIds from server (photoId), swap preview to converted file
       const cards: PendingCard[] = prepared.map((p, i) => ({
         tempId: initiated[i].photoId,
         previewUrl: URL.createObjectURL(p.file),
@@ -99,7 +110,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         progress: 0,
         error: null,
       }));
-      setPendingCards((prev) => [...prev, ...cards]);
+      // Replace initial cards with real ones (revoke old previews)
+      initialCards.forEach((c) => URL.revokeObjectURL(c.previewUrl));
+      setPendingCards((prev) => [
+        ...prev.filter((c) => !tempIds.includes(c.tempId)),
+        ...cards,
+      ]);
 
       // Upload each file; confirm and graduate to real photo card as soon as it finishes
       const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
@@ -136,6 +152,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+      // Mark any still-pending initial cards as errored
+      setPendingCards((prev) => prev.map((c) =>
+        tempIds.includes(c.tempId) && c.progress === 0 && !c.error
+          ? { ...c, error: "Upload failed" }
+          : c
+      ));
     } finally {
       setUploading(false);
     }
