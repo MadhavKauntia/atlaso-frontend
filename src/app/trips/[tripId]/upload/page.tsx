@@ -3,20 +3,21 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
-import AppShell from "@/components/AppShell";
+import FlowTopbar from "@/components/layout/FlowTopbar";
+import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import {
-  Photo,
   getPhotos,
   getPhotoImageUrl,
-  rotatePhoto,
   deletePhoto,
   initiateUploads,
   uploadToS3,
   confirmUploads,
-  ConfirmUploadRequest,
+  type Photo,
+  type ConfirmUploadRequest,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
+const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
 const MAX_CONCURRENT_UPLOADS = 5;
@@ -29,6 +30,48 @@ interface PendingCard {
   error: string | null;
 }
 
+interface InferredLocation {
+  place: string;
+  coordStr: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+async function inferLocationFromPhotos(
+  coords: { lat: number; lon: number }[],
+  dates: number[]
+): Promise<InferredLocation | null> {
+  if (!coords.length) return null;
+  const sortedLat = [...coords.map((c) => c.lat)].sort((a, b) => a - b);
+  const sortedLon = [...coords.map((c) => c.lon)].sort((a, b) => a - b);
+  const lat = sortedLat[Math.floor(sortedLat.length / 2)];
+  const lon = sortedLon[Math.floor(sortedLon.length / 2)];
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
+      { headers: { "User-Agent": "Atlaso/1.0 (hello@atlaso.com)" } }
+    );
+    const data = await res.json();
+    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state;
+    const country = data.address?.country;
+    const place = [city, country].filter(Boolean).join(", ");
+    const latDir = lat >= 0 ? "N" : "S";
+    const lonDir = lon >= 0 ? "E" : "W";
+    const coordStr = `${Math.abs(lat).toFixed(2)}° ${latDir} / ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
+    let startDate: string | null = null;
+    let endDate: string | null = null;
+    if (dates.length) {
+      const sorted = [...dates].sort((a, b) => a - b);
+      const fmt = (ts: number) => new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      startDate = fmt(sorted[0]);
+      endDate = fmt(sorted[sorted.length - 1]);
+    }
+    return place ? { place, coordStr, startDate, endDate } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function UploadPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
   const { tripId } = use(params);
@@ -37,8 +80,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [inferred, setInferred] = useState<InferredLocation | null>(null);
+
+  // collected coords/dates from EXIF across all upload batches
+  const allCoords = useRef<{ lat: number; lon: number }[]>([]);
+  const allDates = useRef<number[]>([]);
   const initialFetch = useRef(false);
 
   useEffect(() => {
@@ -47,19 +94,21 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     getPhotos(tripId).then(setPhotos).catch(() => {});
   }, [tripId]);
 
+  const runInference = useCallback(async () => {
+    const result = await inferLocationFromPhotos(allCoords.current, allDates.current);
+    if (result) setInferred(result);
+  }, []);
+
   const handleFiles = useCallback(async (files: File[]) => {
     if (!files.length) return;
-
     const invalid = files.filter((f) => !ALLOWED_TYPES.has(f.type));
-    if (invalid.length > 0) {
-      setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC). Cannot upload: ${invalid.map((f) => f.name).join(", ")}`);
+    if (invalid.length) {
+      setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC).`);
       return;
     }
-
     setUploading(true);
     setError(null);
 
-    // Show cards in grid immediately using original files as previews
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
     const initialCards: PendingCard[] = files.map((f, i) => ({
       tempId: tempIds[i],
@@ -74,14 +123,14 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       const heic2any = (await import("heic2any")).default;
       const exifr = await import("exifr");
 
-      type PreparedFile = { file: File; width: number; height: number; takenAt: number | null };
-      const prepared: PreparedFile[] = await Promise.all(files.map(async (f) => {
+      type Prepared = { file: File; width: number; height: number; takenAt: number | null; lat?: number; lon?: number };
+      const prepared: Prepared[] = await Promise.all(files.map(async (f) => {
         let file = f;
         if (HEIC_TYPES.has(f.type)) {
           const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
           file = new File([converted as Blob], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
         }
-        const [dims, exif] = await Promise.all([
+        const [dims, exif, gps] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve) => {
             const url = URL.createObjectURL(file);
             const img = new Image();
@@ -90,19 +139,24 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             img.src = url;
           }),
           exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
+          exifr.gps(file).catch(() => null),
         ]);
         const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
-        return { file, width: dims.width, height: dims.height, takenAt };
+        return { file, width: dims.width, height: dims.height, takenAt, lat: gps?.latitude, lon: gps?.longitude };
       }));
 
-      // Get upload URLs
+      // Collect EXIF data for inference
+      for (const p of prepared) {
+        if (p.lat != null && p.lon != null) allCoords.current.push({ lat: p.lat, lon: p.lon });
+        if (p.takenAt) allDates.current.push(p.takenAt);
+      }
+
       const initiated = await initiateUploads(tripId, prepared.map((p) => ({
         filename: p.file.name,
         contentType: p.file.type,
         fileSize: p.file.size,
       })));
 
-      // Update cards with real tempIds from server (photoId), swap preview to converted file
       const cards: PendingCard[] = prepared.map((p, i) => ({
         tempId: initiated[i].photoId,
         previewUrl: URL.createObjectURL(p.file),
@@ -110,22 +164,18 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         progress: 0,
         error: null,
       }));
-      // Replace initial cards with real ones (revoke old previews)
       initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
       setPendingCards((prev) => [
         ...prev.filter((c) => !tempIds.includes(c.tempId)),
         ...cards,
       ]);
 
-      // Upload each file; confirm and graduate to real photo card as soon as it finishes
       const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
-
       const processItem = async ({ p, init, card }: typeof queue[0]) => {
         try {
           await uploadToS3(init.uploadUrl, p.file, (pct) => {
             setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
           });
-
           const [photo] = await confirmUploads(tripId, [{
             photoId: init.photoId,
             storageKey: init.storageKey,
@@ -136,13 +186,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             height: p.height,
             takenAt: p.takenAt,
           } as ConfirmUploadRequest]);
-
           URL.revokeObjectURL(card.previewUrl);
           setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
           setPhotos((prev) => [...prev, photo]);
         } catch (e) {
           setPendingCards((prev) => prev.map((c) =>
-            c.tempId === card.tempId ? { ...c, error: e instanceof Error ? e.message : "Upload failed", progress: 0 } : c
+            c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
           ));
         }
       };
@@ -150,22 +199,21 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
         await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
       }
+
+      // Run inference after batch completes
+      runInference();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      // Mark any still-pending initial cards as errored
       setPendingCards((prev) => prev.map((c) =>
-        tempIds.includes(c.tempId) && c.progress === 0 && !c.error
-          ? { ...c, error: "Upload failed" }
-          : c
+        tempIds.includes(c.tempId) && !c.error ? { ...c, error: "Upload failed" } : c
       ));
     } finally {
       setUploading(false);
     }
-  }, [tripId]);
+  }, [tripId, runInference]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFiles,
-    onDropRejected: () => setError("Only photos are allowed (JPEG, PNG, WebP, HEIC)."),
     accept: {
       "image/jpeg": [".jpg", ".jpeg"],
       "image/png": [".png"],
@@ -179,293 +227,255 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
   if (!ready) return null;
 
-  const markBusy = (id: string) => setBusyIds((prev) => new Set(prev).add(id));
-  const clearBusy = (id: string) => setBusyIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-
-  const handleRotate = async (photo: Photo) => {
-    markBusy(photo.id);
-    try {
-      const updated = await rotatePhoto(tripId, photo.id);
-      setPhotos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Rotate failed");
-    } finally {
-      clearBusy(photo.id);
-    }
-  };
-
-  const handleDelete = async (photo: Photo) => {
-    markBusy(photo.id);
-    try {
-      await deletePhoto(tripId, photo.id);
-      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
-    } catch {
-      clearBusy(photo.id);
-    }
-  };
-
-  const dismissPending = (tempId: string) => {
-    setPendingCards((prev) => {
-      const card = prev.find((c) => c.tempId === tempId);
-      if (card?.previewUrl) URL.revokeObjectURL(card.previewUrl);
-      return prev.filter((c) => c.tempId !== tempId);
-    });
-  };
-
   const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
+  const canContinue = photos.length >= 10 && !uploading;
+
+  const locationHint = inferred
+    ? `From what we can tell, your photos were taken around `
+    : null;
+
+  const handleContinue = () => {
+    if (inferred) {
+      sessionStorage.setItem("atlaso_inferred", JSON.stringify(inferred));
+    }
+    router.push(`/trips/${tripId}/cover`);
+  };
 
   return (
-    <AppShell maxWidth="960px">
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{
-          fontFamily: "var(--font-fraunces), serif",
-          fontSize: 32,
-          fontWeight: 300,
-          color: "var(--ink)",
-          letterSpacing: "-0.02em",
-          marginBottom: 6,
-        }}>
-          Upload your photos
-        </h1>
-        <p style={{ color: "var(--ink-soft)", fontSize: 15 }}>
-          Add all the photos from your trip. You can rotate or remove any before generating.
-        </p>
-      </div>
+    <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 120, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
+      {/* Grain overlay */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
 
-      {/* Drop zone */}
-      <div
-        {...getRootProps()}
-        style={{
-          border: `2px dashed ${isDragActive ? "var(--blue)" : "rgba(10,26,58,0.2)"}`,
-          borderRadius: 14,
-          padding: "36px 24px",
-          textAlign: "center",
-          background: isDragActive ? "rgba(30,82,212,0.04)" : "var(--white)",
-          cursor: uploading ? "not-allowed" : "pointer",
-          transition: "all 0.2s",
-          marginBottom: 12,
-        }}
-      >
-        <input {...getInputProps()} />
-        <div style={{ fontSize: 28, marginBottom: 10 }}>📷</div>
-        {isDragActive ? (
-          <p style={{ color: "var(--blue)", fontSize: 15, fontWeight: 500 }}>Drop to upload</p>
-        ) : (
+      <FlowTopbar
+        currentStep={1}
+        rightSlot={
+          <span style={{ fontFamily: "var(--font-fraunces), serif", fontStyle: "italic", opacity: 0.7 }}>
+            Your work is saved — no sign-in needed yet
+          </span>
+        }
+      />
+
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>
+            Step 1 of 4
+          </div>
+          <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 54, fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 14, color: "var(--ink)" }}>
+            Drop in your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>photos</span>.
+          </h1>
+          <p style={{ fontSize: 17, color: "var(--ink-soft)", maxWidth: 540, lineHeight: 1.5 }}>
+            Upload the shots from your trip. We'll curate, sequence, and lay them out. Aim for 30–100 photos for the best book.
+          </p>
+        </div>
+
+        {/* Dropzone */}
+        <div
+          {...getRootProps()}
+          style={{
+            background: "#ffffff",
+            border: `2px dashed ${isDragActive ? "var(--blue)" : "var(--sky)"}`,
+            borderRadius: 16,
+            padding: "72px 32px",
+            textAlign: "center",
+            cursor: uploading ? "not-allowed" : "pointer",
+            transition: "background 0.2s, border-color 0.2s",
+            ...(isDragActive && { background: "rgba(111,163,232,0.08)", borderColor: "var(--blue)" }),
+          }}
+        >
+          <input {...getInputProps()} />
+          <div style={{
+            width: 56, height: 56, margin: "0 auto 20px",
+            background: "var(--wash)", borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--blue)", fontSize: 24,
+          }}>↑</div>
+          <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 28, fontWeight: 400, marginBottom: 8, color: "var(--ink)" }}>
+            {isDragActive ? "Drop to upload" : "Drop photos here"}
+          </div>
+          <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>
+            or browse your device · JPG, PNG, HEIC up to 25 MB each
+          </div>
+          <span style={{
+            display: "inline-block", padding: "12px 24px",
+            background: "var(--ink)", color: "#ffffff",
+            borderRadius: 100, fontWeight: 500, fontSize: 14,
+            pointerEvents: "none",
+          }}>
+            Browse files
+          </span>
+          <div style={{ marginTop: 20, fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>
+            We'll read the date and location from each photo to help build your story
+          </div>
+        </div>
+
+        {error && (
+          <p style={{ color: "#b91c1c", fontSize: 14, marginTop: 12 }}>{error}</p>
+        )}
+
+        {/* Status + grid */}
+        {totalCount > 0 && (
           <>
-            <p style={{ color: "var(--ink)", fontSize: 15, fontWeight: 500, marginBottom: 4 }}>
-              Drag photos here, or click to select
-            </p>
-            <p style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-              JPEG, PNG, WebP, HEIC
-            </p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "40px 0 16px" }}>
+              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 22, fontWeight: 500, color: "var(--ink)" }}>
+                <span style={{ color: "var(--blue)", fontWeight: 600 }}>{totalCount}</span> photos uploaded
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                {totalCount < 30
+                  ? `${30 - totalCount} more recommended for a richer book`
+                  : "Ready when you are"}
+              </div>
+            </div>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: 10,
+            }}>
+              {photos.map((photo, i) => (
+                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
+                  onDelete={(id) => {
+                    deletePhoto(tripId, id).catch(() => {});
+                    setPhotos((prev) => prev.filter((p) => p.id !== id));
+                  }}
+                />
+              ))}
+              {pendingCards.map((card) => (
+                <PendingTile key={card.tempId} card={card}
+                  onDismiss={(id) => {
+                    setPendingCards((prev) => {
+                      const c = prev.find((x) => x.tempId === id);
+                      if (c?.previewUrl) URL.revokeObjectURL(c.previewUrl);
+                      return prev.filter((x) => x.tempId !== id);
+                    });
+                  }}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>
 
-      {error && (
-        <p style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>{error}</p>
-      )}
-
-      {/* Photo grid */}
-      {(photos.length > 0 || pendingCards.length > 0) && (
-        <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 16px" }}>
-            <p style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-soft)", fontWeight: 500 }}>
-              {totalCount} photo{totalCount !== 1 ? "s" : ""}
-              {uploading && pendingCards.filter((c) => !c.error).length > 0 && (
-                <span style={{ marginLeft: 8, color: "var(--blue)" }}>
-                  · uploading {pendingCards.filter((c) => !c.error).length}…
-                </span>
+      <FlowBottomBar
+        leftContent={
+          inferred ? (
+            <span>
+              From what we can tell, your photos were taken around{" "}
+              <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>{inferred.place}</strong>
+              {inferred.startDate && (
+                <> in{" "}
+                  <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>
+                    {inferred.startDate === inferred.endDate ? inferred.startDate : inferred.startDate}
+                  </strong>
+                </>
               )}
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 32 }}>
-            {photos.map((photo) => (
-              <PhotoCard key={photo.id} photo={photo} tripId={tripId} busy={busyIds.has(photo.id)} onRotate={handleRotate} onDelete={handleDelete} />
-            ))}
-            {pendingCards.map((card) => (
-              <PendingPhotoCard key={card.tempId} card={card} onDismiss={dismissPending} />
-            ))}
-          </div>
-        </>
-      )}
-
-      {photos.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            </span>
+          ) : photos.length >= 10 ? (
+            <span>Looking good — ready to design your cover.</span>
+          ) : null
+        }
+        rightButton={
           <button
-            onClick={() => router.push(`/trips/${tripId}/generating`)}
-            disabled={uploading}
+            onClick={handleContinue}
+            disabled={!canContinue}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "16px 32px",
-              background: uploading ? "rgba(10,26,58,0.3)" : "var(--ink)",
-              color: "var(--white)",
-              border: "none",
-              borderRadius: 100,
-              fontSize: 15,
-              fontWeight: 500,
-              cursor: uploading ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
-              boxShadow: uploading ? "none" : "0 2px 0 var(--blue-deep), 0 8px 24px rgba(10,26,58,0.15)",
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "14px 26px",
+              background: canContinue ? "var(--ink)" : "rgba(10,26,58,0.25)",
+              color: "#ffffff", border: "none", borderRadius: 100,
+              fontWeight: 500, fontSize: 14, cursor: canContinue ? "pointer" : "not-allowed",
+              fontFamily: "inherit", transition: "transform 0.2s",
             }}
+            onMouseEnter={(e) => canContinue && ((e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "")}
           >
-            Generate my photobook →
+            Continue
+            <span style={{
+              width: 24, height: 24, background: "white", color: "var(--ink)",
+              borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12,
+            }}>→</span>
           </button>
-        </div>
-      )}
+        }
+      />
 
       <style>{`
-        .photo-card:hover .photo-overlay {
-          opacity: 1 !important;
-          background: rgba(0,0,0,0.35) !important;
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
         }
-        @keyframes shimmer {
-          0% { opacity: 1; }
-          50% { opacity: 0.5; }
-          100% { opacity: 1; }
+        @keyframes progressBar {
+          from { width: 20%; } to { width: 95%; }
         }
-        .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
       `}</style>
-    </AppShell>
-  );
-}
-
-function CircularProgress({ progress }: { progress: number }) {
-  const r = 22;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - progress / 100);
-  return (
-    <svg width="56" height="56" style={{ transform: "rotate(-90deg)" }}>
-      <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3.5" />
-      <circle
-        cx="28" cy="28" r={r}
-        fill="none"
-        stroke="white"
-        strokeWidth="3.5"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        style={{ transition: "stroke-dashoffset 0.15s ease" }}
-      />
-    </svg>
-  );
-}
-
-function PendingPhotoCard({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
-  return (
-    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1", background: "var(--wash)" }}>
-      {card.previewUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={card.previewUrl}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-      )}
-
-      {card.error ? (
-        /* Error overlay */
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "rgba(185,28,28,0.82)",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          padding: 8, gap: 6,
-        }}>
-          <span style={{ color: "white", fontSize: 20, lineHeight: 1 }}>✕</span>
-          <span style={{ color: "white", fontSize: 10, textAlign: "center", lineHeight: 1.3, wordBreak: "break-word" }}>
-            Upload failed
-          </span>
-          <button
-            onClick={() => onDismiss(card.tempId)}
-            style={{
-              marginTop: 2,
-              background: "rgba(255,255,255,0.2)",
-              border: "1px solid rgba(255,255,255,0.4)",
-              borderRadius: 4,
-              color: "white",
-              fontSize: 10,
-              padding: "3px 8px",
-              cursor: "pointer",
-            }}
-          >
-            Dismiss
-          </button>
-        </div>
-      ) : (
-        /* Progress overlay */
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "rgba(0,0,0,0.35)",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: 4,
-        }}>
-          <CircularProgress progress={card.progress} />
-          <span style={{ color: "white", fontSize: 11, fontWeight: 500 }}>{card.progress}%</span>
-        </div>
-      )}
     </div>
   );
 }
 
-function PhotoCard({ photo, tripId, busy, onRotate, onDelete }: {
-  photo: Photo;
-  tripId: string;
-  busy: boolean;
-  onRotate: (photo: Photo) => void;
-  onDelete: (photo: Photo) => void;
-}) {
+function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: string; index: number; onDelete: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "var(--wash)", aspectRatio: "1" }} className="photo-card">
-      {!loaded && <div style={{ position: "absolute", inset: 0, background: "var(--wash)" }} className="shimmer" />}
+    <div
+      style={{
+        aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
+        background: "var(--muted, #e6ecf5)",
+        animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
+      }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={getPhotoImageUrl(tripId, photo.id)}
-        alt={photo.originalFilename}
+        alt=""
         onLoad={() => setLoaded(true)}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `rotate(${photo.rotation}deg)`,
-          display: "block",
-          opacity: loaded ? 1 : 0,
-          transition: "opacity 0.2s ease",
-        }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
       />
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(0,0,0,0)",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        gap: 6,
-        paddingBottom: 8,
-        opacity: 0,
-        transition: "all 0.2s",
-      }} className="photo-overlay">
-        <button
-          onClick={() => onRotate(photo)}
-          disabled={busy}
-          title="Rotate 90°"
-          style={{ background: "rgba(255,255,255,0.92)", color: "var(--ink)", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 16, lineHeight: 1, cursor: "pointer" }}
-        >
-          ↻
-        </button>
-        <button
-          onClick={() => onDelete(photo)}
-          disabled={busy}
-          title="Delete"
-          style={{ background: "rgba(185,28,28,0.9)", color: "white", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 14, lineHeight: 1, cursor: "pointer" }}
-        >
-          🗑
-        </button>
-      </div>
+      <button
+        onClick={() => onDelete(photo.id)}
+        style={{
+          position: "absolute", top: 6, right: 6,
+          width: 22, height: 22, borderRadius: "50%",
+          background: "rgba(10,26,58,0.7)", color: "white",
+          border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
+          opacity: 0, transition: "opacity 0.2s",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+        className="remove-btn"
+      >×</button>
+      <style>{`.remove-btn { opacity: 0 !important; } div:hover > .remove-btn { opacity: 1 !important; }`}</style>
+    </div>
+  );
+}
+
+function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
+  return (
+    <div style={{
+      aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
+      background: "var(--muted, #e6ecf5)",
+    }}>
+      {card.previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={card.previewUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      )}
+      {card.error ? (
+        <div style={{
+          position: "absolute", inset: 0, background: "rgba(185,28,28,0.8)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+          <span style={{ color: "white", fontSize: 18 }}>✕</span>
+          <button onClick={() => onDismiss(card.tempId)} style={{
+            background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)",
+            borderRadius: 4, color: "white", fontSize: 10, padding: "3px 8px", cursor: "pointer",
+          }}>Dismiss</button>
+        </div>
+      ) : (
+        <>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)" }} />
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, height: 3,
+            width: `${card.progress || 20}%`, background: "var(--blue)", transition: "width 0.1s",
+          }} />
+        </>
+      )}
     </div>
   );
 }

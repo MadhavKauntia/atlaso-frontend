@@ -99,6 +99,16 @@ export async function getTrip(tripId: string): Promise<Trip> {
   return res.json();
 }
 
+export async function updateTrip(tripId: string, name?: string, destination?: string): Promise<Trip> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, destination }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function saveCoverConfig(
   bookId: string,
   templateId: string,
