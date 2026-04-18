@@ -13,6 +13,8 @@ import {
   deletePhoto,
 } from "@/lib/api";
 
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+
 interface UploadStatus {
   name: string;
   error?: string;
@@ -37,6 +39,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
   const handleFiles = useCallback(async (files: File[]) => {
     if (!files.length) return;
+
+    const invalid = files.filter((f) => !ALLOWED_TYPES.has(f.type));
+    if (invalid.length > 0) {
+      setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC). Cannot upload: ${invalid.map((f) => f.name).join(", ")}`);
+      return;
+    }
+
     setUploading(true);
     setUploadStatuses(files.map((f) => ({ name: f.name })));
     setError(null);
@@ -58,8 +67,15 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFiles,
+    onDropRejected: () => {
+      setError("Only photos are allowed (JPEG, PNG, WebP, HEIC).");
+    },
     accept: {
-      "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
+      "image/heic": [".heic"],
+      "image/heif": [".heif"],
     },
     disabled: uploading,
     multiple: true,
