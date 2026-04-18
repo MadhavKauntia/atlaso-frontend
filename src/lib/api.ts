@@ -63,6 +63,17 @@ export async function createTrip(name: string, destination: string): Promise<Tri
   return res.json();
 }
 
+export async function uploadPhoto(tripId: string, file: File): Promise<Photo> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE}/trips/${tripId}/photos`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function uploadPhotos(tripId: string, files: File[]): Promise<BulkUploadResponse> {
   const formData = new FormData();
   for (const file of files) {
@@ -71,6 +82,66 @@ export async function uploadPhotos(tripId: string, files: File[]): Promise<BulkU
   const res = await fetch(`${BASE}/trips/${tripId}/photos/bulk`, {
     method: "POST",
     body: formData,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+interface InitiateUploadRequest {
+  filename: string;
+  contentType: string;
+  fileSize: number;
+}
+
+export interface InitiateUploadResponse {
+  photoId: string;
+  storageKey: string;
+  uploadUrl: string;
+}
+
+export interface ConfirmUploadRequest {
+  photoId: string;
+  storageKey: string;
+  originalFilename: string;
+  contentType: string;
+  fileSize: number;
+  width: number;
+  height: number;
+  takenAt: number | null;
+}
+
+export async function initiateUploads(tripId: string, files: { filename: string; contentType: string; fileSize: number }[]): Promise<InitiateUploadResponse[]> {
+  const res = await fetch(`${BASE}/trips/${tripId}/photos/initiate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(files),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export function uploadToS3(uploadUrl: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload failed: ${xhr.status}`));
+    });
+    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", file.type);
+    xhr.send(file);
+  });
+}
+
+export async function confirmUploads(tripId: string, confirmations: ConfirmUploadRequest[]): Promise<Photo[]> {
+  const res = await fetch(`${BASE}/trips/${tripId}/photos/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(confirmations),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

@@ -6,17 +6,23 @@ import { useDropzone } from "react-dropzone";
 import AppShell from "@/components/AppShell";
 import {
   Photo,
-  uploadPhotos,
   getPhotos,
   getPhotoImageUrl,
   rotatePhoto,
   deletePhoto,
+  initiateUploads,
+  uploadToS3,
+  confirmUploads,
+  ConfirmUploadRequest,
 } from "@/lib/api";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
+const MAX_CONCURRENT_UPLOADS = 5;
 
 interface UploadStatus {
   name: string;
+  progress?: number;
   error?: string;
 }
 
@@ -47,13 +53,83 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     }
 
     setUploading(true);
-    setUploadStatuses(files.map((f) => ({ name: f.name })));
     setError(null);
+    setUploadStatuses(files.map((f) => ({ name: f.name, progress: 0 })));
+
     try {
-      const result = await uploadPhotos(tripId, files);
-      setPhotos((prev) => [...prev, ...result.uploaded]);
-      if (result.failed.length > 0) {
-        setUploadStatuses(result.failed.map((f) => ({ name: f.filename, error: f.error })));
+      // Step 1: Convert HEIC → JPEG in-browser, extract metadata
+      const heic2any = (await import("heic2any")).default;
+      const exifr = await import("exifr");
+
+      type PreparedFile = { file: File; width: number; height: number; takenAt: number | null };
+      const prepared: PreparedFile[] = await Promise.all(files.map(async (f) => {
+        let file = f;
+        if (HEIC_TYPES.has(f.type)) {
+          const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
+          file = new File([converted as Blob], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+        }
+
+        const [dims, exif] = await Promise.all([
+          new Promise<{ width: number; height: number }>((resolve) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
+            img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(url); };
+            img.src = url;
+          }),
+          exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
+        ]);
+
+        const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
+        return { file, width: dims.width, height: dims.height, takenAt };
+      }));
+
+      // Step 2: Request pre-signed upload URLs from backend
+      const initiated = await initiateUploads(tripId, prepared.map((p) => ({
+        filename: p.file.name,
+        contentType: p.file.type,
+        fileSize: p.file.size,
+      })));
+
+      // Step 3: Upload directly to S3 in parallel (max 5 concurrent)
+      const confirmations: ConfirmUploadRequest[] = [];
+      const errors: { name: string; error: string }[] = [];
+
+      const queue = initiated.map((init, i) => ({ init, prepared: prepared[i] }));
+      const runBatch = async (items: typeof queue) => {
+        await Promise.all(items.map(async ({ init, prepared: p }) => {
+          try {
+            await uploadToS3(init.uploadUrl, p.file, (pct) => {
+              setUploadStatuses((prev) => prev.map((s) => s.name === p.file.name ? { ...s, progress: pct } : s));
+            });
+            confirmations.push({
+              photoId: init.photoId,
+              storageKey: init.storageKey,
+              originalFilename: p.file.name,
+              contentType: p.file.type,
+              fileSize: p.file.size,
+              width: p.width,
+              height: p.height,
+              takenAt: p.takenAt,
+            });
+          } catch (e) {
+            errors.push({ name: p.file.name, error: e instanceof Error ? e.message : "Upload failed" });
+          }
+        }));
+      };
+
+      for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
+        await runBatch(queue.slice(i, i + MAX_CONCURRENT_UPLOADS));
+      }
+
+      // Step 4: Confirm successful uploads with backend
+      if (confirmations.length > 0) {
+        const newPhotos = await confirmUploads(tripId, confirmations);
+        setPhotos((prev) => [...prev, ...newPhotos]);
+      }
+
+      if (errors.length > 0) {
+        setUploadStatuses(errors.map((e) => ({ name: e.name, error: e.error })));
       } else {
         setUploadStatuses([]);
       }
@@ -161,6 +237,22 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           </>
         )}
       </div>
+
+      {uploading && uploadStatuses.length > 0 && (
+        <div style={{ marginBottom: 16, padding: "12px 16px", background: "var(--wash)", borderRadius: 10, fontSize: 13 }}>
+          {uploadStatuses.map((s, i) => (
+            <div key={i} style={{ marginBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, color: "var(--ink-soft)" }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>{s.name}</span>
+                <span>{s.progress ?? 0}%</span>
+              </div>
+              <div style={{ height: 4, background: "rgba(10,26,58,0.1)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${s.progress ?? 0}%`, background: "var(--blue)", borderRadius: 2, transition: "width 0.2s" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {failedUploads.length > 0 && (
         <div style={{ marginBottom: 16, padding: "12px 16px", background: "#fef2f2", borderRadius: 10, fontSize: 13, color: "#b91c1c" }}>
