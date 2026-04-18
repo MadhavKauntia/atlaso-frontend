@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { generateBook, regenerateBook } from "@/lib/api";
+import { generateBook, regenerateBook, saveCoverConfig } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const PHASES = [
@@ -39,7 +39,19 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       : generateBook(tripId);
 
     run
-      .then((book) => router.push(`/trips/${tripId}/preview?bookId=${book.id}`))
+      .then(async (book) => {
+        try {
+          const raw = localStorage.getItem("atlaso_cover_prefs");
+          if (raw) {
+            const { templateId, paletteId } = JSON.parse(raw);
+            await saveCoverConfig(book.id, templateId, paletteId);
+            localStorage.removeItem("atlaso_cover_prefs");
+          }
+        } catch {
+          // cover prefs are best-effort; don't block navigation
+        }
+        router.push(`/trips/${tripId}/preview?bookId=${book.id}`);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Generation failed"));
   }, [tripId, regenerateFrom, router]);
 

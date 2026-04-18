@@ -134,6 +134,23 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             Regenerate
           </button>
 
+          <button
+            onClick={() => router.push(`/trips/${tripId}/cover?bookId=${bookId}`)}
+            style={{
+              padding: "10px 20px",
+              background: "transparent",
+              color: "var(--ink)",
+              border: "1px solid rgba(10,26,58,0.25)",
+              borderRadius: 100,
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Design cover
+          </button>
+
           {book.status === "PDF_READY" ? (
             <a
               href={getBookPdfUrl(book.id)}

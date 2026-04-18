@@ -60,6 +60,8 @@ export interface Book {
   version: number;
   title: string;
   subtitle: string | null;
+  coverTemplateId: string | null;
+  coverPaletteId: string | null;
   status: string;
   generatedAt: string;
   pdfUrl: string | null;
@@ -86,6 +88,26 @@ export async function createTrip(name: string, destination: string): Promise<Tri
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, destination }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getTrip(tripId: string): Promise<Trip> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function saveCoverConfig(
+  bookId: string,
+  templateId: string,
+  paletteId: string
+): Promise<Book> {
+  const res = await apiFetch(`${BASE}/books/${bookId}/cover`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ templateId, paletteId }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
