@@ -89,7 +89,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const [error, setError] = useState<string | null>(null);
   const [inferred, setInferred] = useState<InferredLocation | null>(null);
 
-  const isDraftMode = useRef(false);
+  const [isDraftMode, setIsDraftMode] = useState(false);
   const allCoords = useRef<{ lat: number; lon: number }[]>([]);
   const allDates = useRef<number[]>([]);
   const initialFetch = useRef(false);
@@ -98,16 +98,16 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (initialFetch.current) return;
     initialFetch.current = true;
 
-    const draftId = sessionStorage.getItem("atlaso_draft_id");
-    if (draftId === tripId) {
-      isDraftMode.current = true;
+    const draft = sessionStorage.getItem("atlaso_draft_id") === tripId;
+    setIsDraftMode(draft);
+
+    if (draft) {
       // Restore any files already in draftStore (user navigated back)
       const existing = draftStore.getAll();
       if (existing.length > 0) {
         setDraftPhotos(existing.map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
       }
     } else {
-      isDraftMode.current = false;
       getPhotos(tripId).then(setPhotos).catch(() => {});
     }
   }, [tripId]);
@@ -124,6 +124,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC).`);
       return;
     }
+    // Check sessionStorage directly — avoids any ref/state timing issues
+    const isDraft = sessionStorage.getItem("atlaso_draft_id") === tripId;
     setUploading(true);
     setError(null);
 
@@ -159,7 +161,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         if (p.takenAt) allDates.current.push(p.takenAt);
       }
 
-      if (isDraftMode.current) {
+      if (isDraft) {
         // Draft mode: store in memory, no API calls
         draftStore.add(prepared.map((p) => ({
           file: p.file,
@@ -235,7 +237,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      if (!isDraftMode.current) {
+      if (!isDraft) {
         setPendingCards((prev) => prev.map((c) => c.error ? c : { ...c, error: "Upload failed" }));
       }
     } finally {
@@ -256,7 +258,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     multiple: true,
   });
 
-  const confirmedCount = isDraftMode.current ? draftPhotos.length : photos.length;
+  const confirmedCount = isDraftMode ? draftPhotos.length : photos.length;
   const totalCount = confirmedCount + pendingCards.filter((c) => !c.error).length;
   const canContinue = confirmedCount >= 10 && !uploading;
 
@@ -358,7 +360,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: 10,
             }}>
-              {isDraftMode.current ? (
+              {isDraftMode ? (
                 draftPhotos.map((photo, i) => (
                   <DraftTile key={photo.id} photo={photo} index={i}
                     onDelete={(id) => {
