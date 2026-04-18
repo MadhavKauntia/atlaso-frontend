@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
-import { draftStore } from "@/lib/draftStore";
 import {
   getPhotos,
   getPhotoImageUrl,
@@ -28,12 +27,6 @@ interface PendingCard {
   name: string;
   progress: number;
   error: string | null;
-}
-
-interface DraftPhoto {
-  id: string; // previewUrl used as stable identity
-  previewUrl: string;
-  name: string;
 }
 
 interface InferredLocation {
@@ -83,13 +76,11 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const router = useRouter();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [draftPhotos, setDraftPhotos] = useState<DraftPhoto[]>([]);
   const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inferred, setInferred] = useState<InferredLocation | null>(null);
 
-  const [isDraftMode, setIsDraftMode] = useState(false);
   const allCoords = useRef<{ lat: number; lon: number }[]>([]);
   const allDates = useRef<number[]>([]);
   const initialFetch = useRef(false);
@@ -97,19 +88,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   useEffect(() => {
     if (initialFetch.current) return;
     initialFetch.current = true;
-
-    const draft = sessionStorage.getItem("atlaso_draft_id") === tripId;
-    setIsDraftMode(draft);
-
-    if (draft) {
-      // Restore any files already in draftStore (user navigated back)
-      const existing = draftStore.getAll();
-      if (existing.length > 0) {
-        setDraftPhotos(existing.map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
-      }
-    } else {
-      getPhotos(tripId).then(setPhotos).catch(() => {});
-    }
+    getPhotos(tripId).then(setPhotos).catch(() => {});
   }, [tripId]);
 
   const runInference = useCallback(async () => {
@@ -124,10 +103,18 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC).`);
       return;
     }
-    // Check sessionStorage directly — avoids any ref/state timing issues
-    const isDraft = sessionStorage.getItem("atlaso_draft_id") === tripId;
     setUploading(true);
     setError(null);
+
+    const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
+    const initialCards: PendingCard[] = files.map((f, i) => ({
+      tempId: tempIds[i],
+      previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
+      name: f.name,
+      progress: 0,
+      error: null,
+    }));
+    setPendingCards((prev) => [...prev, ...initialCards]);
 
     try {
       const heic2any = (await import("heic2any")).default;
@@ -155,91 +142,66 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         return { file, width: dims.width, height: dims.height, takenAt, lat: gps?.latitude, lon: gps?.longitude };
       }));
 
-      // Collect EXIF data for inference
       for (const p of prepared) {
         if (p.lat != null && p.lon != null) allCoords.current.push({ lat: p.lat, lon: p.lon });
         if (p.takenAt) allDates.current.push(p.takenAt);
       }
 
-      if (isDraft) {
-        // Draft mode: store in memory, no API calls
-        draftStore.add(prepared.map((p) => ({
-          file: p.file,
-          width: p.width,
-          height: p.height,
-          takenAt: p.takenAt ?? null,
-        })));
-        const all = draftStore.getAll();
-        setDraftPhotos(all.map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
-        runInference();
-      } else {
-        // Real mode: show pending cards, upload to S3, confirm with backend
-        const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
-        const initialCards: PendingCard[] = files.map((f, i) => ({
-          tempId: tempIds[i],
-          previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
-          name: f.name,
-          progress: 0,
-          error: null,
-        }));
-        setPendingCards((prev) => [...prev, ...initialCards]);
+      const initiated = await initiateUploads(tripId, prepared.map((p) => ({
+        filename: p.file.name,
+        contentType: p.file.type,
+        fileSize: p.file.size,
+      })));
 
-        const initiated = await initiateUploads(tripId, prepared.map((p) => ({
-          filename: p.file.name,
-          contentType: p.file.type,
-          fileSize: p.file.size,
-        })));
+      const cards: PendingCard[] = prepared.map((p, i) => ({
+        tempId: initiated[i].photoId,
+        previewUrl: URL.createObjectURL(p.file),
+        name: p.file.name,
+        progress: 0,
+        error: null,
+      }));
+      initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
+      setPendingCards((prev) => [
+        ...prev.filter((c) => !tempIds.includes(c.tempId)),
+        ...cards,
+      ]);
 
-        const cards: PendingCard[] = prepared.map((p, i) => ({
-          tempId: initiated[i].photoId,
-          previewUrl: URL.createObjectURL(p.file),
-          name: p.file.name,
-          progress: 0,
-          error: null,
-        }));
-        initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
-        setPendingCards((prev) => [
-          ...prev.filter((c) => !tempIds.includes(c.tempId)),
-          ...cards,
-        ]);
-
-        const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
-        const processItem = async ({ p, init, card }: typeof queue[0]) => {
-          try {
-            await uploadToS3(init.uploadUrl, p.file, (pct) => {
-              setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
-            });
-            const [photo] = await confirmUploads(tripId, [{
-              photoId: init.photoId,
-              storageKey: init.storageKey,
-              originalFilename: p.file.name,
-              contentType: p.file.type,
-              fileSize: p.file.size,
-              width: p.width,
-              height: p.height,
-              takenAt: p.takenAt,
-            } as ConfirmUploadRequest]);
-            URL.revokeObjectURL(card.previewUrl);
-            setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
-            setPhotos((prev) => [...prev, photo]);
-          } catch {
-            setPendingCards((prev) => prev.map((c) =>
-              c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
-            ));
-          }
-        };
-
-        for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
-          await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
+      const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
+      const processItem = async ({ p, init, card }: typeof queue[0]) => {
+        try {
+          await uploadToS3(init.uploadUrl, p.file, (pct) => {
+            setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
+          });
+          const [photo] = await confirmUploads(tripId, [{
+            photoId: init.photoId,
+            storageKey: init.storageKey,
+            originalFilename: p.file.name,
+            contentType: p.file.type,
+            fileSize: p.file.size,
+            width: p.width,
+            height: p.height,
+            takenAt: p.takenAt,
+          } as ConfirmUploadRequest]);
+          URL.revokeObjectURL(card.previewUrl);
+          setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
+          setPhotos((prev) => [...prev, photo]);
+        } catch {
+          setPendingCards((prev) => prev.map((c) =>
+            c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
+          ));
         }
+      };
 
-        runInference();
+      for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
+        await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
       }
+
+      runInference();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      if (!isDraft) {
-        setPendingCards((prev) => prev.map((c) => c.error ? c : { ...c, error: "Upload failed" }));
-      }
+      setPendingCards((prev) => prev.map((c) =>
+        tempIds.includes(c.tempId) && !c.error ? { ...c, error: "Upload failed" } : c
+      ));
     } finally {
       setUploading(false);
     }
@@ -258,9 +220,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     multiple: true,
   });
 
-  const confirmedCount = isDraftMode ? draftPhotos.length : photos.length;
-  const totalCount = confirmedCount + pendingCards.filter((c) => !c.error).length;
-  const canContinue = confirmedCount >= 10 && !uploading;
+  const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
+  const canContinue = photos.length >= 10 && !uploading;
 
   const handleContinue = () => {
     if (inferred) {
@@ -271,20 +232,18 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 120, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
-      {/* Grain overlay */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
 
       <FlowTopbar
         currentStep={1}
         rightSlot={
           <span style={{ fontFamily: "var(--font-fraunces), serif", fontStyle: "italic", opacity: 0.7 }}>
-            Your work is saved — no sign-in needed yet
+            Your work is saved as you go
           </span>
         }
       />
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px" }}>
-        {/* Header */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>
             Step 1 of 4
@@ -297,7 +256,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           </p>
         </div>
 
-        {/* Dropzone */}
         <div
           {...getRootProps()}
           style={{
@@ -341,7 +299,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           <p style={{ color: "#b91c1c", fontSize: 14, marginTop: 12 }}>{error}</p>
         )}
 
-        {/* Status + grid */}
         {totalCount > 0 && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "40px 0 16px" }}>
@@ -360,25 +317,14 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: 10,
             }}>
-              {isDraftMode ? (
-                draftPhotos.map((photo, i) => (
-                  <DraftTile key={photo.id} photo={photo} index={i}
-                    onDelete={(id) => {
-                      draftStore.remove(id);
-                      setDraftPhotos(draftStore.getAll().map((d) => ({ id: d.previewUrl, previewUrl: d.previewUrl, name: d.file.name })));
-                    }}
-                  />
-                ))
-              ) : (
-                photos.map((photo, i) => (
-                  <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
-                    onDelete={(id) => {
-                      deletePhoto(tripId, id).catch(() => {});
-                      setPhotos((prev) => prev.filter((p) => p.id !== id));
-                    }}
-                  />
-                ))
-              )}
+              {photos.map((photo, i) => (
+                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
+                  onDelete={(id) => {
+                    deletePhoto(tripId, id).catch(() => {});
+                    setPhotos((prev) => prev.filter((p) => p.id !== id));
+                  }}
+                />
+              ))}
               {pendingCards.map((card) => (
                 <PendingTile key={card.tempId} card={card}
                   onDismiss={(id) => {
@@ -409,7 +355,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 </>
               )}
             </span>
-          ) : confirmedCount >= 10 ? (
+          ) : photos.length >= 10 ? (
             <span>Looking good — ready to design your cover.</span>
           ) : null
         }
@@ -448,40 +394,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   );
 }
 
-function DraftTile({ photo, index, onDelete }: { photo: DraftPhoto; index: number; onDelete: (id: string) => void }) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div
-      style={{
-        aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
-        background: "var(--muted, #e6ecf5)",
-        animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
-      }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={photo.previewUrl}
-        alt=""
-        onLoad={() => setLoaded(true)}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
-      />
-      <button
-        onClick={() => onDelete(photo.id)}
-        style={{
-          position: "absolute", top: 6, right: 6,
-          width: 22, height: 22, borderRadius: "50%",
-          background: "rgba(10,26,58,0.7)", color: "white",
-          border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
-          opacity: 0, transition: "opacity 0.2s",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-        className="remove-btn"
-      >×</button>
-      <style>{`.remove-btn { opacity: 0 !important; } div:hover > .remove-btn { opacity: 1 !important; }`}</style>
-    </div>
-  );
-}
-
 function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: string; index: number; onDelete: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
@@ -506,7 +418,6 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
           width: 22, height: 22, borderRadius: "50%",
           background: "rgba(10,26,58,0.7)", color: "white",
           border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
-          opacity: 0, transition: "opacity 0.2s",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
         className="remove-btn"
