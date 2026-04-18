@@ -295,20 +295,21 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={() => router.push(`/trips/${tripId}/generating`)}
+            disabled={uploading}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 12,
               padding: "16px 32px",
-              background: "var(--ink)",
+              background: uploading ? "rgba(10,26,58,0.3)" : "var(--ink)",
               color: "var(--white)",
               border: "none",
               borderRadius: 100,
               fontSize: 15,
               fontWeight: 500,
-              cursor: "pointer",
+              cursor: uploading ? "not-allowed" : "pointer",
               fontFamily: "inherit",
-              boxShadow: "0 2px 0 var(--blue-deep), 0 8px 24px rgba(10,26,58,0.15)",
+              boxShadow: uploading ? "none" : "0 2px 0 var(--blue-deep), 0 8px 24px rgba(10,26,58,0.15)",
             }}
           >
             Generate my photobook →
