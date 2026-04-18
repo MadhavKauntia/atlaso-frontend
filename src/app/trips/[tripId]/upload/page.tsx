@@ -279,49 +279,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             {photos.map((photo) => {
               const busy = busyIds.has(photo.id);
               return (
-                <div key={photo.id} style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "var(--wash)", aspectRatio: "1" }} className="photo-card">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getPhotoImageUrl(tripId, photo.id)}
-                    alt={photo.originalFilename}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      transform: `rotate(${photo.rotation}deg)`,
-                      display: "block",
-                    }}
-                  />
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(0,0,0,0)",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "center",
-                    gap: 6,
-                    paddingBottom: 8,
-                    opacity: 0,
-                    transition: "all 0.2s",
-                  }} className="photo-overlay">
-                    <button
-                      onClick={() => handleRotate(photo)}
-                      disabled={busy}
-                      title="Rotate 90°"
-                      style={{ background: "rgba(255,255,255,0.92)", color: "var(--ink)", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 16, lineHeight: 1, cursor: "pointer" }}
-                    >
-                      ↻
-                    </button>
-                    <button
-                      onClick={() => handleDelete(photo)}
-                      disabled={busy}
-                      title="Delete"
-                      style={{ background: "rgba(185,28,28,0.9)", color: "white", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 14, lineHeight: 1, cursor: "pointer" }}
-                    >
-                      🗑
-                    </button>
-                  </div>
-                </div>
+                <PhotoCard key={photo.id} photo={photo} tripId={tripId} busy={busy} onRotate={handleRotate} onDelete={handleDelete} />
               );
             })}
           </div>
@@ -364,7 +322,72 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           background: rgba(0,0,0,0.35) !important;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shimmer {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+        .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
       `}</style>
     </AppShell>
+  );
+}
+
+function PhotoCard({ photo, tripId, busy, onRotate, onDelete }: {
+  photo: Photo;
+  tripId: string;
+  busy: boolean;
+  onRotate: (photo: Photo) => void;
+  onDelete: (photo: Photo) => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "var(--wash)", aspectRatio: "1" }} className="photo-card">
+      {!loaded && <div style={{ position: "absolute", inset: 0, background: "var(--wash)" }} className="shimmer" />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getPhotoImageUrl(tripId, photo.id)}
+        alt={photo.originalFilename}
+        onLoad={() => setLoaded(true)}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          transform: `rotate(${photo.rotation}deg)`,
+          display: "block",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.2s ease",
+        }}
+      />
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: "rgba(0,0,0,0)",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        gap: 6,
+        paddingBottom: 8,
+        opacity: 0,
+        transition: "all 0.2s",
+      }} className="photo-overlay">
+        <button
+          onClick={() => onRotate(photo)}
+          disabled={busy}
+          title="Rotate 90°"
+          style={{ background: "rgba(255,255,255,0.92)", color: "var(--ink)", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 16, lineHeight: 1, cursor: "pointer" }}
+        >
+          ↻
+        </button>
+        <button
+          onClick={() => onDelete(photo)}
+          disabled={busy}
+          title="Delete"
+          style={{ background: "rgba(185,28,28,0.9)", color: "white", border: "none", borderRadius: 6, padding: "6px 8px", fontSize: 14, lineHeight: 1, cursor: "pointer" }}
+        >
+          🗑
+        </button>
+      </div>
+    </div>
   );
 }

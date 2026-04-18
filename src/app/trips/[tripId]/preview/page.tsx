@@ -245,6 +245,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           </div>
         );
       })()}
+      <style>{`
+        @keyframes shimmer {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+        .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
+      `}</style>
     </AppShell>
   );
 }
@@ -264,7 +272,7 @@ function PageRenderer({ page, tripId, onOffsetSaved }: { page: PageData; tripId:
       }}
     >
       {page.slots.map((slot: PhotoSlot, i: number) => (
-        <SlotRenderer key={i} slot={slot} tripId={tripId} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} />
+        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} />
       ))}
       <div style={{
         position: "absolute",
@@ -288,6 +296,7 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: { slot: Ph
   const lastPos = useRef({ x: 0, y: 0 });
   const offsetRef = useRef({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
   const [displayOffset, setDisplayOffset] = useState({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
+  const [loaded, setLoaded] = useState(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -348,12 +357,16 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: { slot: Ph
         userSelect: "none",
       }}
     >
+      {!loaded && (
+        <div style={{ position: "absolute", inset: 0, background: "var(--wash)" }} className="shimmer" />
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
         src={getPhotoImageUrl(tripId, slot.photoId)}
         alt={slot.caption ?? `Photo ${index + 1}`}
         draggable={false}
+        onLoad={() => setLoaded(true)}
         style={{
           width: "100%",
           height: "100%",
@@ -362,6 +375,8 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: { slot: Ph
           transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined,
           display: "block",
           pointerEvents: "none",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.2s ease",
         }}
       />
       {slot.caption && (
