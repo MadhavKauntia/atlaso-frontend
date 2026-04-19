@@ -117,15 +117,29 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     setPendingCards((prev) => [...prev, ...initialCards]);
 
     try {
-      const heic2any = (await import("heic2any")).default;
       const exifr = await import("exifr");
+
+      async function convertHeic(f: File): Promise<File> {
+        const jpegName = f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
+        try {
+          const bitmap = await createImageBitmap(f);
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+          bitmap.close();
+          const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.9 });
+          return new File([blob], jpegName, { type: "image/jpeg" });
+        } catch {
+          const heic2any = (await import("heic2any")).default;
+          const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
+          return new File([converted as Blob], jpegName, { type: "image/jpeg" });
+        }
+      }
 
       type Prepared = { file: File; width: number; height: number; takenAt: number | null; lat?: number; lon?: number };
       const prepared: Prepared[] = await Promise.all(files.map(async (f) => {
         let file = f;
         if (HEIC_TYPES.has(f.type)) {
-          const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
-          file = new File([converted as Blob], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+          file = await convertHeic(f);
         }
         const [dims, exif, gps] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve) => {
