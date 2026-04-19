@@ -31,6 +31,7 @@ interface PendingCard {
 
 interface InferredLocation {
   place: string;
+  country: string;
   coordStr: string;
   startDate: string | null;
   endDate: string | null;
@@ -52,7 +53,7 @@ async function inferLocationFromPhotos(
     );
     const data = await res.json();
     const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state;
-    const country = data.address?.country;
+    const country = data.address?.country || "";
     const place = [city, country].filter(Boolean).join(", ");
     const latDir = lat >= 0 ? "N" : "S";
     const lonDir = lon >= 0 ? "E" : "W";
@@ -65,7 +66,7 @@ async function inferLocationFromPhotos(
       startDate = fmt(sorted[0]);
       endDate = fmt(sorted[sorted.length - 1]);
     }
-    return place ? { place, coordStr, startDate, endDate } : null;
+    return (place || country) ? { place: place || country, country, coordStr, startDate, endDate } : null;
   } catch {
     return null;
   }
@@ -89,6 +90,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (initialFetch.current) return;
     initialFetch.current = true;
     getPhotos(tripId).then(setPhotos).catch(() => {});
+    const raw = sessionStorage.getItem("atlaso_inferred");
+    if (raw) {
+      try { setInferred(JSON.parse(raw)); } catch { /* ignore */ }
+    }
   }, [tripId]);
 
   const runInference = useCallback(async () => {

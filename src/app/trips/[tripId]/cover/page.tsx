@@ -35,7 +35,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [selectedPaletteId, setSelectedPaletteId] = useState(TEMPLATE_LIST[0].paletteId);
   const [userPickedStyle, setUserPickedStyle] = useState(false);
   const [suggestToast, setSuggestToast] = useState(false);
-  const [inferred, setInferred] = useState<{ place: string; coordStr: string } | null>(null);
+  const [inferred, setInferred] = useState<{ place: string; country?: string; coordStr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const tripName = (trip.name && trip.name !== "Untitled Trip") ? trip.name : "";
           if (raw) {
             const inf = JSON.parse(raw);
-            setDestination(inf.place?.split(",")[0]?.trim() || tripName);
+            setDestination(inf.country || inf.place?.split(",")[0]?.trim() || tripName);
           } else {
             setDestination(tripName);
           }
