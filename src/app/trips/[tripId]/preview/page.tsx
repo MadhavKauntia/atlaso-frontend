@@ -169,7 +169,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     <div style={{ flex: 1, overflow: "hidden" }}>
                       <CoverRenderer template={template} pairing={pairing} title={book.title} subtitle={book.subtitle ?? ""} style={{ width: "100%", height: "100%" }} />
                     </div>
-                    <div style={{ flex: 1, background: "#f8f6f0" }} />
+                    <ThumbHalf page={leftPage} tripId={tripId} />
                   </>
                 ) : (
                   <>
@@ -201,16 +201,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
                     <CoverRenderer template={template} pairing={pairing} title={book.title} subtitle={book.subtitle ?? ""} style={{ width: "100%", height: "100%", display: "block" }} />
                   </div>
-                  <div style={{
-                    flex: 1, background: "#fff", padding: 24, position: "relative",
-                    borderLeft: "1px solid rgba(10,26,58,0.06)",
-                    boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)",
-                  }}>
-                    <div style={{ paddingTop: 16 }}>
-                      <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--blue)", fontWeight: 500, marginBottom: 8 }}>Inside front</div>
-                      <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 300, color: "var(--ink)", marginBottom: 6 }}>{book.title}</div>
-                      {book.subtitle && <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>{book.subtitle}</div>}
-                    </div>
+                  <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
+                    <PageRenderer page={spread[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
                   </div>
                 </>
               ) : isDouble ? (
