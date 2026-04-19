@@ -22,7 +22,7 @@ const TIPS = [
   "Your cover will print at 300 dpi with a 3mm bleed to guarantee perfect edges.",
   "We color-calibrate every book individually before it leaves our studio.",
   "92% of customers finish their book in under 10 minutes.",
-  "Books are printed in Bengaluru and ship via DHL Express to 80+ countries.",
+  "Books are printed in Bengaluru and delivered across India.",
 ];
 
 const DEFAULT_TEMPLATE_ID = "archway";

@@ -117,7 +117,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             Where should we <em style={{ fontStyle: "italic", color: "var(--blue)" }}>send</em> it?
           </h1>
           <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 32, lineHeight: 1.5 }}>
-            Enter your shipping address and payment details. We'll print within 3 days and ship via DHL Express.
+            Enter your shipping address and payment details. We'll print within 3 days and deliver across India.
           </p>
 
           {/* 1. Contact */}

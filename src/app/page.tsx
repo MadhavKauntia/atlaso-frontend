@@ -48,7 +48,7 @@ export default function LandingPage() {
               <span className={s.ctaArrow}>→</span>
             </Link>
             <div className={s.ctaNote}>
-              Free to preview<span className={s.ctaNoteSep}>·</span>Ships worldwide
+              Free to preview<span className={s.ctaNoteSep}>·</span>Ships across India
             </div>
           </div>
 

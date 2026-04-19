@@ -273,7 +273,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
             <div>📦</div>
             <div>
               <strong style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>Order today, arrives by {deliveryDate()}.</strong>{" "}
-              We print within 3 days and ship via DHL Express.
+              We print within 3 days and deliver across India.
             </div>
           </div>
         </div>
