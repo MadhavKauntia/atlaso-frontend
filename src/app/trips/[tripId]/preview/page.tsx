@@ -86,8 +86,6 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     spreads.push([pages[pages.length - 1]]);
   }
 
-  const spread = spreads[currentSpread] ?? [];
-  const isDouble = spread.length === 2;
 
   const handleOffsetSaved = (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => {
     setBook((prev) => {
@@ -182,11 +180,11 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           })}
         </div>
 
-        {/* Center: book spread */}
+        {/* Center: book spread — all spreads rendered, CSS-toggled to preserve image cache */}
         <div>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{
-              display: "flex",
+              position: "relative",
               aspectRatio: "16/10",
               boxShadow: "0 24px 60px rgba(10,26,58,0.2), 0 2px 6px rgba(10,26,58,0.1)",
               borderRadius: 3,
@@ -194,33 +192,46 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
               background: "#fff",
               width: "100%",
             }}>
-              {currentSpread === 0 ? (
-                // Cover spread
-                <>
-                  <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-                    <CoverRenderer template={template} pairing={pairing} title={book.title} subtitle={book.subtitle ?? ""} style={{ width: "100%", height: "100%", display: "block" }} />
+              {spreads.map((sp, idx) => {
+                const visible = idx === currentSpread;
+                const isCoverSpread = idx === 0;
+                const isDoubleSp = sp.length === 2;
+                return (
+                  <div key={idx} style={{
+                    position: "absolute", inset: 0, display: "flex",
+                    opacity: visible ? 1 : 0,
+                    pointerEvents: visible ? "auto" : "none",
+                    transition: "opacity 0.15s",
+                  }}>
+                    {isCoverSpread ? (
+                      <>
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                          <CoverRenderer template={template} pairing={pairing} title={book.title} subtitle={book.subtitle ?? ""} style={{ width: "100%", height: "100%", display: "block" }} />
+                        </div>
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
+                          {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />}
+                        </div>
+                      </>
+                    ) : isDoubleSp ? (
+                      <>
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
+                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                        </div>
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
+                          <PageRenderer page={sp[1]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
+                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                        </div>
+                        <div style={{ flex: 1, background: "#fff" }} />
+                      </>
+                    )}
                   </div>
-                  <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
-                    <PageRenderer page={spread[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
-                  </div>
-                </>
-              ) : isDouble ? (
-                <>
-                  <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
-                    <PageRenderer page={spread[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
-                  </div>
-                  <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
-                    <PageRenderer page={spread[1]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
-                    <PageRenderer page={spread[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
-                  </div>
-                  <div style={{ flex: 1, background: "#fff" }} />
-                </>
-              )}
+                );
+              })}
             </div>
           </div>
 
