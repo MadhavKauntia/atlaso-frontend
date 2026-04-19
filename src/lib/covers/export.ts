@@ -58,7 +58,7 @@ export function exportCoverSVG(config: ExportCoverConfig): string {
     </g>`.trim();
 
   const subtitleEl = config.subtitle
-    ? `<text x="${s(subtitleConfig.x)}" y="${s(subtitleConfig.y)}" fill="${pairing.textSecondary}" font-size="${fs(subtitleConfig.fontSize)}" letter-spacing="${fs(0.5)}" font-family="Fraunces, Georgia, serif" font-style="italic">\u2014 ${escapeXml(config.subtitle)}</text>`
+    ? `<text x="${s(subtitleConfig.x)}" y="${s(subtitleConfig.y)}" fill="${pairing.textSecondary}" font-size="${fs(subtitleConfig.fontSize)}" letter-spacing="${fs(0.5)}" font-family="Fraunces, Georgia, serif" font-style="italic">${escapeXml(config.subtitle)}</text>`
     : "";
 
   const coordEl = config.coordinates
