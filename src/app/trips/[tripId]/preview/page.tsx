@@ -131,10 +131,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       </div>
 
       {/* 3-column layout */}
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: "80px 1fr 260px", gap: 24, alignItems: "start" }}>
+      <div className="flow-preview-grid">
 
         {/* Left rail: spread thumbnails */}
-        <div style={{ position: "sticky", top: 100, display: "flex", flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
+        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
             const leftPage = sp[0];
@@ -273,8 +273,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           </div>
         </div>
 
-        {/* Right: panel */}
-        <div style={{ position: "sticky", top: 100, background: "#fff", borderRadius: 14, border: "1px solid rgba(10,26,58,0.08)", padding: 20 }}>
+        {/* Right: panel — hidden on mobile */}
+        <div className="flow-preview-panel" style={{ position: "sticky", top: 100, background: "#fff", borderRadius: 14, border: "1px solid rgba(10,26,58,0.08)", padding: 20 }}>
           <button
             onClick={() => router.push(`/trips/${tripId}/generating?regenerateFrom=${bookId}`)}
             style={{

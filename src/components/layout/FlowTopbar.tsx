@@ -16,11 +16,10 @@ const STEPS = [
 
 export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) {
   return (
-    <div style={{
+    <div className="flow-topbar" style={{
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      padding: "24px 48px",
       borderBottom: "1px solid rgba(10,26,58,0.08)",
       background: "#ffffff",
       position: "sticky",
@@ -41,7 +40,7 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
         Atlaso
       </Link>
 
-      <div style={{ display: "flex", gap: 32, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.15em" }}>
+      <div style={{ display: "flex", gap: 20, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.15em" }}>
         {STEPS.map((step) => {
           const done = step.num < currentStep;
           const active = step.num === currentStep;
@@ -68,7 +67,7 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
               }}>
                 {done ? "✓" : step.num}
               </div>
-              {step.label}
+              <span className="flow-step-label">{step.label}</span>
             </div>
           );
         })}

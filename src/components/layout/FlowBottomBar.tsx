@@ -7,13 +7,12 @@ interface FlowBottomBarProps {
 
 export default function FlowBottomBar({ leftContent, rightButton }: FlowBottomBarProps) {
   return (
-    <div style={{
+    <div className="flow-bottom-bar" style={{
       position: "fixed",
       bottom: 0,
       left: 0,
       right: 0,
       background: "#ffffff",
-      padding: "20px 48px",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",

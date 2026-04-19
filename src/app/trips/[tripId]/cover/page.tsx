@@ -280,12 +280,12 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "start" }}>
+        <div className="flow-cover-grid">
 
           {/* LEFT: Controls */}
           <div>
             <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>Step 2 of 4</div>
-            <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 44, fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 12, color: "var(--ink)" }}>
+            <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 12, color: "var(--ink)" }}>
               Name your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>trip</span>, design its cover.
             </h1>
             <p style={{ fontSize: 15, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.5 }}>

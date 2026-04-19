@@ -257,12 +257,12 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         }
       />
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px" }}>
+      <div className="flow-page-inner">
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>
             Step 1 of 4
           </div>
-          <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 54, fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 14, color: "var(--ink)" }}>
+          <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 14, color: "var(--ink)" }}>
             Drop in your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>photos</span>.
           </h1>
           <p style={{ fontSize: 17, color: "var(--ink-soft)", maxWidth: 540, lineHeight: 1.5 }}>
