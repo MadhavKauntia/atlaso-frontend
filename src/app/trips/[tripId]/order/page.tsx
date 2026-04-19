@@ -64,7 +64,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
     if (!bookId) return;
     getBook(bookId).then((b) => {
       setBook(b);
-      if (!b.pdfUrl) exportBook(b).then(setBook).catch(() => {});
+      if (b.status !== "PDF_READY") exportBook(b).then(setBook).catch(() => {});
     }).catch(() => {});
   }, [bookId]);
 

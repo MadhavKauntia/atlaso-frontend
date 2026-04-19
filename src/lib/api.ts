@@ -64,7 +64,6 @@ export interface Book {
   coverPaletteId: string | null;
   status: string;
   generatedAt: string;
-  pdfUrl: string | null;
   pages: PageData[];
 }
 
