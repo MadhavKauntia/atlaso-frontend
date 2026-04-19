@@ -82,28 +82,26 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     started.current = true;
 
     const run = async () => {
-      // Update trip name from cover prefs before generating
+      let prefs: { title: string; subtitle: string; templateId: string; paletteId: string } | null = null;
       try {
         const raw = localStorage.getItem("atlaso_cover_prefs");
-        if (raw) {
-          const { title } = JSON.parse(raw);
-          if (title) await updateTrip(tripId, title, title);
-        }
+        if (raw) prefs = JSON.parse(raw);
+      } catch { /* ignore parse errors */ }
+
+      // Update trip name from cover prefs before generating
+      try {
+        if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.title);
       } catch { /* best-effort */ }
 
       const book = regenerateFrom
         ? await regenerateBook(regenerateFrom)
         : await generateBook(tripId);
 
-      // Save cover config
-      try {
-        const raw = localStorage.getItem("atlaso_cover_prefs");
-        if (raw) {
-          const { templateId, paletteId } = JSON.parse(raw);
-          await saveCoverConfig(book.id, templateId, paletteId);
-          localStorage.removeItem("atlaso_cover_prefs");
-        }
-      } catch { /* best-effort */ }
+      // Save cover config — not best-effort, we want this to succeed
+      if (prefs?.templateId && prefs?.paletteId) {
+        await saveCoverConfig(book.id, prefs.templateId, prefs.paletteId);
+        localStorage.removeItem("atlaso_cover_prefs");
+      }
 
       bookRef.current = book;
       generationDoneAt.current = elapsed;
