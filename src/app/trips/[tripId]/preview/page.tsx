@@ -119,7 +119,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <FlowTopbar currentStep={3} />
 
       {/* Hero strip */}
-      <div style={{ padding: "40px 48px 32px", textAlign: "center" }}>
+      <div style={{ padding: "20px 48px 16px", textAlign: "center" }}>
         <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 12 }}>
           Your photobook is ready
         </div>
@@ -133,7 +133,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       </div>
 
       {/* 3-column layout */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: "80px 1fr 260px", gap: 24, alignItems: "start" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: "80px 1fr 260px", gap: 24, alignItems: "start" }}>
 
         {/* Left rail: spread thumbnails */}
         <div style={{ position: "sticky", top: 100, display: "flex", flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
@@ -193,7 +193,6 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
               overflow: "hidden",
               background: "#fff",
               width: "100%",
-              maxWidth: 680,
             }}>
               {currentSpread === 0 ? (
                 // Cover spread
