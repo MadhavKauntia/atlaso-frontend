@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, type Book } from "@/lib/api";
+import { getBook, exportBook, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import CoverRenderer from "@/components/covers/CoverRenderer";
@@ -62,7 +62,10 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
 
   useEffect(() => {
     if (!bookId) return;
-    getBook(bookId).then(setBook).catch(() => {});
+    getBook(bookId).then((b) => {
+      setBook(b);
+      if (!b.pdfUrl) exportBook(b).then(setBook).catch(() => {});
+    }).catch(() => {});
   }, [bookId]);
 
   if (!ready) return null;
