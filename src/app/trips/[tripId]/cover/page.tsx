@@ -339,7 +339,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             {/* Subtitle */}
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 500, color: "var(--ink-soft)", marginBottom: 10 }}>
-                <span>Subtitle</span>
+                <span>Description <span style={{ fontWeight: 400, opacity: 0.55, textTransform: "none", letterSpacing: 0 }}>(optional)</span></span>
                 <span style={{ opacity: 0.6 }}>{subtitle.length} / 40</span>
               </div>
               <input

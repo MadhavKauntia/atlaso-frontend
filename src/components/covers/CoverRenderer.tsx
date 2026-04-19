@@ -170,7 +170,7 @@ function CoverRenderer({
           fontFamily="var(--font-fraunces, Georgia, serif)"
           fontStyle="italic"
         >
-          {"— " + subtitle}
+          {subtitle}
         </text>
       )}
 

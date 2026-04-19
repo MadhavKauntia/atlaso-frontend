@@ -90,7 +90,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
       // Update trip name from cover prefs before generating
       try {
-        if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.title);
+        if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.subtitle || undefined);
       } catch { /* best-effort */ }
 
       const book = regenerateFrom
