@@ -365,7 +365,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
       <FlowBottomBar
         leftContent={
-          inferred ? (
+          pendingCards.some((c) => c.converting) ? (
+            <span>Converting your iPhone photos to JPEG before uploading. This only takes a moment.</span>
+          ) : inferred ? (
             <span>
               From what we can tell, your photos were taken around{" "}
               <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>{inferred.place}</strong>
