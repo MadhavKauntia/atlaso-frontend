@@ -206,6 +206,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             width: dims.width,
             height: dims.height,
             takenAt,
+            latitude: gps?.latitude ?? null,
+            longitude: gps?.longitude ?? null,
           } as ConfirmUploadRequest]);
 
           URL.revokeObjectURL(card.previewUrl);

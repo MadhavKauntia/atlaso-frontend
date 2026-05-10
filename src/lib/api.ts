@@ -190,6 +190,8 @@ export interface ConfirmUploadRequest {
   width: number;
   height: number;
   takenAt: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export async function initiateUploads(tripId: string, files: { filename: string; contentType: string; fileSize: number }[]): Promise<InitiateUploadResponse[]> {
