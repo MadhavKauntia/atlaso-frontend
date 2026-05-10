@@ -1,14 +1,19 @@
-import { getToken } from "@/lib/auth";
+import { getToken, removeToken } from "@/lib/auth";
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
-function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
   const existingHeaders = (options.headers as Record<string, string>) ?? {};
   const headers = token
     ? { ...existingHeaders, Authorization: `Bearer ${token}` }
     : existingHeaders;
-  return fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    removeToken();
+    window.location.href = "/login";
+  }
+  return res;
 }
 
 export interface User {
