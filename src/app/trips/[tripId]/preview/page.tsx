@@ -106,7 +106,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const pairing = PAIRINGS[book.coverPaletteId ?? DEFAULT_PAIRING_ID] ?? PAIRINGS[DEFAULT_PAIRING_ID];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 80, position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 60, position: "relative" }}>
       {/* Grain overlay */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100,
@@ -117,7 +117,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <FlowTopbar currentStep={3} />
 
       {/* Hero strip */}
-      <div style={{ padding: "20px 48px 16px", textAlign: "center" }}>
+      <div style={{ padding: "20px 48px 32px", textAlign: "center" }}>
         <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 12 }}>
           Your photobook is ready
         </div>
@@ -126,7 +126,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           {pages.length > 0 && <>, {pages.length} pages.</>}
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>
-          Flip through your book. Swap photos, or regenerate any spread you don't love.
+          Drag any photo to reframe the crop. Regenerate for a fresh layout.
         </p>
       </div>
 
