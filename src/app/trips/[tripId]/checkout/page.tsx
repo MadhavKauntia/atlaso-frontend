@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, type Book } from "@/lib/api";
+import { getBook, markTripOrdered, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CoverRenderer from "@/components/covers/CoverRenderer";
 import { TEMPLATES } from "@/lib/covers/templates";
@@ -73,8 +73,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const tax = country === "India" ? Math.round(subtotal * 0.18 * 100) / 100 : 0;
   const total = subtotal + shippingCost + tax;
 
-  const handlePay = () => {
-    // Navigate to confirmation (in a real app, payment gateway would handle this)
+  const handlePay = async () => {
+    await markTripOrdered(tripId).catch(() => {});
     router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
   };
 

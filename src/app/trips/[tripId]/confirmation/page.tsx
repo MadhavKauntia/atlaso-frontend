@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getBook, type Book } from "@/lib/api";
+import { getBook, getBookByTripId, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CoverRenderer from "@/components/covers/CoverRenderer";
 import { TEMPLATES } from "@/lib/covers/templates";
@@ -44,7 +44,7 @@ const ORDER_NUM = orderNumber();
 
 export default function ConfirmationPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
-  use(params); // needed to extract tripId if required
+  const { tripId } = use(params);
   const searchParams = useSearchParams();
   const bookId = searchParams.get("bookId") ?? "";
 
@@ -52,9 +52,9 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!bookId) return;
-    getBook(bookId).then(setBook).catch(() => {});
-  }, [bookId]);
+    const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
+    fetch.then(setBook).catch(() => {});
+  }, [bookId, tripId]);
 
   if (!ready) return null;
 

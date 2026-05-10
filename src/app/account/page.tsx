@@ -59,8 +59,10 @@ export default function AccountPage() {
     router.push("/");
   };
 
-  const inProgress = trips.filter((t) => t.status !== "BOOK_GENERATED");
-  const books = trips.filter((t) => t.status === "BOOK_GENERATED");
+  const inProgress = trips.filter((t) => t.status !== "BOOK_GENERATED" && t.status !== "ORDERED");
+  const pendingDesigns = trips.filter((t) => t.status === "BOOK_GENERATED");
+  const completedOrders = trips.filter((t) => t.status === "ORDERED");
+  const hasAny = trips.length > 0;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
@@ -85,14 +87,14 @@ export default function AccountPage() {
 
         {/* Page title */}
         <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, fontSize: "clamp(40px, 6vw, 64px)", lineHeight: 1, letterSpacing: "-0.03em", color: "var(--ink)", margin: "0 0 52px" }}>
-          Your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>designs.</span>
+          Your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>books.</span>
         </h1>
 
         {loading && (
           <p style={{ color: "var(--ink-soft)", fontSize: 15 }}>Loading…</p>
         )}
 
-        {!loading && trips.length === 0 && (
+        {!loading && !hasAny && (
           <div style={{ textAlign: "center", padding: "80px 0" }}>
             <p style={{ fontFamily: "var(--font-fraunces), serif", fontStyle: "italic", fontSize: 22, color: "var(--ink-soft)", marginBottom: 28 }}>
               No designs yet.
@@ -104,26 +106,36 @@ export default function AccountPage() {
         )}
 
         {!loading && inProgress.length > 0 && (
-          <section style={{ marginBottom: 52 }}>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 16 }}>
-              In progress
-            </div>
+          <section style={{ marginBottom: 48 }}>
+            <SectionLabel>In progress</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {inProgress.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Resume" />
+                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Resume" href={resumeUrl(trip)} />
               ))}
             </div>
           </section>
         )}
 
-        {!loading && books.length > 0 && (
-          <section>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 16 }}>
-              Your books
-            </div>
+        {!loading && pendingDesigns.length > 0 && (
+          <section style={{ marginBottom: 48 }}>
+            <SectionLabel>Pending designs</SectionLabel>
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16, marginTop: -8 }}>
+              Ready to order — review your book and place your order when you&apos;re happy with it.
+            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {books.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="View" />
+              {pendingDesigns.map((trip) => (
+                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Review" href={`/trips/${trip.id}/preview`} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!loading && completedOrders.length > 0 && (
+          <section>
+            <SectionLabel>Completed orders</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {completedOrders.map((trip) => (
+                <OrderCard key={trip.id} trip={trip} />
               ))}
             </div>
           </section>
@@ -133,14 +145,24 @@ export default function AccountPage() {
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 16 }}>
+      {children}
+    </div>
+  );
+}
+
 function TripCard({
   trip,
   onDelete,
   actionLabel,
+  href,
 }: {
   trip: Trip;
   onDelete: (id: string) => void;
-  actionLabel: "Resume" | "View";
+  actionLabel: "Resume" | "Review";
+  href: string;
 }) {
   return (
     <div style={{
@@ -174,7 +196,7 @@ function TripCard({
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <Link
-          href={resumeUrl(trip)}
+          href={href}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "9px 18px",
@@ -185,33 +207,85 @@ function TripCard({
         >
           {actionLabel} →
         </Link>
-        <button
-          onClick={() => onDelete(trip.id)}
-          title="Delete"
-          style={{
-            width: 34, height: 34,
-            background: "none", border: "1px solid rgba(10,26,58,0.15)",
-            borderRadius: "50%", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--ink-soft)", fontSize: 13,
-            transition: "background 0.15s, color 0.15s, border-color 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = "rgba(185,28,28,0.08)";
-            b.style.color = "#b91c1c";
-            b.style.borderColor = "rgba(185,28,28,0.3)";
-          }}
-          onMouseLeave={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = "none";
-            b.style.color = "var(--ink-soft)";
-            b.style.borderColor = "rgba(10,26,58,0.15)";
-          }}
-        >
-          ✕
-        </button>
+        <DeleteButton onClick={() => onDelete(trip.id)} />
       </div>
     </div>
+  );
+}
+
+function OrderCard({ trip }: { trip: Trip }) {
+  return (
+    <Link
+      href={`/trips/${trip.id}/confirmation`}
+      style={{ textDecoration: "none" }}
+    >
+      <div style={{
+        background: "#fff",
+        borderRadius: 12,
+        padding: "18px 22px",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        boxShadow: "0 1px 3px rgba(10,26,58,0.07), 0 4px 12px rgba(10,26,58,0.04)",
+        cursor: "pointer",
+        transition: "box-shadow 0.15s",
+      }}
+        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(10,26,58,0.12), 0 8px 24px rgba(10,26,58,0.07)")}
+        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(10,26,58,0.07), 0 4px 12px rgba(10,26,58,0.04)")}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "var(--font-fraunces), serif",
+            fontSize: 17, fontWeight: 500,
+            color: "var(--ink)", marginBottom: 4,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {trip.name}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+            {trip.destination && <span>{trip.destination}</span>}
+            {trip.createdAt && <span>{fmt(trip.createdAt)}</span>}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#2d9650", fontWeight: 500 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#2d9650", display: "inline-block" }} />
+              Order placed
+            </span>
+          </div>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--ink-soft)", flexShrink: 0 }}>
+          View order →
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function DeleteButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title="Delete"
+      style={{
+        width: 34, height: 34,
+        background: "none", border: "1px solid rgba(10,26,58,0.15)",
+        borderRadius: "50%", cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "var(--ink-soft)", fontSize: 13,
+        transition: "background 0.15s, color 0.15s, border-color 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.style.background = "rgba(185,28,28,0.08)";
+        b.style.color = "#b91c1c";
+        b.style.borderColor = "rgba(185,28,28,0.3)";
+      }}
+      onMouseLeave={(e) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.style.background = "none";
+        b.style.color = "var(--ink-soft)";
+        b.style.borderColor = "rgba(10,26,58,0.15)";
+      }}
+    >
+      ✕
+    </button>
   );
 }
