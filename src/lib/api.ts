@@ -272,6 +272,12 @@ export async function getBook(bookId: string): Promise<Book> {
   return res.json();
 }
 
+export async function getBookByTripId(tripId: string): Promise<Book> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/book`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function exportBook(book: Book): Promise<Book> {
   let coverImageBase64: string | undefined;
 

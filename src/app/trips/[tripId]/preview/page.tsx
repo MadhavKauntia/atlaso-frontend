@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getPhotoImageUrl, updateSlotOffset,
+  getBook, getBookByTripId, getPhotoImageUrl, updateSlotOffset,
   type Book, type PageData, type PhotoSlot,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -28,12 +28,12 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!bookId) return;
-    getBook(bookId)
+    const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
+    fetch
       .then(setBook)
       .catch(() => setError("Could not load book"))
       .finally(() => setLoading(false));
-  }, [bookId]);
+  }, [bookId, tripId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
