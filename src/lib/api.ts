@@ -29,6 +29,7 @@ export interface Trip {
   destination: string | null;
   status: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Photo {
@@ -85,6 +86,17 @@ export async function googleAuth(idToken: string): Promise<{ token: string; user
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+export async function getTrips(): Promise<Trip[]> {
+  const res = await apiFetch(`${BASE}/trips`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function deleteTripById(tripId: string): Promise<void> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 export async function createTrip(name: string, destination: string): Promise<Trip> {
