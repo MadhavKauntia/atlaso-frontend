@@ -27,6 +27,7 @@ interface PendingCard {
   name: string;
   progress: number;
   error: string | null;
+  converting?: boolean;
 }
 
 interface InferredLocation {
@@ -118,6 +119,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       name: f.name,
       progress: 0,
       error: null,
+      converting: HEIC_TYPES.has(f.type),
     }));
     setPendingCards((prev) => [...prev, ...initialCards]);
 
@@ -140,11 +142,16 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         }
       }
 
-      type Prepared = { file: File; width: number; height: number; takenAt: number | null; lat?: number; lon?: number };
-      const prepared: Prepared[] = await Promise.all(files.map(async (f) => {
+      type Prepared = { file: File; width: number; height: number; takenAt: number | null; lat?: number; lon?: number; previewUrl?: string };
+      const prepared: Prepared[] = await Promise.all(files.map(async (f, i) => {
         let file = f;
+        let previewUrl: string | undefined;
         if (HEIC_TYPES.has(f.type)) {
           file = await convertHeic(f);
+          previewUrl = URL.createObjectURL(file);
+          setPendingCards((prev) => prev.map((c) =>
+            c.tempId === tempIds[i] ? { ...c, converting: false, previewUrl: previewUrl! } : c
+          ));
         }
         const [dims, exif, gps] = await Promise.all([
           new Promise<{ width: number; height: number }>((resolve) => {
@@ -158,7 +165,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           exifr.gps(file).catch(() => null),
         ]);
         const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
-        return { file, width: dims.width, height: dims.height, takenAt, lat: gps?.latitude, lon: gps?.longitude };
+        return { file, width: dims.width, height: dims.height, takenAt, lat: gps?.latitude, lon: gps?.longitude, previewUrl };
       }));
 
       for (const p of prepared) {
@@ -174,7 +181,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
       const cards: PendingCard[] = prepared.map((p, i) => ({
         tempId: initiated[i].photoId,
-        previewUrl: URL.createObjectURL(p.file),
+        previewUrl: p.previewUrl ?? URL.createObjectURL(p.file),
         name: p.file.name,
         progress: 0,
         error: null,
@@ -469,6 +476,15 @@ function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: s
             borderRadius: 4, color: "white", fontSize: 10, padding: "3px 8px", cursor: "pointer",
           }}>Dismiss</button>
         </div>
+      ) : card.converting ? (
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+          background: "rgba(230,236,245,0.92)",
+        }}>
+          <div style={{ width: 20, height: 20, border: "2px solid var(--blue)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <span style={{ fontSize: 10, fontWeight: 500, color: "var(--ink-soft)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Converting</span>
+        </div>
       ) : (
         <>
           <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)" }} />
@@ -478,6 +494,7 @@ function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: s
           }} />
         </>
       )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
