@@ -240,7 +240,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   });
 
   const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
-  const canContinue = photos.length >= 10 && !uploading;
+  const canContinue = photos.length >= 24 && !uploading;
 
   const handleContinue = () => {
     if (inferred) {
@@ -271,7 +271,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             Drop in your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>photos</span>.
           </h1>
           <p style={{ fontSize: 17, color: "var(--ink-soft)", maxWidth: 540, lineHeight: 1.5 }}>
-            Upload the shots from your trip. We'll curate, sequence, and lay them out. Aim for 30–100 photos for the best book.
+            Upload the shots from your trip. We'll arrange them into a 24-page book. You need at least 24 photos to get started — more gives you richer, fuller pages.
           </p>
         </div>
 
@@ -325,8 +325,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 <span style={{ color: "var(--blue)", fontWeight: 600 }}>{totalCount}</span> photos uploaded
               </div>
               <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-                {totalCount < 30
-                  ? `${30 - totalCount} more recommended for a richer book`
+                {totalCount < 24
+                  ? `${24 - totalCount} more needed to continue`
+                  : totalCount < 48
+                  ? `${48 - totalCount} more for fuller pages`
                   : "Ready when you are"}
               </div>
             </div>
@@ -374,7 +376,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 </>
               )}
             </span>
-          ) : photos.length >= 10 ? (
+          ) : photos.length >= 24 ? (
             <span>Looking good — ready to design your cover.</span>
           ) : null
         }
