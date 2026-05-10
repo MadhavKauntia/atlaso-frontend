@@ -19,7 +19,6 @@ import {
 const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
-const MAX_CONCURRENT_UPLOADS = 5;
 
 interface PendingCard {
   tempId: string;
@@ -142,92 +141,87 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         }
       }
 
-      type Prepared = { file: File; width: number; height: number; takenAt: number | null; lat?: number; lon?: number; previewUrl?: string };
-      const prepared: Prepared[] = await Promise.all(files.map(async (f, i) => {
-        let file = f;
-        let previewUrl: string | undefined;
-        if (HEIC_TYPES.has(f.type)) {
-          file = await convertHeic(f);
-          previewUrl = URL.createObjectURL(file);
-          setPendingCards((prev) => prev.map((c) =>
-            c.tempId === tempIds[i] ? { ...c, converting: false, previewUrl: previewUrl! } : c
-          ));
-        }
-        const [dims, exif, gps] = await Promise.all([
-          new Promise<{ width: number; height: number }>((resolve) => {
-            const url = URL.createObjectURL(file);
-            const img = new Image();
-            img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
-            img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(url); };
-            img.src = url;
-          }),
-          exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
-          exifr.gps(file).catch(() => null),
-        ]);
-        const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
-        return { file, width: dims.width, height: dims.height, takenAt, lat: gps?.latitude, lon: gps?.longitude, previewUrl };
-      }));
-
-      for (const p of prepared) {
-        if (p.lat != null && p.lon != null) allCoords.current.push({ lat: p.lat, lon: p.lon });
-        if (p.takenAt) allDates.current.push(p.takenAt);
-      }
-
-      const initiated = await initiateUploads(tripId, prepared.map((p) => ({
-        filename: p.file.name,
-        contentType: p.file.type,
-        fileSize: p.file.size,
-      })));
-
-      const cards: PendingCard[] = prepared.map((p, i) => ({
-        tempId: initiated[i].photoId,
-        previewUrl: p.previewUrl ?? URL.createObjectURL(p.file),
-        name: p.file.name,
-        progress: 0,
-        error: null,
-      }));
-      initialCards.forEach((c) => { if (c.previewUrl) URL.revokeObjectURL(c.previewUrl); });
-      setPendingCards((prev) => [
-        ...prev.filter((c) => !tempIds.includes(c.tempId)),
-        ...cards,
-      ]);
-
-      const queue = prepared.map((p, i) => ({ p, init: initiated[i], card: cards[i] }));
-      const processItem = async ({ p, init, card }: typeof queue[0]) => {
+      // Each file runs its own prepare → initiate → upload → confirm pipeline independently.
+      // Non-HEIC files skip conversion and start uploading immediately while HEIC files convert.
+      const processFile = async (f: File, i: number) => {
+        let currentTempId = tempIds[i];
         try {
-          await uploadToS3(init.uploadUrl, p.file, (pct) => {
+          let file = f;
+          let heicPreviewUrl: string | undefined;
+
+          if (HEIC_TYPES.has(f.type)) {
+            file = await convertHeic(f);
+            heicPreviewUrl = URL.createObjectURL(file);
+            setPendingCards((prev) => prev.map((c) =>
+              c.tempId === tempIds[i] ? { ...c, converting: false, previewUrl: heicPreviewUrl! } : c
+            ));
+          }
+
+          const [dims, exif, gps] = await Promise.all([
+            new Promise<{ width: number; height: number }>((resolve) => {
+              const url = URL.createObjectURL(file);
+              const img = new Image();
+              img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
+              img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(url); };
+              img.src = url;
+            }),
+            exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
+            exifr.gps(file).catch(() => null),
+          ]);
+
+          const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
+          if (gps?.latitude != null && gps?.longitude != null) allCoords.current.push({ lat: gps.latitude, lon: gps.longitude });
+          if (takenAt) allDates.current.push(takenAt);
+
+          const [init] = await initiateUploads(tripId, [{
+            filename: file.name,
+            contentType: file.type,
+            fileSize: file.size,
+          }]);
+
+          const cardPreviewUrl = heicPreviewUrl ?? URL.createObjectURL(file);
+          const card: PendingCard = { tempId: init.photoId, previewUrl: cardPreviewUrl, name: file.name, progress: 0, error: null };
+
+          // Replace placeholder card in-place so grid order stays stable
+          setPendingCards((prev) => {
+            const idx = prev.findIndex((c) => c.tempId === tempIds[i]);
+            if (idx < 0) return [...prev, card];
+            const next = [...prev];
+            if (next[idx].previewUrl && next[idx].previewUrl !== heicPreviewUrl) URL.revokeObjectURL(next[idx].previewUrl);
+            next[idx] = card;
+            return next;
+          });
+          currentTempId = init.photoId;
+
+          await uploadToS3(init.uploadUrl, file, (pct) => {
             setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
           });
+
           const [photo] = await confirmUploads(tripId, [{
             photoId: init.photoId,
             storageKey: init.storageKey,
-            originalFilename: p.file.name,
-            contentType: p.file.type,
-            fileSize: p.file.size,
-            width: p.width,
-            height: p.height,
-            takenAt: p.takenAt,
+            originalFilename: file.name,
+            contentType: file.type,
+            fileSize: file.size,
+            width: dims.width,
+            height: dims.height,
+            takenAt,
           } as ConfirmUploadRequest]);
+
           URL.revokeObjectURL(card.previewUrl);
           setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
           setPhotos((prev) => [...prev, photo]);
         } catch {
           setPendingCards((prev) => prev.map((c) =>
-            c.tempId === card.tempId ? { ...c, error: "Upload failed", progress: 0 } : c
+            c.tempId === currentTempId ? { ...c, error: "Upload failed", progress: 0, converting: false } : c
           ));
         }
       };
 
-      for (let i = 0; i < queue.length; i += MAX_CONCURRENT_UPLOADS) {
-        await Promise.all(queue.slice(i, i + MAX_CONCURRENT_UPLOADS).map(processItem));
-      }
-
+      await Promise.all(files.map((f, i) => processFile(f, i)));
       runInference();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-      setPendingCards((prev) => prev.map((c) =>
-        tempIds.includes(c.tempId) && !c.error ? { ...c, error: "Upload failed" } : c
-      ));
     } finally {
       setUploading(false);
     }
