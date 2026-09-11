@@ -440,6 +440,10 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
           {photos.map((photo) => {
             const isCurrent = photo.id === currentPhotoId;
             const isUsed = usedPhotoIds.has(photo.id) && !isCurrent;
+            const w = photo.metadata?.width || 0;
+            const h = photo.metadata?.height || 0;
+            // Reserve each tile's height up front so the masonry doesn't reflow as images load.
+            const aspectRatio = w > 0 && h > 0 ? `${w} / ${h}` : "1 / 1";
             return (
               <button
                 key={photo.id}
@@ -457,7 +461,8 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
                 <img
                   src={getPhotoImageUrl(tripId, photo.id)}
                   alt={photo.originalFilename ?? ""}
-                  style={{ width: "100%", height: "auto", display: "block", opacity: isCurrent ? 0.55 : 1 }}
+                  loading="lazy"
+                  style={{ width: "100%", aspectRatio, height: "auto", display: "block", objectFit: "contain", opacity: isCurrent ? 0.55 : 1 }}
                 />
                 {isCurrent && (
                   <div style={{ position: "absolute", top: 6, left: 6, background: "var(--blue)", color: "#fff", fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 100 }}>
