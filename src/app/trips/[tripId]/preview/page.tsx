@@ -447,15 +447,15 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
                 style={{
                   position: "relative", aspectRatio: "1", padding: 0, overflow: "hidden",
                   borderRadius: 8, cursor: isCurrent ? "default" : "pointer",
-                  border: `2px solid ${isCurrent ? "var(--blue)" : "transparent"}`,
-                  background: "var(--wash, #d7e3f4)",
+                  border: `2px solid ${isCurrent ? "var(--blue)" : "rgba(10,26,58,0.08)"}`,
+                  background: "#f1f3f6",
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getPhotoImageUrl(tripId, photo.id)}
                   alt={photo.originalFilename ?? ""}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isCurrent ? 0.55 : 1 }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: isCurrent ? 0.55 : 1 }}
                 />
                 {isCurrent && (
                   <div style={{ position: "absolute", top: 6, left: 6, background: "var(--blue)", color: "#fff", fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 100 }}>
