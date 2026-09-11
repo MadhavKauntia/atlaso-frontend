@@ -434,7 +434,8 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
 
         <div style={{
           overflowY: "auto",
-          display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10,
+          // Masonry columns: every photo shows at its true aspect ratio — no crop, no letterboxing.
+          columnWidth: 160, columnGap: 10,
         }}>
           {photos.map((photo) => {
             const isCurrent = photo.id === currentPhotoId;
@@ -445,7 +446,8 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
                 onClick={() => !isCurrent && onSelect(photo.id)}
                 disabled={isCurrent}
                 style={{
-                  position: "relative", aspectRatio: "1", padding: 0, overflow: "hidden",
+                  position: "relative", display: "block", width: "100%", marginBottom: 10,
+                  breakInside: "avoid", padding: 0, overflow: "hidden",
                   borderRadius: 8, cursor: isCurrent ? "default" : "pointer",
                   border: `2px solid ${isCurrent ? "var(--blue)" : "rgba(10,26,58,0.08)"}`,
                   background: "#f1f3f6",
@@ -455,7 +457,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
                 <img
                   src={getPhotoImageUrl(tripId, photo.id)}
                   alt={photo.originalFilename ?? ""}
-                  style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", opacity: isCurrent ? 0.55 : 1 }}
+                  style={{ width: "100%", height: "auto", display: "block", opacity: isCurrent ? 0.55 : 1 }}
                 />
                 {isCurrent && (
                   <div style={{ position: "absolute", top: 6, left: 6, background: "var(--blue)", color: "#fff", fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 100 }}>
@@ -471,7 +473,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
             );
           })}
           {photos.length === 0 && (
-            <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-soft)", fontSize: 13, padding: 40 }}>
+            <div style={{ textAlign: "center", color: "var(--ink-soft)", fontSize: 13, padding: 40 }}>
               No photos found for this trip.
             </div>
           )}
