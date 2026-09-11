@@ -15,6 +15,7 @@ import {
   type Photo,
   type ConfirmUploadRequest,
 } from "@/lib/api";
+import { convertHeicBlob } from "@/lib/heic/heicPool";
 
 const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
@@ -127,17 +128,25 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
       async function convertHeic(f: File): Promise<File> {
         const jpegName = f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg");
+        // Preferred: off-main-thread worker pool (native decode → heic-to fallback),
+        // downscaled so uploads stay small and the UI stays responsive.
         try {
-          const bitmap = await createImageBitmap(f);
-          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-          canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
-          bitmap.close();
-          const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.9 });
+          const blob = await convertHeicBlob(f, { maxEdge: 3000, quality: 0.85 });
           return new File([blob], jpegName, { type: "image/jpeg" });
         } catch {
-          const heic2any = (await import("heic2any")).default;
-          const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
-          return new File([converted as Blob], jpegName, { type: "image/jpeg" });
+          // Fallback for environments without workers: convert on the main thread.
+          try {
+            const bitmap = await createImageBitmap(f);
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.9 });
+            return new File([blob], jpegName, { type: "image/jpeg" });
+          } catch {
+            const heic2any = (await import("heic2any")).default;
+            const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
+            return new File([converted as Blob], jpegName, { type: "image/jpeg" });
+          }
         }
       }
 
@@ -165,8 +174,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(url); };
               img.src = url;
             }),
-            exifr.parse(file, ["DateTimeOriginal"]).catch(() => null),
-            exifr.gps(file).catch(() => null),
+            // Read EXIF from the ORIGINAL file — conversion/downscaling strips it,
+            // and exifr can read HEIC metadata directly.
+            exifr.parse(f, ["DateTimeOriginal"]).catch(() => null),
+            exifr.gps(f).catch(() => null),
           ]);
 
           const takenAt = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal.getTime() : null;
