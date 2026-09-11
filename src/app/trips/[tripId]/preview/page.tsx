@@ -407,16 +407,16 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
       style={{
         position: "fixed", inset: 0, zIndex: 200,
         background: "rgba(10,26,58,0.45)", backdropFilter: "blur(2px)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--paper, #fff)", width: "100%", maxWidth: 900,
-          maxHeight: "80vh", borderRadius: "16px 16px 0 0", padding: 24,
+          maxHeight: "85vh", borderRadius: 16, padding: 24,
           display: "flex", flexDirection: "column",
-          boxShadow: "0 -8px 40px rgba(10,26,58,0.25)",
+          boxShadow: "0 24px 60px rgba(10,26,58,0.3)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
