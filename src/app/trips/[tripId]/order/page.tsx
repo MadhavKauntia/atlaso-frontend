@@ -12,34 +12,15 @@ import { PAIRINGS } from "@/lib/covers/palette";
 const DEFAULT_TEMPLATE_ID = "archway";
 const DEFAULT_PAIRING_ID = "lisbon-sun";
 
-const SIZES = [
-  { id: "8x8", label: "8 × 8 in", detail: "Compact, travels well", basePrice: 49, delta: null, boxW: 36, boxH: 36 },
-  { id: "10x10", label: "10 × 10 in", detail: "Our flagship size", basePrice: 69, delta: "+$20", badge: "Most popular", boxW: 48, boxH: 48 },
-  { id: "12x8", label: "12 × 8 in", detail: "Landscape, cinematic", basePrice: 79, delta: "+$30", boxW: 66, boxH: 44 },
+// Single product: one hardcover photobook, flat all-inclusive price.
+const BOOK_PRICE = 1999; // ₹ per copy
+
+const INCLUDED_FEATURES = [
+  "10 × 10 in hardcover, cloth spine, rigid boards",
+  "Archival matte paper — 100+ year lifespan",
+  "Lay-flat binding so spreads never lose the middle",
+  "Free shipping across India, taxes included",
 ];
-
-const PAPERS = [
-  { id: "matte", label: "Archival matte", detail: "Warm, soft, non-reflective", price: 0, priceLabel: "Included", swatch: "matte" },
-  { id: "gloss", label: "Lustre gloss", detail: "Vivid, sharp, modern", price: 0, priceLabel: "Included", swatch: "gloss" },
-  { id: "linen", label: "Linen textured", detail: "Painterly, premium feel", price: 10, priceLabel: "+$10", swatch: "linen" },
-];
-
-const COVERS = [
-  { id: "hardcover", label: "Hardcover", detail: "Built to sit on a shelf. Cloth spine, rigid boards.", price: 0, priceLabel: "Included" },
-  { id: "softcover", label: "Softcover", detail: "Flexible, lighter. Great for travel.", price: -15, priceLabel: "−$15" },
-];
-
-const SHIPPING = 8;
-
-function paperSwatch(type: string): React.CSSProperties {
-  if (type === "gloss") return {
-    background: "linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.6) 50%, transparent 60%), linear-gradient(135deg, #e6ecf5 0%, #a8c5ee 100%)",
-  };
-  if (type === "linen") return {
-    backgroundImage: "repeating-linear-gradient(45deg, rgba(10,26,58,0.04) 0, rgba(10,26,58,0.04) 1px, transparent 1px, transparent 3px), linear-gradient(135deg, #f5f0e6 0%, #e6ddc7 100%)",
-  };
-  return { backgroundImage: "linear-gradient(135deg, #f8f4ea 0%, #ece4d3 100%)" };
-}
 
 function deliveryDate() {
   const d = new Date();
@@ -55,9 +36,6 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
   const router = useRouter();
 
   const [book, setBook] = useState<Book | null>(null);
-  const [sizeId, setSizeId] = useState("10x10");
-  const [paperId, setPaperId] = useState("matte");
-  const [coverId, setCoverId] = useState("hardcover");
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
@@ -70,28 +48,11 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
 
   if (!ready) return null;
 
-  const size = SIZES.find((s) => s.id === sizeId)!;
-  const paper = PAPERS.find((p) => p.id === paperId)!;
-  const cover = COVERS.find((c) => c.id === coverId)!;
-
-  const unitPrice = size.basePrice + paper.price + cover.price;
-  const extraQtyDiscount = qty > 1 ? Math.round(unitPrice * 0.4 * (qty - 1) * 100) / 100 : 0;
-  const subtotal = unitPrice + unitPrice * 0.6 * (qty - 1);
-  const total = subtotal + SHIPPING;
+  const total = BOOK_PRICE * qty;
 
   const template = TEMPLATES[book?.coverTemplateId ?? DEFAULT_TEMPLATE_ID] ?? TEMPLATES[DEFAULT_TEMPLATE_ID];
   const pairing = PAIRINGS[book?.coverPaletteId ?? DEFAULT_PAIRING_ID] ?? PAIRINGS[DEFAULT_PAIRING_ID];
   const pageCount = book?.pages?.length ?? 0;
-
-  const selectedOptionStyle = (selected: boolean): React.CSSProperties => ({
-    background: "#fff",
-    border: `2px solid ${selected ? "var(--blue)" : "rgba(10,26,58,0.08)"}`,
-    borderRadius: 12,
-    padding: 16,
-    cursor: "pointer",
-    transition: "border-color 0.15s, transform 0.15s",
-    position: "relative",
-  });
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 120, position: "relative" }}>
@@ -115,87 +76,26 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
             Make it <em style={{ fontStyle: "italic", color: "var(--blue)" }}>yours</em>.
           </h1>
           <p style={{ fontSize: 15, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.5, maxWidth: 520 }}>
-            Pick your size, paper, and cover. Most people go with 10×10 hardcover in archival matte — but every option prints beautifully.
+            One beautifully made photobook, printed and delivered across India. Choose how many copies you&apos;d like — that&apos;s it.
           </p>
 
-          {/* Size */}
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 20, fontWeight: 500 }}>Size</div>
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>All sizes hold the same {pageCount || 48} pages</div>
+          {/* Single variant — what's included */}
+          <div style={{ marginBottom: 36, background: "#fff", borderRadius: 16, border: "1px solid rgba(10,26,58,0.08)", padding: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 22, fontWeight: 500 }}>The Atlaso photobook</div>
+                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{pageCount || 48} pages · one premium edition</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>₹{BOOK_PRICE.toLocaleString("en-IN")}</div>
+                <div style={{ fontSize: 11, color: "var(--ink-soft)" }}>all-inclusive</div>
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {SIZES.map((s) => (
-                <div key={s.id} onClick={() => setSizeId(s.id)} style={selectedOptionStyle(sizeId === s.id)}>
-                  {s.badge && (
-                    <div style={{ display: "inline-block", padding: "2px 8px", background: "rgba(30,82,212,0.1)", color: "var(--blue)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", borderRadius: 100, marginBottom: 8, fontWeight: 500 }}>
-                      {s.badge}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80, marginBottom: 12, justifyContent: "center" }}>
-                    <div style={{ width: s.boxW, height: s.boxH, background: "var(--muted, #e6ecf5)", border: "1px solid rgba(10,26,58,0.15)", borderRadius: 2 }} />
-                  </div>
-                  <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 500, marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.4 }}>{s.detail}</div>
-                  <div style={{ marginTop: 10, fontFamily: "var(--font-fraunces), serif", fontSize: 15, fontWeight: 500 }}>
-                    ${s.basePrice}{s.delta && <span style={{ color: "var(--blue)", fontSize: 12 }}> {s.delta}</span>}
-                  </div>
-                  {sizeId === s.id && (
-                    <div style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, background: "var(--blue)", color: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Paper */}
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 20, fontWeight: 500 }}>Paper</div>
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>All rated archival, 100+ year lifespan</div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {PAPERS.map((p) => (
-                <div key={p.id} onClick={() => setPaperId(p.id)} style={selectedOptionStyle(paperId === p.id)}>
-                  <div style={{ height: 80, borderRadius: 6, marginBottom: 12, ...paperSwatch(p.swatch) }} />
-                  <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 500, marginBottom: 4 }}>{p.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.4 }}>{p.detail}</div>
-                  <div style={{ marginTop: 10, fontFamily: "var(--font-fraunces), serif", fontSize: 15, fontWeight: 500 }}>
-                    {p.price > 0 ? (
-                      <>${unitPrice - size.basePrice + size.basePrice + p.price} <span style={{ color: "var(--blue)", fontSize: 12 }}>{p.priceLabel}</span></>
-                    ) : p.priceLabel}
-                  </div>
-                  {paperId === p.id && (
-                    <div style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, background: "var(--blue)", color: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Cover type */}
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 20, fontWeight: 500 }}>Cover</div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-              {COVERS.map((c) => (
-                <div key={c.id} onClick={() => setCoverId(c.id)} style={selectedOptionStyle(coverId === c.id)}>
-                  <div style={{ height: 80, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {c.id === "hardcover" ? (
-                      <div style={{ width: 48, height: 64, background: "#1a3a6b", borderRadius: 2, boxShadow: "3px 3px 0 #0a1a3a" }} />
-                    ) : (
-                      <div style={{ width: 48, height: 64, background: "#6fa3e8", borderRadius: 2, transform: "perspective(200px) rotateY(-15deg)" }} />
-                    )}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 500, marginBottom: 4 }}>{c.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.4 }}>{c.detail}</div>
-                  <div style={{ marginTop: 10, fontFamily: "var(--font-fraunces), serif", fontSize: 15, fontWeight: 500 }}>
-                    {c.price < 0 ? <>${unitPrice + c.price} <span style={{ color: "var(--blue)", fontSize: 12 }}>{c.priceLabel}</span></> : c.priceLabel}
-                  </div>
-                  {coverId === c.id && (
-                    <div style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, background: "var(--blue)", color: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>✓</div>
-                  )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(10,26,58,0.06)", paddingTop: 18 }}>
+              {INCLUDED_FEATURES.map((feature) => (
+                <div key={feature} style={{ display: "flex", gap: 10, fontSize: 14, color: "var(--ink)", lineHeight: 1.45 }}>
+                  <div style={{ width: 18, height: 18, background: "rgba(45,150,80,0.12)", color: "#2d9650", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, flexShrink: 0 }}>✓</div>
+                  {feature}
                 </div>
               ))}
             </div>
@@ -205,7 +105,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           <div style={{ marginBottom: 36 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
               <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 20, fontWeight: 500 }}>Quantity</div>
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>Extra copies print at 40% off</div>
+              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>₹{BOOK_PRICE.toLocaleString("en-IN")} per copy</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16, background: "#fff", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(10,26,58,0.08)", maxWidth: 280 }}>
               <button
@@ -242,9 +142,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           </div>
 
           {[
-            { label: "Size", value: size.label },
-            { label: "Paper", value: paper.label },
-            { label: "Cover", value: cover.label },
+            { label: "Edition", value: "Hardcover" },
             { label: "Pages", value: String(pageCount || 48) },
             { label: "Quantity", value: String(qty) },
           ].map((row) => (
@@ -255,17 +153,19 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           ))}
 
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(10,26,58,0.08)" }}>
+            {qty > 1 && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
+                <div style={{ color: "var(--ink-soft)" }}>₹{BOOK_PRICE.toLocaleString("en-IN")} × {qty}</div>
+                <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>₹{total.toLocaleString("en-IN")}</div>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
-              <div style={{ color: "var(--ink-soft)" }}>Subtotal</div>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>${subtotal.toFixed(2)}</div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
-              <div style={{ color: "var(--ink-soft)" }}>Shipping</div>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>${SHIPPING.toFixed(2)}</div>
+              <div style={{ color: "var(--ink-soft)" }}>Shipping &amp; taxes</div>
+              <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>Included</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10 }}>
               <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 15 }}>Total</div>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 28, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em" }}>${total.toFixed(0)}</div>
+              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 28, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em" }}>₹{total.toLocaleString("en-IN")}</div>
             </div>
           </div>
 
@@ -288,11 +188,11 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
         borderTop: "1px solid rgba(10,26,58,0.08)", zIndex: 10,
       }}>
         <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-          <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)", fontWeight: 500 }}>${total.toFixed(0)}</strong>
-          {" · "}{qty} × {book?.title ?? "book"}, {size.label} {cover.label.toLowerCase()} · free returns
+          <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)", fontWeight: 500 }}>₹{total.toLocaleString("en-IN")}</strong>
+          {" · "}{qty} × {book?.title ?? "book"}, hardcover · free shipping
         </div>
         <button
-          onClick={() => router.push(`/trips/${tripId}/checkout?bookId=${bookId}&size=${sizeId}&paper=${paperId}&cover=${coverId}&qty=${qty}`)}
+          onClick={() => router.push(`/trips/${tripId}/checkout?bookId=${bookId}&qty=${qty}`)}
           style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             padding: "14px 26px", background: "var(--ink)", color: "#fff",

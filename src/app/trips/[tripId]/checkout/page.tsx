@@ -12,8 +12,7 @@ import Link from "next/link";
 
 const DEFAULT_TEMPLATE_ID = "archway";
 const DEFAULT_PAIRING_ID = "lisbon-sun";
-const SHIPPING_EXPRESS = 8;
-const SHIPPING_STANDARD = 4;
+const BOOK_PRICE = 1999; // ₹ per copy, all-inclusive (shipping + taxes included)
 
 const FIELD_STYLE: React.CSSProperties = {
   width: "100%", padding: "12px 14px", fontSize: 15,
@@ -31,10 +30,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const { tripId } = use(params);
   const searchParams = useSearchParams();
   const bookId = searchParams.get("bookId") ?? "";
-  const size = searchParams.get("size") ?? "10x10";
-  const paper = searchParams.get("paper") ?? "matte";
-  const coverType = searchParams.get("cover") ?? "hardcover";
-  const qty = parseInt(searchParams.get("qty") ?? "1", 10);
+  const qty = Math.max(1, parseInt(searchParams.get("qty") ?? "1", 10));
   const router = useRouter();
 
   const [book, setBook] = useState<Book | null>(null);
@@ -48,7 +44,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const [pincode, setPincode] = useState("");
   const [country, setCountry] = useState("India");
   const [phone, setPhone] = useState("");
-  const [shipping, setShipping] = useState<"express" | "standard">("express");
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -63,17 +58,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const pairing = PAIRINGS[book?.coverPaletteId ?? DEFAULT_PAIRING_ID] ?? PAIRINGS[DEFAULT_PAIRING_ID];
   const pageCount = book?.pages?.length ?? 48;
 
-  const sizeLabels: Record<string, string> = { "8x8": "8×8 in", "10x10": "10×10 in", "12x8": "12×8 in" };
-  const paperLabels: Record<string, string> = { matte: "Archival matte", gloss: "Lustre gloss", linen: "Linen textured" };
-  const basePrices: Record<string, number> = { "8x8": 49, "10x10": 69, "12x8": 79 };
-  const paperExtra: Record<string, number> = { matte: 0, gloss: 0, linen: 10 };
-  const coverExtra: Record<string, number> = { hardcover: 0, softcover: -15 };
-
-  const unitPrice = (basePrices[size] ?? 69) + (paperExtra[paper] ?? 0) + (coverExtra[coverType] ?? 0);
-  const subtotal = unitPrice + Math.round(unitPrice * 0.6 * (qty - 1) * 100) / 100;
-  const shippingCost = shipping === "express" ? SHIPPING_EXPRESS : SHIPPING_STANDARD;
-  const tax = country === "India" ? Math.round(subtotal * 0.18 * 100) / 100 : 0;
-  const total = subtotal + shippingCost + tax;
+  const total = BOOK_PRICE * qty;
 
   const handlePay = async () => {
     setPayError(null);
@@ -95,7 +80,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
         amount: order.amount,
         currency: order.currency,
         name: "Atlaso",
-        description: `${book?.title ?? "Photobook"} · ${sizeLabels[size]} ${coverType}`,
+        description: `${book?.title ?? "Photobook"} · ${qty} ${qty > 1 ? "copies" : "copy"}`,
         prefill: {
           name: `${firstName} ${lastName}`.trim(),
           email,
@@ -134,12 +119,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       setPaying(false);
     }
   };
-
-  function deliveryDate(extra: number) {
-    const d = new Date();
-    d.setDate(d.getDate() + extra);
-    return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-  }
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)", position: "relative" }}>
@@ -219,36 +198,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             </div>
           </FormSection>
 
-          {/* 3. Shipping method */}
-          <FormSection num={3} title="Shipping method">
-            {[
-              { id: "express" as const, label: "DHL Express", detail: `Arrives by ${deliveryDate(10)} · tracked`, price: "$8.00" },
-              { id: "standard" as const, label: "Standard post", detail: `Arrives ${deliveryDate(16)}–${deliveryDate(20)} · tracked`, price: "$4.00" },
-            ].map((opt) => (
-              <div
-                key={opt.id}
-                onClick={() => setShipping(opt.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  padding: "12px 16px",
-                  border: `1.5px solid ${shipping === opt.id ? "var(--blue)" : "rgba(10,26,58,0.1)"}`,
-                  background: shipping === opt.id ? "rgba(30,82,212,0.03)" : "#fff",
-                  borderRadius: 10, cursor: "pointer", marginBottom: 10,
-                  transition: "border-color 0.15s",
-                }}
-              >
-                <RadioDot selected={shipping === opt.id} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500, fontSize: 14 }}>{opt.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{opt.detail}</div>
-                </div>
-                <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 16 }}>{opt.price}</div>
-              </div>
-            ))}
-          </FormSection>
-
-          {/* 4. Payment */}
-          <FormSection num={4} title="Payment">
+          {/* 3. Payment */}
+          <FormSection num={3} title="Payment">
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: "rgba(30,82,212,0.04)", border: "1px solid rgba(30,82,212,0.15)", borderRadius: 10 }}>
               <div style={{ fontSize: 18, lineHeight: 1 }}>🔒</div>
               <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
@@ -272,20 +223,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 16, marginBottom: 4 }}>{book?.title ?? "Your Trip"}</div>
               <div style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>
                 {book?.subtitle && <>{book.subtitle}<br /></>}
-                {sizeLabels[size]} {coverType} · {paperLabels[paper]}<br />
+                Hardcover photobook<br />
                 {pageCount} pages · Qty: {qty}
               </div>
             </div>
             <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 15, whiteSpace: "nowrap" }}>
-              ${unitPrice}
+              ₹{BOOK_PRICE.toLocaleString("en-IN")}
             </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
             {[
-              { label: "Subtotal", value: `$${subtotal.toFixed(2)}` },
-              { label: "Shipping", value: `$${shippingCost.toFixed(2)}` },
-              ...(tax > 0 ? [{ label: "Taxes (18% GST)", value: `$${tax.toFixed(2)}` }] : []),
+              ...(qty > 1 ? [{ label: `₹${BOOK_PRICE.toLocaleString("en-IN")} × ${qty}`, value: `₹${total.toLocaleString("en-IN")}` }] : []),
+              { label: "Shipping & taxes", value: "Included" },
             ].map((row) => (
               <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
                 <div style={{ color: "var(--ink-soft)" }}>{row.label}</div>
@@ -296,7 +246,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 16, borderTop: "1px solid rgba(10,26,58,0.08)" }}>
             <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 15 }}>Total</div>
-            <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>${total.toFixed(2)}</div>
+            <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>₹{total.toLocaleString("en-IN")}</div>
           </div>
 
           {payError && (
@@ -316,7 +266,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               opacity: paying ? 0.6 : 1,
             }}
           >
-            {paying ? "Processing…" : `🔒 Pay ₹${total.toFixed(2)} securely`}
+            {paying ? "Processing…" : `🔒 Pay ₹${total.toLocaleString("en-IN")} securely`}
           </button>
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -348,14 +298,6 @@ function FormSection({ num, title, children }: { num: number; title: string; chi
         </div>
       </div>
       {children}
-    </div>
-  );
-}
-
-function RadioDot({ selected }: { selected: boolean }) {
-  return (
-    <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected ? "var(--blue)" : "rgba(10,26,58,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      {selected && <div style={{ width: 10, height: 10, background: "var(--blue)", borderRadius: "50%" }} />}
     </div>
   );
 }
