@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
 import s from "./landing.module.css";
 
 export default function LandingPage() {
@@ -134,6 +135,8 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

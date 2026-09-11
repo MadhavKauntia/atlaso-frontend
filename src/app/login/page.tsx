@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import AppShell from "@/components/AppShell";
@@ -70,7 +71,10 @@ function LoginContent() {
         </div>
 
         <p style={{ marginTop: 32, fontSize: 13, color: "var(--ink-soft)", opacity: 0.7 }}>
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          By continuing, you agree to our{" "}
+          <Link href="/terms" style={{ color: "var(--blue)", textDecoration: "underline" }}>Terms of Service</Link>{" "}
+          and{" "}
+          <Link href="/privacy" style={{ color: "var(--blue)", textDecoration: "underline" }}>Privacy Policy</Link>.
         </p>
       </div>
     </AppShell>
