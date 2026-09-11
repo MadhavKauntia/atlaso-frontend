@@ -3,8 +3,8 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, updateSlotOffset,
-  type Book, type PageData, type PhotoSlot,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updateSlotOffset, updateSlotPhoto,
+  type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FlowTopbar from "@/components/layout/FlowTopbar";
@@ -26,6 +26,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  // Which slot the photo picker is currently open for (null = closed).
+  const [picker, setPicker] = useState<{ pageId: string; slotIndex: number; currentPhotoId: string } | null>(null);
 
   useEffect(() => {
     const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
@@ -34,6 +37,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       .catch(() => setError("Could not load book"))
       .finally(() => setLoading(false));
   }, [bookId, tripId]);
+
+  useEffect(() => {
+    getPhotos(tripId).then(setPhotos).catch(() => {});
+  }, [tripId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -102,6 +109,32 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     });
   };
 
+  const openPicker = (pageId: string, slotIndex: number, currentPhotoId: string) =>
+    setPicker({ pageId, slotIndex, currentPhotoId });
+
+  const handlePhotoReplaced = (pageId: string, slotIndex: number, photoId: string) => {
+    // Optimistic: swap the photo and reset framing to match the backend.
+    setBook((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        pages: prev.pages.map((p) =>
+          p.id !== pageId ? p : {
+            ...p,
+            slots: p.slots.map((sl, i) =>
+              i !== slotIndex ? sl : { ...sl, photoId, offsetX: 0.5, offsetY: 0.5, rotation: 0 }
+            ),
+          }
+        ),
+      };
+    });
+    updateSlotPhoto(pageId, slotIndex, photoId).catch(() => {});
+    setPicker(null);
+  };
+
+  // Photos already placed somewhere in the book — surfaced as a hint in the picker.
+  const usedPhotoIds = new Set((book.pages ?? []).flatMap((p) => p.slots.map((sl) => sl.photoId)));
+
   const template = TEMPLATES[book.coverTemplateId ?? DEFAULT_TEMPLATE_ID] ?? TEMPLATES[DEFAULT_TEMPLATE_ID];
   const pairing = PAIRINGS[book.coverPaletteId ?? DEFAULT_PAIRING_ID] ?? PAIRINGS[DEFAULT_PAIRING_ID];
 
@@ -126,7 +159,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           {pages.length > 0 && <>, {pages.length} pages.</>}
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>
-          Drag any photo to reframe the crop. Regenerate for a fresh layout.
+          Drag any photo to reframe the crop, or hover and hit <strong style={{ color: "var(--ink)", fontWeight: 500 }}>Replace</strong> to swap it. Regenerate for a fresh layout.
         </p>
       </div>
 
@@ -209,22 +242,22 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                           <CoverRenderer template={template} pairing={pairing} title={book.title} subtitle={book.subtitle ?? ""} style={{ width: "100%", height: "100%", display: "block" }} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
-                          {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />}
+                          {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />}
                         </div>
                       </>
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(10,26,58,0.04)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                          <PageRenderer page={sp[1]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(10,26,58,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} />
+                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                         <div style={{ flex: 1, background: "#fff" }} />
                       </>
@@ -341,10 +374,109 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         </button>
       </div>
 
+      {picker && (
+        <PhotoPickerModal
+          tripId={tripId}
+          photos={photos}
+          usedPhotoIds={usedPhotoIds}
+          currentPhotoId={picker.currentPhotoId}
+          onClose={() => setPicker(null)}
+          onSelect={(photoId) => handlePhotoReplaced(picker.pageId, picker.slotIndex, photoId)}
+        />
+      )}
+
       <style>{`
         @keyframes shimmer { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
       `}</style>
+    </div>
+  );
+}
+
+function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClose, onSelect }: {
+  tripId: string;
+  photos: Photo[];
+  usedPhotoIds: Set<string>;
+  currentPhotoId: string;
+  onClose: () => void;
+  onSelect: (photoId: string) => void;
+}) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(10,26,58,0.45)", backdropFilter: "blur(2px)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--paper, #fff)", width: "100%", maxWidth: 900,
+          maxHeight: "80vh", borderRadius: "16px 16px 0 0", padding: 24,
+          display: "flex", flexDirection: "column",
+          boxShadow: "0 -8px 40px rgba(10,26,58,0.25)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 20, fontWeight: 500 }}>Replace photo</div>
+            <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>Pick any photo from this trip.</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(10,26,58,0.15)", background: "#fff", cursor: "pointer", fontSize: 16, color: "var(--ink)" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{
+          overflowY: "auto",
+          display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10,
+        }}>
+          {photos.map((photo) => {
+            const isCurrent = photo.id === currentPhotoId;
+            const isUsed = usedPhotoIds.has(photo.id) && !isCurrent;
+            return (
+              <button
+                key={photo.id}
+                onClick={() => !isCurrent && onSelect(photo.id)}
+                disabled={isCurrent}
+                style={{
+                  position: "relative", aspectRatio: "1", padding: 0, overflow: "hidden",
+                  borderRadius: 8, cursor: isCurrent ? "default" : "pointer",
+                  border: `2px solid ${isCurrent ? "var(--blue)" : "transparent"}`,
+                  background: "var(--wash, #d7e3f4)",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getPhotoImageUrl(tripId, photo.id)}
+                  alt={photo.originalFilename ?? ""}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isCurrent ? 0.55 : 1 }}
+                />
+                {isCurrent && (
+                  <div style={{ position: "absolute", top: 6, left: 6, background: "var(--blue)", color: "#fff", fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 100 }}>
+                    In this frame
+                  </div>
+                )}
+                {isUsed && (
+                  <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(10,26,58,0.7)", color: "#fff", fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 100 }}>
+                    In book
+                  </div>
+                )}
+              </button>
+            );
+          })}
+          {photos.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-soft)", fontSize: 13, padding: 40 }}>
+              No photos found for this trip.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -365,23 +497,25 @@ function ThumbHalf({ page, tripId }: { page: PageData | undefined; tripId: strin
   );
 }
 
-function PageRenderer({ page, tripId, onOffsetSaved }: {
+function PageRenderer({ page, tripId, onOffsetSaved, onReplace }: {
   page: PageData;
   tripId: string;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
+  onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
 }) {
   return (
     <div style={{ position: "relative", background: "#fff", width: "100%", height: "100%" }}>
       {page.slots.map((slot: PhotoSlot, i: number) => (
-        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} />
+        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} onReplace={onReplace} />
       ))}
     </div>
   );
 }
 
-function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: {
+function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved, onReplace }: {
   slot: PhotoSlot; tripId: string; pageId: string; index: number;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
+  onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -390,6 +524,7 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: {
   const offsetRef = useRef({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
   const [displayOffset, setDisplayOffset] = useState({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
   const [loaded, setLoaded] = useState(false);
+  const [hover, setHover] = useState(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -436,6 +571,8 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: {
     <div
       ref={containerRef}
       onMouseDown={handleMouseDown}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         position: "absolute",
         left: `${slot.position.x * 100}%`,
@@ -471,6 +608,24 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved }: {
           {slot.caption}
         </div>
       )}
+      {/* Replace button — appears on hover, sits above the drag layer */}
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); onReplace(pageId, index, slot.photoId); }}
+        title="Replace this photo"
+        style={{
+          position: "absolute", top: 6, right: 6,
+          display: "flex", alignItems: "center", gap: 4,
+          padding: "4px 8px", fontSize: 11, fontWeight: 500,
+          background: "rgba(255,255,255,0.95)", color: "var(--ink)",
+          border: "none", borderRadius: 100, cursor: "pointer",
+          boxShadow: "0 2px 6px rgba(10,26,58,0.25)",
+          opacity: hover ? 1 : 0, transition: "opacity 0.15s",
+          pointerEvents: hover ? "auto" : "none",
+        }}
+      >
+        ⇄ Replace
+      </button>
     </div>
   );
 }

@@ -393,3 +393,18 @@ export async function updateSlotOffset(
   });
   if (!res.ok) throw new Error(await res.text());
 }
+
+/** Replaces the photo shown in a page slot with another photo from the trip. */
+export async function updateSlotPhoto(
+  pageId: string,
+  slotIndex: number,
+  photoId: string
+): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/photo`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ photoId }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
