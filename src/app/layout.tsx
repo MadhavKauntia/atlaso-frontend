@@ -19,7 +19,7 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: "Atlaso — Travel Photobooks",
+  title: "Atlaso",
   description: "Create beautiful photobooks from your travel photos",
 };
 
