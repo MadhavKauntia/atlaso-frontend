@@ -1,5 +1,6 @@
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
+  if (process.env.NEXT_PUBLIC_MOCK === "1") return "mock-token";
   return localStorage.getItem("atlaso_token");
 }
 

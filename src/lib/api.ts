@@ -1,4 +1,5 @@
 import { getToken, removeToken } from "@/lib/auth";
+import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
@@ -110,6 +111,7 @@ export async function createTrip(name: string, destination: string): Promise<Tri
 }
 
 export async function claimTrip(tripId: string): Promise<Trip> {
+  if (IS_MOCK) return mockTrip(tripId);
   const res = await apiFetch(`${BASE}/trips/${tripId}/claim`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -121,13 +123,55 @@ export async function markTripOrdered(tripId: string): Promise<Trip> {
   return res.json();
 }
 
+export interface RazorpayOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+}
+
+/** Creates a Razorpay order server-side. `amount` is in the smallest unit (paise). */
+export async function createRazorpayOrder(
+  amount: number,
+  currency = "INR",
+  receipt?: string
+): Promise<RazorpayOrder> {
+  const res = await apiFetch(`${BASE}/payments/create-order`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount, currency, receipt }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/** Verifies a Razorpay payment signature server-side; marks the trip ordered on success. */
+export async function verifyRazorpayPayment(payload: {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  tripId?: string;
+}): Promise<{ verified: boolean }> {
+  const res = await apiFetch(`${BASE}/payments/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? "Payment verification failed");
+  }
+  return res.json();
+}
+
 export async function getTrip(tripId: string): Promise<Trip> {
+  if (IS_MOCK) return mockTrip(tripId);
   const res = await apiFetch(`${BASE}/trips/${tripId}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function updateTrip(tripId: string, name?: string, destination?: string): Promise<Trip> {
+  if (IS_MOCK) return { ...mockTrip(tripId), name: name ?? "", destination: destination ?? null };
   const res = await apiFetch(`${BASE}/trips/${tripId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -142,6 +186,7 @@ export async function saveCoverConfig(
   templateId: string,
   paletteId: string
 ): Promise<Book> {
+  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverTemplateId: templateId, coverPaletteId: paletteId };
   const res = await apiFetch(`${BASE}/books/${bookId}/cover`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -244,6 +289,7 @@ export async function getPhotos(tripId: string): Promise<Photo[]> {
 }
 
 export function getPhotoImageUrl(tripId: string, photoId: string): string {
+  if (IS_MOCK) return mockPhotoUrl(photoId);
   return `${BASE}/trips/${tripId}/photos/${photoId}/image`;
 }
 
@@ -263,24 +309,28 @@ export async function deletePhoto(tripId: string, photoId: string): Promise<void
 }
 
 export async function generateBook(tripId: string): Promise<Book> {
+  if (IS_MOCK) return mockBook(tripId);
   const res = await apiFetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function regenerateBook(bookId: string): Promise<Book> {
+  if (IS_MOCK) return mockBook("mock-trip", bookId);
   const res = await apiFetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function getBook(bookId: string): Promise<Book> {
+  if (IS_MOCK) return mockBook("mock-trip", bookId);
   const res = await apiFetch(`${BASE}/books/${bookId}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function getBookByTripId(tripId: string): Promise<Book> {
+  if (IS_MOCK) return mockBook(tripId);
   const res = await apiFetch(`${BASE}/trips/${tripId}/book`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -335,6 +385,7 @@ export async function updateSlotOffset(
   offsetX: number,
   offsetY: number
 ): Promise<void> {
+  if (IS_MOCK) return;
   const res = await apiFetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/offset`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

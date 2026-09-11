@@ -2,7 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, markTripOrdered, type Book } from "@/lib/api";
+import { getBook, createRazorpayOrder, verifyRazorpayPayment, type Book } from "@/lib/api";
+import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CoverRenderer from "@/components/covers/CoverRenderer";
 import { TEMPLATES } from "@/lib/covers/templates";
@@ -48,7 +49,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const [country, setCountry] = useState("India");
   const [phone, setPhone] = useState("");
   const [shipping, setShipping] = useState<"express" | "standard">("express");
-  const [payMethod, setPayMethod] = useState<"card" | "upi" | "gpay">("card");
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bookId) return;
@@ -74,8 +76,63 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const total = subtotal + shippingCost + tax;
 
   const handlePay = async () => {
-    await markTripOrdered(tripId).catch(() => {});
-    router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
+    setPayError(null);
+    setPaying(true);
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error("Couldn't load the payment gateway. Check your connection and try again.");
+
+      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!keyId) throw new Error("Payments are not configured. Please contact support.");
+
+      // Razorpay expects the amount in the smallest currency unit (paise for INR).
+      const amountPaise = Math.round(total * 100);
+      const order = await createRazorpayOrder(amountPaise, "INR", `trip_${tripId}`);
+
+      const rzp = new window.Razorpay({
+        key: keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Atlaso",
+        description: `${book?.title ?? "Photobook"} · ${sizeLabels[size]} ${coverType}`,
+        prefill: {
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          contact: phone,
+        },
+        theme: { color: "#1e52d4" },
+        handler: async (response) => {
+          try {
+            const result = await verifyRazorpayPayment({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              tripId,
+            });
+            if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice — please contact support.");
+            router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
+          } catch (err) {
+            setPayError(err instanceof Error ? err.message : "Payment verification failed.");
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaying(false),
+        },
+      });
+
+      rzp.on("payment.failed", (resp) => {
+        const description = (resp as { error?: { description?: string } })?.error?.description;
+        setPayError(description ?? "Payment failed. Please try again.");
+        setPaying(false);
+      });
+
+      rzp.open();
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setPaying(false);
+    }
   };
 
   function deliveryDate(extra: number) {
@@ -192,46 +249,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           {/* 4. Payment */}
           <FormSection num={4} title="Payment">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* Card */}
-              <div
-                onClick={() => setPayMethod("card")}
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", border: `1.5px solid ${payMethod === "card" ? "var(--blue)" : "rgba(10,26,58,0.1)"}`, background: payMethod === "card" ? "rgba(30,82,212,0.03)" : "#fff", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-              >
-                <RadioDot selected={payMethod === "card"} />
-                <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Credit or debit card</div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <PayBadge label="VISA" bg="#1a3a6b" color="#fff" />
-                  <PayBadge label="MC" bg="#eb5757" color="#fff" />
-                </div>
-              </div>
-              {payMethod === "card" && (
-                <div style={{ marginTop: 2, padding: "14px 16px", borderTop: "1px dashed rgba(10,26,58,0.1)" }}>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={LABEL_STYLE}>Card number</label>
-                    <input placeholder="1234 5678 9012 3456" style={FIELD_STYLE} />
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div><label style={LABEL_STYLE}>Expiry</label><input placeholder="MM / YY" style={FIELD_STYLE} /></div>
-                    <div><label style={LABEL_STYLE}>CVC</label><input placeholder="123" style={FIELD_STYLE} /></div>
-                  </div>
-                </div>
-              )}
-              <div
-                onClick={() => setPayMethod("upi")}
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", border: `1.5px solid ${payMethod === "upi" ? "var(--blue)" : "rgba(10,26,58,0.1)"}`, background: payMethod === "upi" ? "rgba(30,82,212,0.03)" : "#fff", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-              >
-                <RadioDot selected={payMethod === "upi"} />
-                <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>UPI</div>
-                <PayBadge label="UPI" bg="#2d9650" color="#fff" />
-              </div>
-              <div
-                onClick={() => setPayMethod("gpay")}
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", border: `1.5px solid ${payMethod === "gpay" ? "var(--blue)" : "rgba(10,26,58,0.1)"}`, background: payMethod === "gpay" ? "rgba(30,82,212,0.03)" : "#fff", borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-              >
-                <RadioDot selected={payMethod === "gpay"} />
-                <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Google Pay</div>
-                <PayBadge label="G·Pay" bg="#f2f2f2" color="#4285F4" />
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: "rgba(30,82,212,0.04)", border: "1px solid rgba(30,82,212,0.15)", borderRadius: 10 }}>
+              <div style={{ fontSize: 18, lineHeight: 1 }}>🔒</div>
+              <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+                You&apos;ll complete payment securely via <strong style={{ color: "var(--ink)" }}>Razorpay</strong> — card, UPI, netbanking, and wallets — after you press <strong style={{ color: "var(--ink)" }}>Pay</strong>. Your card details never touch our servers.
               </div>
             </div>
           </FormSection>
@@ -278,21 +299,29 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>${total.toFixed(2)}</div>
           </div>
 
+          {payError && (
+            <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(235,87,87,0.08)", border: "1px solid rgba(235,87,87,0.25)", borderRadius: 8, fontSize: 13, color: "#c0392b", lineHeight: 1.4 }}>
+              {payError}
+            </div>
+          )}
+
           <button
             onClick={handlePay}
+            disabled={paying}
             style={{
               display: "flex", width: "100%", marginTop: 20,
               padding: 16, background: "var(--ink)", color: "#fff",
               border: "none", borderRadius: 100, fontSize: 15, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit", alignItems: "center", justifyContent: "center", gap: 10,
+              cursor: paying ? "default" : "pointer", fontFamily: "inherit", alignItems: "center", justifyContent: "center", gap: 10,
+              opacity: paying ? 0.6 : 1,
             }}
           >
-            🔒 Pay ${total.toFixed(2)} securely
+            {paying ? "Processing…" : `🔒 Pay ₹${total.toFixed(2)} securely`}
           </button>
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {[
-              "256-bit encrypted checkout powered by Stripe",
+              "256-bit encrypted checkout powered by Razorpay",
               "Free reprint if your book arrives damaged",
               "30-day satisfaction guarantee",
             ].map((text) => (
@@ -327,14 +356,6 @@ function RadioDot({ selected }: { selected: boolean }) {
   return (
     <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected ? "var(--blue)" : "rgba(10,26,58,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {selected && <div style={{ width: 10, height: 10, background: "var(--blue)", borderRadius: "50%" }} />}
-    </div>
-  );
-}
-
-function PayBadge({ label, bg, color }: { label: string; bg: string; color: string }) {
-  return (
-    <div style={{ width: 32, height: 22, borderRadius: 3, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600, color, letterSpacing: "0.05em" }}>
-      {label}
     </div>
   );
 }
