@@ -11,9 +11,9 @@ import CountryCover from "@/components/covers/CountryCover";
 const BOOK_PRICE = 1999; // ₹ per copy
 
 const INCLUDED_FEATURES = [
-  "21 × 21 cm hardbound, cloth spine, rigid boards",
+  "6.9 × 9.8 inch hardbound, cloth spine, rigid boards",
   "Archival matte paper — 100+ year lifespan",
-  "48 lay-flat pages so spreads never lose the middle",
+  "50 lay-flat pages so spreads never lose the middle",
   "Free shipping across India, taxes included",
 ];
 
@@ -130,7 +130,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
 
           {[
             { label: "Edition", value: "Hardbound" },
-            { label: "Format", value: "21 × 21 cm" },
+            { label: "Format", value: "6.9 × 9.8 in" },
             { label: "Pages", value: String(pageCount || 48) },
             { label: "Quantity", value: String(qty) },
           ].map((row) => (

@@ -93,7 +93,7 @@ export default function LandingPage() {
       <section className={s.covers}>
         <div className={s.coversHead}>
           <h2>your keepsake for every trip</h2>
-          <p>21 × 21cm, 48 lay-flat pages, hardbound</p>
+          <p>6.9 × 9.8 inches, 50 lay-flat pages, hardbound</p>
         </div>
         <div className={s.coversRow}>
           {COVERS.map((c) => (

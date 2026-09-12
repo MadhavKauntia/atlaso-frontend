@@ -253,7 +253,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   });
 
   const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
-  const canContinue = photos.length >= 24 && !uploading;
+  const canContinue = photos.length >= 50 && !uploading;
 
   const handleContinue = () => {
     if (inferred) {
@@ -282,7 +282,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            Upload the shots from your trip. We'll arrange them into a 24-page book. You need at least 24 photos to get started — more gives you richer, fuller pages.
+            Upload the shots from your trip. We'll arrange them into a 50-page book. You need at least 50 photos to get started — more gives you richer, fuller pages.
           </p>
         </div>
 
@@ -337,10 +337,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 <span style={{ color: "var(--sb-gold)", fontWeight: 800 }}>{totalCount}</span> photos uploaded
               </div>
               <div style={{ fontSize: 13, color: "var(--sb-muted)" }}>
-                {totalCount < 24
-                  ? `${24 - totalCount} more needed to continue`
-                  : totalCount < 48
-                  ? `${48 - totalCount} more for fuller pages`
+                {totalCount < 50
+                  ? `${50 - totalCount} more needed to continue`
+                  : totalCount < 100
+                  ? `${100 - totalCount} more for fuller pages`
                   : "Ready when you are"}
               </div>
             </div>
@@ -390,7 +390,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 </>
               )}
             </span>
-          ) : photos.length >= 24 ? (
+          ) : photos.length >= 50 ? (
             <span>Looking good — ready to design your cover.</span>
           ) : null
         }
