@@ -231,8 +231,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   }}>
                     {isCoverSpread ? (
                       <>
-                        <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-panel)" }}>
-                          <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: "62%" }} />
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
+                          <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "94%", aspectRatio: "0.707" }} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
                           {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />}
