@@ -16,8 +16,8 @@ export default function HowItWorksPage() {
           to shelf, in four steps
         </h1>
         <p className={s.heroSubtitle}>
-          You upload. We lay out, illustrate and print. Nothing is charged until you approve the
-          proof.
+          Upload your photos and the whole book builds itself — automatically, in minutes. You
+          review and order; we print and ship. Nothing is charged until you order.
         </p>
       </section>
 
@@ -38,13 +38,13 @@ export default function HowItWorksPage() {
           <div className={s.stepBody}>
             <h2 className={s.stepTitle}>upload the roll</h2>
             <p className={s.stepDesc}>
-              Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside —
-              pull any back in.
+              Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside
+              automatically — pull any back in.
             </p>
           </div>
         </div>
 
-        {/* Step 2 — we build the album */}
+        {/* Step 2 — the album builds itself */}
         <div className={s.step}>
           <div className={s.stepNumber} style={{ background: "var(--sb-green)" }}>
             2
@@ -63,10 +63,11 @@ export default function HowItWorksPage() {
             </div>
           </div>
           <div className={s.stepBody}>
-            <h2 className={s.stepTitle}>we build the album</h2>
+            <h2 className={s.stepTitle}>the album builds itself</h2>
             <p className={s.stepDesc}>
-              Grouped by day, paired by shape and colour. Flip through every spread, swap any photo,
-              regenerate the layout.
+              In under a minute your photos are grouped by day and paired by shape and colour. Flip
+              through every spread, swap any photo, or regenerate the layout — instantly, no waiting
+              on anyone.
             </p>
           </div>
         </div>
@@ -95,7 +96,7 @@ export default function HowItWorksPage() {
           </div>
         </div>
 
-        {/* Step 4 — proof, print, post */}
+        {/* Step 4 — review, order, we ship */}
         <div className={s.step}>
           <div className={s.stepNumber} style={{ background: "var(--sb-blue)" }}>
             4
@@ -108,9 +109,10 @@ export default function HowItWorksPage() {
             <div className={s.tileEnvelopeBar} />
           </div>
           <div className={s.stepBody}>
-            <h2 className={s.stepTitle}>proof, print, post</h2>
+            <h2 className={s.stepTitle}>review, order, we ship</h2>
             <p className={s.stepDesc}>
-              A proof lands in your inbox within hours. Approve it and the book ships in six days.
+              Your finished book is ready to see the moment it's built — no proof to wait on. Order
+              when you love it, and we print and ship it in about 3 days.
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ export default function HowItWorksPage() {
       {/* ── Closing CTA ────────────────────────── */}
       <section className={s.ctaSection}>
         <h2 className={s.ctaTitle}>ready when you are</h2>
-        <p className={s.ctaNote}>free to build · pay at checkout</p>
+        <p className={s.ctaNote}>ready in minutes · pay at checkout</p>
         <Link href="/create" className={s.cta}>
           start my photo book <span>→</span>
         </Link>

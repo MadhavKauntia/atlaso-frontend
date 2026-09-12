@@ -31,7 +31,8 @@ export default function LandingPage() {
             waiting to happen
           </h1>
           <p className={s.lede}>
-            Dump in the photos, pick the country. We lay out, illustrate and print it.
+            Dump in your photos and pick a country — your photobook designs itself in minutes.
+            You review and order; we print and ship.
           </p>
           <div className={s.ctaRow}>
             <Link href="/create" className={s.cta}>
@@ -110,7 +111,7 @@ export default function LandingPage() {
         <h2>
           that trip deserves<br />better than a phone
         </h2>
-        <p className={s.closingNote}>free layout · pay only if you love it</p>
+        <p className={s.closingNote}>ready in minutes · pay only if you love it</p>
         <Link href="/create" className={s.closingCta}>
           start my photo book <span>→</span>
         </Link>

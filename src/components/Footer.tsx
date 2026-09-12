@@ -12,8 +12,8 @@ export default function Footer() {
             atlaso<span className={s.footerLogoDot}>.</span>
           </Link>
           <p className={s.footerTagline}>
-            Travel photobooks. Drop in your photos, we lay out the album, illustrate the cover and
-            print it — delivered across India.
+            Travel photobooks that build themselves. Drop in your photos, pick a country, and your
+            book is ready in minutes — we print and ship it across India.
           </p>
         </div>
 
