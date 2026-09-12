@@ -69,8 +69,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
   const pages = book.pages ?? [];
 
-  // Build spreads: first page alone (cover), middle pages in pairs, last page alone
-  const spreads: PageData[][] = [];
+  // Build spreads: cover alone, then interior pages (first alone, middle pairs, last alone)
+  const spreads: PageData[][] = [[]]; // index 0 = cover (no pages)
   if (pages.length === 1) {
     spreads.push([pages[0]]);
   } else if (pages.length >= 2) {
@@ -181,12 +181,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   {label}
                 </div>
                 {isCover ? (
-                  <>
-                    <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-panel)" }}>
-                      <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: "80%" }} />
-                    </div>
-                    <ThumbHalf page={leftPage} tripId={tripId} />
-                  </>
+                  <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
+                    <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "88%", aspectRatio: "0.707" }} />
+                  </div>
                 ) : (
                   <>
                     <ThumbHalf page={leftPage} tripId={tripId} />
@@ -211,12 +208,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
               padding: 10,
               width: "100%",
             }}>
-              {/* Dashed center gutter */}
-              <div style={{
-                position: "absolute", top: 10, bottom: 10, left: "50%",
-                width: 0, borderLeft: "1.5px dashed rgba(38,34,32,0.28)",
-                transform: "translateX(-50%)", zIndex: 2, pointerEvents: "none",
-              }} />
+              {/* Dashed center gutter (hidden on the cover spread) */}
+              {currentSpread !== 0 && (
+                <div style={{
+                  position: "absolute", top: 10, bottom: 10, left: "50%",
+                  width: 0, borderLeft: "1.5px dashed rgba(38,34,32,0.28)",
+                  transform: "translateX(-50%)", zIndex: 2, pointerEvents: "none",
+                }} />
+              )}
               {spreads.map((sp, idx) => {
                 const visible = idx === currentSpread;
                 const isCoverSpread = idx === 0;
@@ -230,14 +229,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     transition: "opacity 0.15s",
                   }}>
                     {isCoverSpread ? (
-                      <>
-                        <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
-                          <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "94%", aspectRatio: "0.707" }} />
-                        </div>
-                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />}
-                        </div>
-                      </>
+                      <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
+                        <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "96%", aspectRatio: "0.707" }} />
+                      </div>
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
