@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, createRazorpayOrder, verifyRazorpayPayment, type Book } from "@/lib/api";
+import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, type Book, type User } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
@@ -12,16 +12,21 @@ const BOOK_PRICE = 1999; // ₹ per copy, all-inclusive (shipping + taxes includ
 
 const DASH = "1px dashed #46403a";
 
-const FIELD_STYLE: React.CSSProperties = {
-  width: "100%", padding: "13px 16px", fontSize: 15,
-  border: "1px solid var(--sb-panel-2)", borderRadius: 12,
-  background: "var(--sb-bg)", fontFamily: "inherit", color: "var(--sb-cream)",
-  outline: "none",
-};
 const LABEL_STYLE: React.CSSProperties = {
   display: "block", fontSize: 11, textTransform: "uppercase",
   letterSpacing: "0.15em", color: "var(--sb-muted)", marginBottom: 6, fontWeight: 700,
 };
+
+function fieldStyle(error: boolean): React.CSSProperties {
+  return {
+    width: "100%", padding: "13px 16px", fontSize: 15,
+    border: `1px solid ${error ? "var(--sb-red)" : "var(--sb-panel-2)"}`, borderRadius: 12,
+    background: "var(--sb-bg)", fontFamily: "inherit", color: "var(--sb-cream)", outline: "none",
+    boxSizing: "border-box",
+  };
+}
+
+const digits = (s: string) => s.replace(/\D/g, "");
 
 export default function CheckoutPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
@@ -32,9 +37,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const router = useRouter();
 
   const [book, setBook] = useState<Book | null>(null);
-  const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [user, setUser] = useState<User | null>(null);
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
   const [city, setCity] = useState("");
@@ -42,22 +45,42 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const [pincode, setPincode] = useState("");
   const [country, setCountry] = useState("India");
   const [phone, setPhone] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!bookId) return;
-    getBook(bookId).then(setBook).catch(() => {});
+    if (bookId) getBook(bookId).then(setBook).catch(() => {});
+    getMe().then(setUser).catch(() => {});
   }, [bookId]);
 
   if (!ready) return null;
 
-  const pageCount = book?.pages?.length ?? 48;
-
+  const pageCount = book?.pages?.length ?? 50;
   const total = BOOK_PRICE * qty;
+
+  const errors: Record<string, string | null> = {
+    address1: address1.trim() ? null : "Required",
+    city: city.trim() ? null : "Required",
+    state: state.trim() ? null : "Required",
+    pincode: !pincode.trim()
+      ? "Required"
+      : country === "India" && !/^\d{6}$/.test(pincode.trim())
+      ? "Enter a 6-digit pincode"
+      : null,
+    phone: !phone.trim() ? "Required" : digits(phone).length < 8 ? "Enter a valid phone number" : null,
+  };
+  const isValid = Object.values(errors).every((e) => !e);
+  const err = (f: string) => (touched[f] ? errors[f] : null);
+  const blur = (f: string) => () => setTouched((t) => ({ ...t, [f]: true }));
 
   const handlePay = async () => {
     setPayError(null);
+    if (!isValid) {
+      setTouched({ address1: true, city: true, state: true, pincode: true, phone: true });
+      setPayError("Please fill in all required shipping details.");
+      return;
+    }
     setPaying(true);
     try {
       const loaded = await loadRazorpayScript();
@@ -66,7 +89,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
       if (!keyId) throw new Error("Payments are not configured. Please contact support.");
 
-      // Razorpay expects the amount in the smallest currency unit (paise for INR).
       const amountPaise = Math.round(total * 100);
       const order = await createRazorpayOrder(amountPaise, "INR", `trip_${tripId}`);
 
@@ -78,8 +100,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
         name: "Atlaso",
         description: `${book?.title ?? "Photobook"} · ${qty} ${qty > 1 ? "copies" : "copy"}`,
         prefill: {
-          name: `${firstName} ${lastName}`.trim(),
-          email,
+          name: user?.name ?? "",
+          email: user?.email ?? "",
           contact: phone,
         },
         theme: { color: "#c9352c" },
@@ -91,11 +113,18 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               razorpaySignature: response.razorpay_signature,
               tripId,
               quantity: qty,
+              addressLine1: address1.trim(),
+              addressLine2: address2.trim() || undefined,
+              city: city.trim(),
+              state: state.trim(),
+              pincode: pincode.trim(),
+              country,
+              phone: phone.trim(),
             });
             if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice — please contact support.");
             router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
-          } catch (err) {
-            setPayError(err instanceof Error ? err.message : "Payment verification failed.");
+          } catch (error) {
+            setPayError(error instanceof Error ? error.message : "Payment verification failed.");
             setPaying(false);
           }
         },
@@ -111,8 +140,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       });
 
       rzp.open();
-    } catch (err) {
-      setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } catch (error) {
+      setPayError(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setPaying(false);
     }
   };
@@ -142,40 +171,58 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             Where should we <span style={{ color: "var(--sb-red)" }}>send</span> it?
           </h1>
           <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.5 }}>
-            Enter your shipping address and payment details. We&apos;ll print within 3 days and deliver across India.
+            Enter your shipping address. We&apos;ll print within 3 days and deliver across India.
           </p>
 
-          {/* 1. Contact */}
+          {/* 1. Contact (from Google account, read-only) */}
           <FormSection num={1} title="Contact">
-            <div>
-              <label style={LABEL_STYLE}>Email for updates</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={FIELD_STYLE} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={LABEL_STYLE}>Name</label>
+                <div style={readonlyBox}>{user?.name ?? "…"}</div>
+              </div>
+              <div>
+                <label style={LABEL_STYLE}>Email</label>
+                <div style={readonlyBox}>{user?.email ?? "…"}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--sb-muted-2)", marginTop: 10 }}>
+              From your Google account — order updates and your receipt go here.
             </div>
           </FormSection>
 
           {/* 2. Shipping address */}
           <FormSection num={2} title="Shipping address">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div><label style={LABEL_STYLE}>First name</label><input value={firstName} onChange={(e) => setFirstName(e.target.value)} style={FIELD_STYLE} /></div>
-              <div><label style={LABEL_STYLE}>Last name</label><input value={lastName} onChange={(e) => setLastName(e.target.value)} style={FIELD_STYLE} /></div>
-            </div>
             <div style={{ marginBottom: 12 }}>
               <label style={LABEL_STYLE}>Address line 1</label>
-              <input value={address1} onChange={(e) => setAddress1(e.target.value)} style={FIELD_STYLE} />
+              <input value={address1} onChange={(e) => setAddress1(e.target.value)} onBlur={blur("address1")} style={fieldStyle(!!err("address1"))} />
+              {err("address1") && <FieldError>{err("address1")}</FieldError>}
             </div>
             <div style={{ marginBottom: 12 }}>
               <label style={LABEL_STYLE}>Address line 2 <span style={{ color: "var(--sb-muted-2)", textTransform: "none", letterSpacing: "normal" }}>(optional)</span></label>
-              <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." style={FIELD_STYLE} />
+              <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." style={fieldStyle(false)} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div><label style={LABEL_STYLE}>City</label><input value={city} onChange={(e) => setCity(e.target.value)} style={FIELD_STYLE} /></div>
-              <div><label style={LABEL_STYLE}>State</label><input value={state} onChange={(e) => setState(e.target.value)} style={FIELD_STYLE} /></div>
-              <div><label style={LABEL_STYLE}>Pincode</label><input value={pincode} onChange={(e) => setPincode(e.target.value)} style={FIELD_STYLE} /></div>
+              <div>
+                <label style={LABEL_STYLE}>City</label>
+                <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={blur("city")} style={fieldStyle(!!err("city"))} />
+                {err("city") && <FieldError>{err("city")}</FieldError>}
+              </div>
+              <div>
+                <label style={LABEL_STYLE}>State</label>
+                <input value={state} onChange={(e) => setState(e.target.value)} onBlur={blur("state")} style={fieldStyle(!!err("state"))} />
+                {err("state") && <FieldError>{err("state")}</FieldError>}
+              </div>
+              <div>
+                <label style={LABEL_STYLE}>Pincode</label>
+                <input value={pincode} onChange={(e) => setPincode(e.target.value)} onBlur={blur("pincode")} inputMode="numeric" style={fieldStyle(!!err("pincode"))} />
+                {err("pincode") && <FieldError>{err("pincode")}</FieldError>}
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label style={LABEL_STYLE}>Country</label>
-                <select value={country} onChange={(e) => setCountry(e.target.value)} style={FIELD_STYLE}>
+                <select value={country} onChange={(e) => setCountry(e.target.value)} style={fieldStyle(false)}>
                   <option>India</option>
                   <option>United States</option>
                   <option>United Kingdom</option>
@@ -183,7 +230,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                   <option>Australia</option>
                 </select>
               </div>
-              <div><label style={LABEL_STYLE}>Phone</label><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" style={FIELD_STYLE} /></div>
+              <div>
+                <label style={LABEL_STYLE}>Phone</label>
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={blur("phone")} placeholder="+91 98765 43210" inputMode="tel" style={fieldStyle(!!err("phone"))} />
+                {err("phone") && <FieldError>{err("phone")}</FieldError>}
+              </div>
             </div>
           </FormSection>
 
@@ -274,6 +325,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       </div>
     </div>
   );
+}
+
+const readonlyBox: React.CSSProperties = {
+  width: "100%", padding: "13px 16px", fontSize: 15,
+  border: "1px dashed var(--sb-panel-2)", borderRadius: 12,
+  background: "transparent", color: "var(--sb-cream)",
+  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+};
+
+function FieldError({ children }: { children: React.ReactNode }) {
+  return <div style={{ color: "#f0a39d", fontSize: 11, marginTop: 5 }}>{children}</div>;
 }
 
 function FormSection({ num, title, children }: { num: number; title: string; children: React.ReactNode }) {

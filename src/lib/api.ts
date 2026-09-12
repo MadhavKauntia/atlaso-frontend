@@ -91,6 +91,12 @@ export async function googleAuth(idToken: string): Promise<{ token: string; user
   return res.json();
 }
 
+export async function getMe(): Promise<User> {
+  const res = await apiFetch(`${BASE}/auth/me`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function getTrips(): Promise<Trip[]> {
   const res = await apiFetch(`${BASE}/trips`);
   if (!res.ok) throw new Error(await res.text());
@@ -153,6 +159,13 @@ export async function verifyRazorpayPayment(payload: {
   razorpaySignature: string;
   tripId?: string;
   quantity?: number;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  phone?: string;
 }): Promise<{ verified: boolean }> {
   const res = await apiFetch(`${BASE}/payments/verify`, {
     method: "POST",
