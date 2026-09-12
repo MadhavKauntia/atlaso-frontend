@@ -47,7 +47,7 @@ export default function Footer() {
 
       <div className={s.footerBottom}>
         <div>© {YEAR} Atlaso. All rights reserved.</div>
-        <div>Made for travellers who keep their memories in print.</div>
+        <div>Made by travellers, for travellers.</div>
       </div>
     </footer>
   );
