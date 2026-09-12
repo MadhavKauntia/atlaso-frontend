@@ -2,7 +2,8 @@ import { getCountry, stampUrl, countryArtUrl } from "@/lib/covers/countries";
 
 const COVER_W = 1414;
 const COVER_H = 2000; // 0.707 portrait, matches the cover art
-const SERIF = "Georgia, 'Times New Roman', serif";
+const TITLE_FONT = "'Roboto Serif', Georgia, serif";
+const DESC_FONT = "'Gochi Hand', 'Comic Sans MS', cursive";
 
 /**
  * Renders the chosen cover to a print-ready PNG and returns the raw base64 (no
@@ -21,6 +22,16 @@ export async function renderCountryCoverPng(
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
 
+  // Ensure the cover fonts are loaded before drawing to canvas.
+  try {
+    await Promise.all([
+      document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
+      document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
+    ]);
+  } catch {
+    /* fall back to system fonts */
+  }
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return undefined;
@@ -37,15 +48,6 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, COVER_W, COVER_H);
 
-    // atlaso wordmark, top-right
-    ctx.fillStyle = ink;
-    ctx.globalAlpha = 0.85;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `400 ${Math.round(COVER_H * 0.028)}px ${SERIF}`;
-    ctx.fillText("atlaso", COVER_W * 0.92, COVER_H * 0.075);
-    ctx.globalAlpha = 1;
-
     // stamp illustration — ~42% wide, vertically centred at 44%
     const img = await loadImage(stamp);
     const sw = COVER_W * 0.42;
@@ -56,14 +58,14 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `700 ${Math.round(COVER_H * 0.095)}px ${SERIF}`;
+    ctx.font = `700 ${Math.round(COVER_H * 0.095)}px ${TITLE_FONT}`;
     ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.74, COVER_W * 0.82);
 
     // description
     if (displayDesc) {
-      ctx.globalAlpha = 0.9;
-      ctx.font = `italic 400 ${Math.round(COVER_H * 0.04)}px ${SERIF}`;
-      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.82, COVER_W * 0.82);
+      ctx.globalAlpha = 0.95;
+      ctx.font = `400 ${Math.round(COVER_H * 0.028)}px ${DESC_FONT}`;
+      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.8, COVER_W * 0.82);
       ctx.globalAlpha = 1;
     }
   } else if (art) {
@@ -85,12 +87,12 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `700 ${Math.round(COVER_H * 0.1)}px ${SERIF}`;
+    ctx.font = `700 ${Math.round(COVER_H * 0.1)}px ${TITLE_FONT}`;
     ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.7, COVER_W * 0.82);
     if (displayDesc) {
-      ctx.globalAlpha = 0.9;
-      ctx.font = `italic 400 ${Math.round(COVER_H * 0.042)}px ${SERIF}`;
-      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.78, COVER_W * 0.82);
+      ctx.globalAlpha = 0.95;
+      ctx.font = `400 ${Math.round(COVER_H * 0.028)}px ${DESC_FONT}`;
+      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.77, COVER_W * 0.82);
       ctx.globalAlpha = 1;
     }
   }

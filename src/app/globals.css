@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* ─── Cover fonts (self-hosted so they work in the print canvas too) ─── */
+@font-face {
+  font-family: "Gochi Hand";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/gochi-hand.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Roboto Serif";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/roboto-serif.woff2") format("woff2");
+}
+
 /* ─── Responsive layout helpers ─── */
 
 .flow-topbar {
@@ -101,6 +117,10 @@
   --sb-blue: #1a63b8;
   --sb-green: #1e8a5f;
   --sb-cyan: #1fc0e2;
+
+  /* Cover typography */
+  --font-cover-title: "Roboto Serif", var(--font-fraunces), Georgia, serif;
+  --font-gochi: "Gochi Hand", "Comic Sans MS", cursive;
 }
 
 * {

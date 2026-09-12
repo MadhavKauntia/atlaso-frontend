@@ -14,7 +14,8 @@ interface CountryCoverProps {
   style?: React.CSSProperties;
 }
 
-const SERIF = "var(--font-fraunces), Georgia, serif";
+const TITLE_FONT = "var(--font-cover-title)";
+const DESC_FONT = "var(--font-gochi)";
 
 /**
  * Renders a travel photobook cover as a bound book (spine + face).
@@ -59,20 +60,6 @@ export default function CountryCover({
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: "4%",
-            right: "8%",
-            fontFamily: SERIF,
-            fontSize: "4.5cqw",
-            letterSpacing: "0.02em",
-            color: ink,
-            opacity: 0.85,
-          }}
-        >
-          atlaso
-        </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={stamp}
@@ -93,7 +80,7 @@ export default function CountryCover({
             top: "66%",
             left: 0,
             right: 0,
-            fontFamily: SERIF,
+            fontFamily: TITLE_FONT,
             fontWeight: 700,
             fontSize: "14cqw",
             lineHeight: 1,
@@ -110,15 +97,14 @@ export default function CountryCover({
           <div
             style={{
               position: "absolute",
-              top: "80%",
+              top: "79%",
               left: 0,
               right: 0,
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: "6cqw",
+              fontFamily: DESC_FONT,
+              fontSize: "4cqw",
               lineHeight: 1.2,
               color: ink,
-              opacity: 0.9,
+              opacity: 0.95,
               textAlign: "center",
               padding: "0 6%",
             }}
@@ -159,7 +145,7 @@ export default function CountryCover({
       >
         <div
           style={{
-            fontFamily: SERIF,
+            fontFamily: TITLE_FONT,
             fontWeight: 700,
             fontSize: "15cqw",
             lineHeight: 1.02,
@@ -173,12 +159,11 @@ export default function CountryCover({
         {displayDesc && (
           <div
             style={{
-              fontFamily: SERIF,
-              fontStyle: "italic",
-              fontSize: "5.5cqw",
+              fontFamily: DESC_FONT,
+              fontSize: "4cqw",
               lineHeight: 1.2,
               color: ink,
-              opacity: 0.9,
+              opacity: 0.95,
               textAlign: "center",
             }}
           >
