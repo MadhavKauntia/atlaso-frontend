@@ -183,7 +183,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 {isCover ? (
                   <>
                     <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-panel)" }}>
-                      <CountryCover country={book.coverCountry} title={book.title} style={{ width: "80%" }} />
+                      <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: "80%" }} />
                     </div>
                     <ThumbHalf page={leftPage} tripId={tripId} />
                   </>
@@ -232,7 +232,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     {isCoverSpread ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-panel)" }}>
-                          <CountryCover country={book.coverCountry} title={book.title} style={{ width: "62%" }} />
+                          <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: "62%" }} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
                           {sp[0] && <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />}
@@ -333,7 +333,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <div style={{ width: 42, flexShrink: 0 }}>
-              <CountryCover country={book.coverCountry} title={book.title} style={{ width: 42 }} />
+              <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: 42 }} />
             </div>
             <div style={{ flex: 1, fontSize: 12 }}>
               <div style={{ color: "var(--sb-muted)", fontSize: 10, marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "var(--font-dm-sans)" }}>Cover</div>

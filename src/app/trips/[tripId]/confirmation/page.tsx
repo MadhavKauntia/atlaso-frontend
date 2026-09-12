@@ -101,7 +101,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
         {/* Cover showcase */}
         <div style={{ margin: "48px auto 0", display: "flex", justifyContent: "center", perspective: 1000 }}>
           <div style={{ filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.45))", animation: "drift 5s ease-in-out infinite" }}>
-            <CountryCover country={book?.coverCountry} title={title} style={{ width: 240 }} />
+            <CountryCover country={book?.coverCountry} title={title} description={book?.subtitle ?? ""} style={{ width: 240 }} />
           </div>
         </div>
       </div>

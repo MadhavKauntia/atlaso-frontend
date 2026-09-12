@@ -119,7 +119,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
         <div style={{ position: "sticky", top: 100, background: "var(--sb-panel)", borderRadius: 18, padding: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, paddingBottom: 20, marginBottom: 20, borderBottom: DASH }}>
             <div style={{ flexShrink: 0 }}>
-              <CountryCover country={book?.coverCountry} title={book?.title ?? "Your Trip"} style={{ width: 62 }} />
+              <CountryCover country={book?.coverCountry} title={book?.title ?? "Your Trip"} description={book?.subtitle ?? ""} style={{ width: 62 }} />
             </div>
             <div>
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--sb-muted)", marginBottom: 4 }}>Your book</div>

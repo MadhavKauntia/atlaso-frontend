@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import CountryCover from "@/components/covers/CountryCover";
-import { COUNTRIES } from "@/lib/covers/countries";
+import { COUNTRIES, getCountry } from "@/lib/covers/countries";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { getToken, setToken } from "@/lib/auth";
 import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib/api";
@@ -25,6 +25,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const router = useRouter();
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [inferred, setInferred] = useState<{ place: string; country?: string; coordStr: string } | null>(null);
@@ -33,6 +34,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [error, setError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const titleDirty = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filtered = query.trim()
@@ -51,20 +53,29 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
         if (bookId) {
           const [trip, book] = await Promise.all([getTrip(tripId), getBook(bookId)]);
-          setTitle(book.title || trip.name || "");
-          if (book.coverCountry) setCountry(book.coverCountry);
-          else setCountry(matchCountry(inf?.country, inf?.place));
+          const t = book.title || trip.name || "";
+          setTitle(t);
+          titleDirty.current = !!t.trim();
+          setDescription(book.subtitle || "");
+          setCountry(book.coverCountry || matchCountry(inf?.country, inf?.place));
         } else {
           const trip = await getTrip(tripId);
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
-          setTitle(tripName || inf?.country || inf?.place?.split(",")[0]?.trim() || "");
-          setCountry(matchCountry(inf?.country, inf?.place));
 
           const prefsRaw = localStorage.getItem("atlaso_cover_prefs");
-          if (prefsRaw) {
-            const prefs = JSON.parse(prefsRaw);
-            if (prefs.title) setTitle(prefs.title);
-            if (prefs.country) setCountry(prefs.country);
+          const prefs = prefsRaw ? JSON.parse(prefsRaw) : {};
+
+          const pickedCountry = prefs.country || matchCountry(inf?.country, inf?.place);
+          setCountry(pickedCountry);
+          setDescription(prefs.description || "");
+
+          const t = prefs.title || tripName || "";
+          if (t) {
+            setTitle(t);
+            titleDirty.current = true;
+          } else if (pickedCountry) {
+            setTitle(getCountry(pickedCountry)?.name || "");
+            titleDirty.current = false;
           }
         }
       } catch {
@@ -77,18 +88,32 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId, bookId]);
 
+  const selectCountry = (slug: string) => {
+    setCountry(slug);
+    if (!titleDirty.current) {
+      setTitle(getCountry(slug)?.name || "");
+    }
+  };
+
+  const onTitleChange = (val: string) => {
+    setTitle(val);
+    titleDirty.current = val.trim().length > 0;
+    // If the user clears the title, let the selected country repopulate it.
+    if (!val.trim() && country) setTitle(getCountry(country)?.name || "");
+  };
+
   const showSaved = () => {
     setSavedIndicator(true);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => setSavedIndicator(false), 2000);
   };
 
-  // Auto-save the chosen country when editing an existing book.
+  // Auto-save when editing an existing book.
   useEffect(() => {
     if (!bookId || loading || !country) return;
     const t = setTimeout(async () => {
       try {
-        await saveCoverCountry(bookId, country);
+        await saveCoverCountry(bookId, country, description);
         showSaved();
       } catch {
         /* silent */
@@ -96,12 +121,12 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, country]);
+  }, [bookId, country, description]);
 
   const persistPrefs = () => {
     localStorage.setItem(
       "atlaso_cover_prefs",
-      JSON.stringify({ title: title.trim(), country: country ?? "" })
+      JSON.stringify({ title: title.trim(), country: country ?? "", description: description.trim() })
     );
   };
 
@@ -144,7 +169,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId) return;
     setSaving(true);
     try {
-      if (country) await saveCoverCountry(bookId, country);
+      if (country) await saveCoverCountry(bookId, country, description);
       router.push(`/trips/${tripId}/preview?bookId=${bookId}`);
     } catch {
       setError("Could not save cover.");
@@ -177,6 +202,15 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     width: "100%",
     boxSizing: "border-box",
     outline: "none",
+  };
+
+  const fieldLabel: React.CSSProperties = {
+    fontSize: 12,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    fontWeight: 700,
+    color: "var(--sb-muted-2)",
+    marginBottom: 10,
   };
 
   return (
@@ -313,56 +347,14 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               name your book
             </h1>
             <p style={{ fontSize: 15, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.6, maxWidth: "48ch" }}>
-              Pick a country for its illustrated stamp cover, or write your own title.
+              Pick a country for its illustrated stamp cover, then name your book and add a description.
             </p>
 
             {error && <p style={{ color: "#ef8b7f", fontSize: 14, marginBottom: 16 }}>{error}</p>}
 
-            {/* Title */}
+            {/* 1. Country picker */}
             <div style={{ marginBottom: 28 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  fontWeight: 700,
-                  color: "var(--sb-muted-2)",
-                  marginBottom: 10,
-                }}
-              >
-                book title
-              </div>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={40}
-                placeholder="or name it yourself — “Nonna’s kitchen, 2025”"
-                style={inputStyle}
-              />
-              {inferred && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "var(--sb-gold)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ padding: "2px 8px", background: "rgba(232,179,44,0.12)", borderRadius: 100, fontSize: 11 }}>
-                    detected from photos
-                  </span>
-                  {inferred.coordStr}
-                </div>
-              )}
-            </div>
-
-            {/* Country picker */}
-            <div style={{ marginBottom: 28 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  fontWeight: 700,
-                  color: "var(--sb-muted-2)",
-                  marginBottom: 11,
-                }}
-              >
-                cover — pick a country
-              </div>
+              <div style={fieldLabel}>cover — pick a country</div>
               <input
                 type="search"
                 value={query}
@@ -376,7 +368,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                   <button
                     key={c.slug}
                     type="button"
-                    onClick={() => setCountry(c.slug)}
+                    onClick={() => selectCountry(c.slug)}
                     aria-pressed={country === c.slug}
                     style={chipStyle(country === c.slug)}
                   >
@@ -388,27 +380,59 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                 )}
               </div>
             </div>
+
+            {/* 2. Book title */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ ...fieldLabel, display: "flex", justifyContent: "space-between" }}>
+                <span>book title</span>
+                <span style={{ opacity: 0.7 }}>{title.length} / 40</span>
+              </div>
+              <input
+                value={title}
+                onChange={(e) => onTitleChange(e.target.value)}
+                maxLength={40}
+                placeholder="Defaults to the country — edit to rename"
+                style={inputStyle}
+              />
+            </div>
+
+            {/* 3. Description (optional) */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ ...fieldLabel, display: "flex", justifyContent: "space-between" }}>
+                <span>
+                  description <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, opacity: 0.7 }}>(optional)</span>
+                </span>
+                <span style={{ opacity: 0.7 }}>{description.length} / 40</span>
+              </div>
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={40}
+                placeholder="e.g. group trip 2025"
+                style={inputStyle}
+              />
+              {inferred && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "var(--sb-gold)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ padding: "2px 8px", background: "rgba(232,179,44,0.12)", borderRadius: 100, fontSize: 11 }}>
+                    detected from photos
+                  </span>
+                  {inferred.coordStr}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT: Preview */}
           <div style={{ position: "sticky", top: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {savedIndicator && (
-              <div style={{ marginBottom: 12, fontSize: 12, color: "var(--sb-gold)" }}>Saved</div>
-            )}
+            {savedIndicator && <div style={{ marginBottom: 12, fontSize: 12, color: "var(--sb-gold)" }}>Saved</div>}
             <CountryCover
               country={country}
               title={title}
+              description={description}
               style={{ width: 320, transform: "rotate(-2deg)" }}
             />
-            <div
-              style={{
-                marginTop: 24,
-                fontSize: 13,
-                color: "var(--sb-muted-2)",
-                textAlign: "center",
-              }}
-            >
-              {country ? "illustrated stamp cover" : "pick a country to see its cover"}
+            <div style={{ marginTop: 24, fontSize: 13, color: "var(--sb-muted-2)", textAlign: "center" }}>
+              {country ? "live preview · updates as you type" : "pick a country to see its cover"}
             </div>
             <div
               style={{

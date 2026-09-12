@@ -205,7 +205,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           <div style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: DASH }}>
             <div style={{ flexShrink: 0 }}>
-              <CountryCover country={book?.coverCountry} title={book?.title ?? "Your Trip"} style={{ width: 58 }} />
+              <CountryCover country={book?.coverCountry} title={book?.title ?? "Your Trip"} description={book?.subtitle ?? ""} style={{ width: 58 }} />
             </div>
             <div style={{ flex: 1, fontSize: 13 }}>
               <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 16, marginBottom: 4, color: "var(--sb-cream)" }}>{book?.title ?? "Your Trip"}</div>

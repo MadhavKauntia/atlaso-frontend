@@ -26,6 +26,7 @@ const TIPS = [
 interface CoverPrefs {
   title: string;
   country: string;
+  description: string;
 }
 
 export default function GeneratingPage({ params }: { params: Promise<{ tripId: string }> }) {
@@ -84,7 +85,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       }
 
       try {
-        if (prefs?.title) await updateTrip(tripId, prefs.title);
+        if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.description || undefined);
       } catch {
         /* best-effort */
       }
@@ -92,7 +93,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       const book = regenerateFrom ? await regenerateBook(regenerateFrom) : await generateBook(tripId);
 
       if (prefs?.country) {
-        await saveCoverCountry(book.id, prefs.country);
+        await saveCoverCountry(book.id, prefs.country, prefs.description || undefined);
       }
       localStorage.removeItem("atlaso_cover_prefs");
 
@@ -107,6 +108,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
   const displayTitle = coverPrefs?.title || "your trip";
   const displayCountry = coverPrefs?.country || null;
+  const displayDescription = coverPrefs?.description || "";
 
   if (error) {
     return (
@@ -214,7 +216,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
           {/* Floating book */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 48 }}>
             <div style={{ animation: "bookFloat 4s ease-in-out infinite" }}>
-              <CountryCover country={displayCountry} title={displayTitle} style={{ width: 210 }} />
+              <CountryCover country={displayCountry} title={displayTitle} description={displayDescription} style={{ width: 210 }} />
             </div>
           </div>
 
