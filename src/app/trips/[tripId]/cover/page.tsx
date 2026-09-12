@@ -34,6 +34,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [error, setError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  // Whether the user has typed their own title (preserved across country switches).
+  const titleCustom = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filtered = query.trim()
@@ -52,7 +54,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
         if (bookId) {
           const [trip, book] = await Promise.all([getTrip(tripId), getBook(bookId)]);
-          setTitle(book.title || trip.name || "");
+          const t = book.title || trip.name || "";
+          setTitle(t);
+          titleCustom.current = !!t.trim();
           setDescription(book.subtitle || "");
           setCountry(book.coverCountry || matchCountry(inf?.country, inf?.place));
         } else {
@@ -65,8 +69,15 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const pickedCountry = prefs.country || matchCountry(inf?.country, inf?.place);
           setCountry(pickedCountry);
           setDescription(prefs.description || "");
-          // Default the title to the picked country name; a saved custom title wins.
-          setTitle(prefs.title || tripName || getCountry(pickedCountry)?.name || "");
+          // A saved/trip title is treated as custom; otherwise default to the country.
+          const custom = prefs.title || tripName;
+          if (custom) {
+            setTitle(custom);
+            titleCustom.current = true;
+          } else {
+            setTitle(getCountry(pickedCountry)?.name || "");
+            titleCustom.current = false;
+          }
         }
       } catch {
         setError("Could not load your trip. Please try again.");
@@ -80,9 +91,15 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
   const selectCountry = (slug: string) => {
     setCountry(slug);
-    // Picking a country populates the title with its name; the user can then
-    // freely edit it (including clearing it to type a new one).
-    setTitle(getCountry(slug)?.name || "");
+    // Only fill the title from the country when the user hasn't typed their own.
+    if (!titleCustom.current) setTitle(getCountry(slug)?.name || "");
+  };
+
+  const onTitleChange = (val: string) => {
+    setTitle(val);
+    // A non-empty value is the user's custom title; clearing it re-enables the
+    // country default on the next country pick.
+    titleCustom.current = val.trim().length > 0;
   };
 
   const showSaved = () => {
@@ -372,7 +389,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               </div>
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => onTitleChange(e.target.value)}
                 maxLength={40}
                 placeholder="Defaults to the country — edit to rename"
                 style={inputStyle}
