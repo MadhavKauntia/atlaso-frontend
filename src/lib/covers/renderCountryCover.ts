@@ -42,26 +42,27 @@ export async function renderCountryCoverPng(
     ctx.globalAlpha = 0.85;
     ctx.textAlign = "right";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `400 ${Math.round(COVER_H * 0.03)}px ${SERIF}`;
+    ctx.font = `400 ${Math.round(COVER_H * 0.028)}px ${SERIF}`;
     ctx.fillText("atlaso", COVER_W * 0.92, COVER_H * 0.075);
     ctx.globalAlpha = 1;
 
-    // stamp illustration
+    // stamp illustration — ~42% wide, vertically centred at 44%
     const img = await loadImage(stamp);
-    const sw = COVER_W * 0.62;
-    const sh = img.naturalHeight ? (sw / img.naturalWidth) * img.naturalHeight : sw / 0.81;
-    ctx.drawImage(img, (COVER_W - sw) / 2, COVER_H * 0.1, sw, sh);
+    const sw = COVER_W * 0.42;
+    const sh = img.naturalHeight ? (sw / img.naturalWidth) * img.naturalHeight : sw / 0.8;
+    ctx.drawImage(img, (COVER_W - sw) / 2, COVER_H * 0.44 - sh / 2, sw, sh);
 
     // title
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
-    ctx.font = `700 ${Math.round(COVER_H * 0.1)}px ${SERIF}`;
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `700 ${Math.round(COVER_H * 0.095)}px ${SERIF}`;
     ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.74, COVER_W * 0.82);
 
     // description
     if (displayDesc) {
       ctx.globalAlpha = 0.9;
-      ctx.font = `italic 400 ${Math.round(COVER_H * 0.042)}px ${SERIF}`;
+      ctx.font = `italic 400 ${Math.round(COVER_H * 0.04)}px ${SERIF}`;
       ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.82, COVER_W * 0.82);
       ctx.globalAlpha = 1;
     }

@@ -45,6 +45,8 @@ export default function CountryCover({
 
   if (stamp) {
     // Composite cover: solid bg + stamp + dynamic title & description.
+    // Positions match the legacy jpg covers (stamp ~37% wide, centered at 44%
+    // height; title baseline ~72%; description ~81%).
     face = (
       <div
         style={{
@@ -54,19 +56,16 @@ export default function CountryCover({
           aspectRatio: "0.707",
           background: bg,
           containerType: "inline-size",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "6% 8% 8%",
-          boxSizing: "border-box",
           overflow: "hidden",
         }}
       >
         <div
           style={{
-            alignSelf: "flex-end",
+            position: "absolute",
+            top: "4%",
+            right: "8%",
             fontFamily: SERIF,
-            fontSize: "5cqw",
+            fontSize: "4.5cqw",
             letterSpacing: "0.02em",
             color: ink,
             opacity: 0.85,
@@ -78,19 +77,31 @@ export default function CountryCover({
         <img
           src={stamp}
           alt={def ? `${def.name} stamp` : "stamp"}
-          style={{ width: "62%", height: "auto", marginTop: "3%", display: "block" }}
+          style={{
+            position: "absolute",
+            top: "25.5%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "42%",
+            height: "auto",
+            display: "block",
+          }}
         />
-        <div style={{ flex: 1 }} />
         <div
           style={{
+            position: "absolute",
+            top: "66%",
+            left: 0,
+            right: 0,
             fontFamily: SERIF,
             fontWeight: 700,
-            fontSize: "15cqw",
-            lineHeight: 1.02,
+            fontSize: "14cqw",
+            lineHeight: 1,
             letterSpacing: "0.01em",
             color: ink,
             textAlign: "center",
             textTransform: "uppercase",
+            padding: "0 6%",
           }}
         >
           {displayTitle}
@@ -98,20 +109,23 @@ export default function CountryCover({
         {displayDesc && (
           <div
             style={{
-              marginTop: "3.5%",
+              position: "absolute",
+              top: "80%",
+              left: 0,
+              right: 0,
               fontFamily: SERIF,
               fontStyle: "italic",
-              fontSize: "5.5cqw",
+              fontSize: "6cqw",
               lineHeight: 1.2,
               color: ink,
               opacity: 0.9,
               textAlign: "center",
+              padding: "0 6%",
             }}
           >
             {displayDesc}
           </div>
         )}
-        <div style={{ height: "6%" }} />
       </div>
     );
   } else if (art) {

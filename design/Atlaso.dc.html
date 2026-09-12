@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Nunito:wght@600;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #262220; }
+  * { box-sizing: border-box; }
+  a { color: #f3ead8; text-decoration: none; }
+  a:hover { color: #e8b32c; }
+  ::selection { background: #e2631f; color: #f3ead8; }
+  @keyframes atlasoFloat { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)) } 50% { transform: translateY(-10px) rotate(var(--r,0deg)) } }
+  @keyframes atlasoSpin { to { transform: rotate(360deg) } }
+</style>
+</helmet>
+<div style="font-family: 'DM Sans', system-ui, sans-serif; color: #f3ead8; background: #262220; overflow-x: hidden">
+
+  <header style="position: sticky; top: 0; z-index: 40; background-color: #FFFFFF; border-bottom: 1px solid #3d3833; padding: 14px clamp(16px, 3vw, 34px); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+    <a href="./Atlaso.dc.html" style="display: flex; align-items: center; gap: 12px" aria-label="Atlaso home">
+      <span style="font-family: Nunito, sans-serif; font-weight: 800; font-size: 27px; letter-spacing: -0.03em; line-height: 1; color: #000000">atlaso<span style="color: #1FC0E2">.</span></span>
+    </a>
+    <nav style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">make a book</a>
+      <a href="./Atlaso How It Works.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">how it works</a>
+      <a href="./Atlaso Account.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">account</a>
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 800; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #262220; background: #e8b32c; padding: 8px 14px; border-radius: 999px">start ›</a>
+    </nav>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(28px, 3.5vw, 56px) clamp(20px, 5vw, 64px); min-height: calc(100svh - 68px); box-sizing: border-box">
+    <div style="display: flex; flex-direction: column; gap: 26px; max-width: 560px">
+      <h1 style="font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: clamp(38px, 4.6vw, 72px); line-height: 0.98; letter-spacing: -0.04em; margin: 0; text-wrap: pretty">
+        your camera roll<br><span style="color: #e8b32c">is a photo book</span><br>waiting to happen
+      </h1>
+      <p style="font-size: 17px; line-height: 1.6; color: #c3b8a4; margin: 0; max-width: 44ch; width: 442px; height: 53px">Dump in the photos, pick the country. We lay out, illustrate and print it.</p>
+      <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+        <a href="./Atlaso Builder.dc.html" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; color: #f3ead8; background: #c9352c; padding: 17px 30px; border-radius: 999px; display: inline-flex; align-items: center; gap: 12px" style-hover="background: #e2631f">start my photo book <span style="font-family: 'DM Sans', sans-serif; font-weight: 500">→</span></a>
+        <div style="font-size: 14px; line-height: 1.5; color: #9c9080">free to build<br>ships in 6 days</div>
+      </div>
+    </div>
+
+    <div style="position: relative; display: grid; place-items: center; padding: clamp(24px, 3vw, 44px) 0">
+      <div style="position: relative; width: 100%; max-width: 540px; display: flex; background: #f3ead8; padding: 10px; box-shadow: 14px 16px 0 rgba(0,0,0,0.35); transform: rotate(-2deg); aspect-ratio: 1.5 / 1">
+        <div style="flex: 1; padding: 4px; display: grid; border-right: 2px dashed #cfc2a8">
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-1" shape="rect" placeholder="the big landscape one"></image-slot></div>
+        </div>
+        <div style="flex: 1; padding: 4px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px">
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-2" shape="rect" placeholder="portrait"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-3" shape="rect" placeholder="food"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-4" shape="rect" placeholder="street"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-5" shape="rect" placeholder="harbour"></image-slot></div>
+        </div>
+        <div style="position: absolute; top: -13px; left: 22%; width: 92px; height: 26px; background: #e8b32c; transform: rotate(-4deg)"></div>
+        <div style="position: absolute; bottom: -14px; right: 16%; width: 104px; height: 26px; background: #1a63b8; transform: rotate(3deg)"></div>
+      </div>
+
+      <div style="position: absolute; bottom: 0; left: 0; width: clamp(104px, 24%, 148px); background: #f3ead8; padding: 7px 7px 24px; box-shadow: 10px 12px 0 rgba(0,0,0,0.32); transform: rotate(-7deg); z-index: 3">
+        <img src="./assets/postcard-bali.png" alt="Bali postcard cover illustration" style="display: block; width: 100%; height: auto">
+      </div>
+      <div style="position: absolute; top: 2%; right: 0; width: clamp(64px, 15%, 92px); aspect-ratio: 1; background: radial-gradient(circle at 50% 22%, #e2631f 26%, transparent 27%), radial-gradient(circle at 78% 50%, #e2631f 26%, transparent 27%), radial-gradient(circle at 50% 78%, #e2631f 26%, transparent 27%), radial-gradient(circle at 22% 50%, #e2631f 26%, transparent 27%), radial-gradient(circle at 50% 50%, #e2631f 30%, transparent 31%); --r: -8deg; animation: atlasoFloat 7s ease-in-out infinite; z-index: 2"></div>
+      <div style="position: absolute; bottom: 6%; right: 2%; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.08em; color: #262220; background: #f3ead8; padding: 7px 12px; border-radius: 999px; transform: rotate(-7deg); z-index: 3">day 4 — Lisbon</div>
+      <div style="position: absolute; top: 10%; left: 0; width: clamp(72px, 17%, 100px); aspect-ratio: 1; border-radius: 999px; background: #1e8a5f; display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 11px; letter-spacing: 0.12em; line-height: 1.35; color: #f3ead8; transform: rotate(9deg); z-index: 3">LAY<br>FLAT<br>★</div>
+    </div>
+  </section>
+
+  <div style="background: #f3ead8; color: #262220; padding: 13px 0; overflow: hidden; white-space: nowrap; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 0.02em; text-align: center">
+    <div style="display: flex; gap: 22px; padding-left: 20px; align-items: center">
+      <span>high quality photo paper</span><span style="color: rgb(201, 53, 44);">✦</span><span>hard-bound, coffee table book</span><span style="color: rgb(30, 138, 95);">✦</span><span>layout generated instantly</span><span style="color: rgb(226, 99, 31);">✦</span><span><span style="letter-spacing: 0.34px;">a cover for every country</span></span><span style="color: rgb(26, 99, 184);">✦</span>
+<span>7-10 day delivery</span>
+<span style="color: rgb(26, 99, 184);">✦</span>
+    </div>
+  </div>
+
+  <section id="covers" style="padding: clamp(48px, 6vw, 96px) clamp(20px, 5vw, 64px); background: #f3ead8; color: #262220">
+    <div style="max-width: 720px; margin: 0 auto; text-align: center">
+      <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: clamp(30px, 3.6vw, 48px); letter-spacing: -0.035em; margin: 0">your keepsake for every trip</h2>
+      <p style="font-size: 16px; color: #6a5f50; margin: 12px auto 0; max-width: 52ch">21 × 21cm, 48 lay-flat pages, hardbound</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: clamp(16px, 2.2vw, 32px); max-width: 1080px; margin: clamp(40px, 5vw, 64px) auto 0">
+      <figure style="margin: 0; width: clamp(140px, 17vw, 206px); transform: rotate(-5deg) translateY(18px); transition: transform 260ms cubic-bezier(.2,.8,.3,1)" style-hover="transform: rotate(-5deg) translateY(18px) scale(1.08)">
+        <div style="display: flex; box-shadow: 10px 14px 0 rgba(38,34,32,0.18); border-radius: 2px 6px 6px 2px; overflow: hidden">
+          <div style="flex: none; width: 13px; background: #2c4230; border-right: 1px solid rgba(0,0,0,0.18)"></div>
+          <img src="./assets/covers/bali.jpg" alt="Bali photobook cover" style="display: block; flex: 1; min-width: 0; width: auto; height: auto">
+        </div>
+      </figure>
+      <figure style="margin: 0; width: clamp(140px, 17vw, 206px); transform: rotate(3deg) translateY(-14px); transition: transform 260ms cubic-bezier(.2,.8,.3,1)" style-hover="transform: rotate(3deg) translateY(-14px) scale(1.08)">
+        <div style="display: flex; box-shadow: 10px 14px 0 rgba(38,34,32,0.18); border-radius: 2px 6px 6px 2px; overflow: hidden">
+          <div style="flex: none; width: 13px; background: #f3b53f; border-right: 1px solid rgba(0,0,0,0.18)"></div>
+          <img src="./assets/covers/italy.jpg" alt="Italy photobook cover" style="display: block; flex: 1; min-width: 0; width: auto; height: auto">
+        </div>
+      </figure>
+      <figure style="margin: 0; width: clamp(140px, 17vw, 206px); transform: rotate(-2deg) translateY(26px); transition: transform 260ms cubic-bezier(.2,.8,.3,1)" style-hover="transform: rotate(-2deg) translateY(26px) scale(1.08)">
+        <div style="display: flex; box-shadow: 10px 14px 0 rgba(38,34,32,0.18); border-radius: 2px 6px 6px 2px; overflow: hidden">
+          <div style="flex: none; width: 13px; background: #2ba3bd; border-right: 1px solid rgba(0,0,0,0.18)"></div>
+          <img src="./assets/covers/thailand.jpg" alt="Thailand photobook cover" style="display: block; flex: 1; min-width: 0; width: auto; height: auto">
+        </div>
+      </figure>
+      <figure style="margin: 0; width: clamp(140px, 17vw, 206px); transform: rotate(6deg) translateY(-6px); transition: transform 260ms cubic-bezier(.2,.8,.3,1)" style-hover="transform: rotate(6deg) translateY(-6px) scale(1.08)">
+        <div style="display: flex; box-shadow: 10px 14px 0 rgba(38,34,32,0.18); border-radius: 2px 6px 6px 2px; overflow: hidden">
+          <div style="flex: none; width: 13px; background: #41599c; border-right: 1px solid rgba(0,0,0,0.18)"></div>
+          <img src="./assets/covers/switzerland.jpg" alt="Switzerland photobook cover" style="display: block; flex: 1; min-width: 0; width: auto; height: auto">
+        </div>
+      </figure>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: clamp(40px, 5vw, 60px)">
+      <a href="./Atlaso Builder.dc.html" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 17px; color: #f3ead8; background: #c9352c; padding: 14px 24px; border-radius: 999px">make mine →</a>
+    </div>
+  </section>
+
+  <section style="position: relative; padding: clamp(52px, 7vw, 104px) clamp(20px, 5vw, 64px); background: #c9352c; text-align: center; overflow: hidden">
+    <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: clamp(34px, 4.6vw, 66px); letter-spacing: -0.04em; margin: 0 0 14px; line-height: 0.98; position: relative">that trip deserves<br>better than a phone</h2>
+    <p style="font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 28px; color: #f3ead8; position: relative">free layout · pay only if you love it</p>
+    <a href="./Atlaso Builder.dc.html" style="position: relative; display: inline-flex; align-items: center; gap: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; color: #262220; background: #e8b32c; padding: 18px 32px; border-radius: 999px">start my photo book <span style="font-family: 'DM Sans', sans-serif; font-weight: 500">→</span></a>
+  </section>
+
+  <footer style="background: #1c1917; border-top: 1px solid #3d3833; padding: clamp(40px, 5vw, 68px) clamp(20px, 5vw, 64px) 28px">
+    <div style="max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: clamp(24px, 3vw, 48px)">
+      <div style="max-width: 34ch">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; margin-bottom: 12px">atlaso<span style="color: #e2631f">.</span></div>
+        <p style="font-size: 14px; line-height: 1.6; color: #b0a593; margin: 0">Travel photobooks. Drop in your photos, we lay out the album, illustrate the cover and print it — delivered across India.</p>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">product</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="./Atlaso How It Works.dc.html">how it works</a>
+          <a href="./Atlaso Builder.dc.html">start a book</a>
+          <a href="./Atlaso Account.dc.html">account</a>
+        </nav>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">legal</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="#">privacy policy</a>
+          <a href="#">terms &amp; conditions</a>
+          <a href="#">refunds &amp; cancellation</a>
+          <a href="#">shipping &amp; delivery</a>
+        </nav>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">support</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="#">contact us</a>
+          <a href="mailto:support@myatlaso.com">support@myatlaso.com</a>
+        </nav>
+      </div>
+    </div>
+    <div style="max-width: 1120px; margin: clamp(28px, 3vw, 44px) auto 0; padding-top: 20px; border-top: 1px solid #302b28; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 13px; color: #a89c8a">
+      <span>© 2026 Atlaso. All rights reserved.</span>
+      <span>Made for travellers who keep their memories in print.</span>
+    </div>
+  </footer>
+
+</div></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;basePrice&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:58,&quot;tsType&quot;:&quot;number&quot;,&quot;unit&quot;:&quot;£&quot;,&quot;section&quot;:&quot;Pricing&quot;},&quot;deliveryDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:2,&quot;max&quot;:21,&quot;section&quot;:&quot;Pricing&quot;},&quot;photoCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:128,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Demo book&quot;},&quot;tripYear&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2026&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo book&quot;}}">
+class Component extends DCLogic {
+  state = { step: 1, photos: [], seed: 0, spread: 0, country: "", customTitle: "", cover: "", email: "", card: "", expiry: "", cvc: "", query: "", done: false };
+
+  addFiles(files, replaceIndex) {
+    const list = Array.from(files || []).filter(f => f.type.indexOf("image/") === 0);
+    if (!list.length) return;
+    const mapped = list.map((f, i) => ({ id: Date.now() + "-" + i + "-" + f.name, name: f.name, url: URL.createObjectURL(f) }));
+    this.setState(s => {
+      if (typeof replaceIndex === "number") {
+        const next = s.photos.slice();
+        next[replaceIndex] = mapped[0];
+        return { photos: next };
+      }
+      return { photos: s.photos.concat(mapped).slice(0, 200) };
+    });
+  }
+
+  renderVals() {
+    const p = this.props, S = this.state;
+    const set = (k, v) => () => this.setState({ [k]: v });
+    const basePrice = p.basePrice ?? 58;
+    const deliveryDays = p.deliveryDays ?? 6;
+    const MIN = 24;
+
+    const countryDefs = [
+      { name: "Bali", art: "bali", spine: "#2c4230", ink: "#f3ead8" },
+      { name: "Italy", art: "italy", spine: "#f3b53f", ink: "#262220" },
+      { name: "Thailand", art: "thailand", spine: "#2ba3bd", ink: "#f3ead8" },
+      { name: "Sri Lanka", art: "srilanka", spine: "#0d6152", ink: "#f3ead8" },
+      { name: "Japan", art: "japan", spine: "#b04a42", ink: "#f3ead8" },
+      { name: "Vietnam", art: "vietnam", spine: "#42609f", ink: "#f3ead8" },
+      { name: "Greece", art: "greece", spine: "#2489a3", ink: "#f3ead8" },
+      { name: "Switzerland", art: "switzerland", spine: "#41599c", ink: "#f3ead8" },
+      { name: "Portugal", spine: "#c9352c", ink: "#f3ead8" },
+      { name: "Morocco", spine: "#e2631f", ink: "#f3ead8" },
+      { name: "Iceland", spine: "#1a63b8", ink: "#f3ead8" },
+      { name: "Peru", spine: "#1e8a5f", ink: "#f3ead8" }
+    ];
+    const q = S.query.trim().toLowerCase();
+    const countryList = countryDefs.filter(c => !q || c.name.toLowerCase().includes(q)).slice(0, 12).map(c => {
+      const on = S.country === c.name;
+      return { name: c.name, on: on ? "true" : "false", bg: on ? "#e8b32c" : "#46403a", fg: on ? "#262220" : "#f3ead8", pick: set("country", c.name) };
+    });
+    const picked = countryDefs.find(c => c.name === S.country);
+    const artUrl = picked && picked.art ? "url(./assets/covers/" + picked.art + ".jpg) center/cover" : null;
+
+
+    const n = S.photos.length;
+    const order = S.photos.map((ph, i) => ({ ph, i })).sort((a, b) => ((a.i * 7 + S.seed * 13) % 11) - ((b.i * 7 + S.seed * 13) % 11));
+    const perSpread = 5;
+    const spreadCount = Math.max(1, Math.ceil(order.length / perSpread));
+    const spreadIndex = Math.min(S.spread, spreadCount - 1);
+    const chunk = order.slice(spreadIndex * perSpread, spreadIndex * perSpread + perSpread);
+    const withReplace = item => ({
+      url: item.ph.url,
+      bg: "url(" + item.ph.url + ")",
+      name: item.ph.name,
+      onReplace: e => { this.addFiles(e.target.files, item.i); e.target.value = ""; }
+    });
+
+    const thumbs = S.photos.map((ph, i) => ({
+      url: ph.url, bg: "url(" + ph.url + ")", name: ph.name,
+      remove: () => this.setState(s => ({ photos: s.photos.filter((_, j) => j !== i) }))
+    }));
+
+    const emailOk = /.+@.+\..+/.test(S.email);
+    const cardOk = S.card.replace(/\D/g, "").length >= 12 && S.expiry.trim().length >= 4 && S.cvc.trim().length >= 3;
+    const titled = !!(S.country || S.customTitle.trim());
+    const valid = { 1: n >= MIN, 2: n >= MIN, 3: titled, 4: emailOk && cardOk };
+    const reason = {
+      1: n ? (MIN - n) + " more photos needed" : "choose at least " + MIN + " photos",
+      2: "",
+      3: "pick a country or name your book",
+      4: !emailOk ? "add an email for the proof" : "complete your card details"
+    };
+    const labels = { 1: "photos", 2: "album", 3: "title", 4: "payment" };
+    const nextLabels = { 1: "build my album →", 2: "looks good →", 3: "continue to payment →", 4: "pay & send to print →" };
+
+    const reachable = k => k === 1 || [1,2,3].slice(0, k - 1).every(i => valid[i]);
+    const steps = [1,2,3,4].map(k => {
+      const current = !S.done && S.step === k;
+      const complete = valid[k] && (S.done || S.step > k);
+      const canGo = !S.done && reachable(k);
+      return {
+        label: labels[k],
+        mark: complete ? "✓" : String(k),
+        current: current ? "step" : "false",
+        cursor: canGo ? "pointer" : "default",
+        opacity: canGo || current ? 1 : 0.45,
+        dotBg: current ? "#e8b32c" : complete ? "#1e8a5f" : "#302b28",
+        dotInk: current ? "#262220" : "#f3ead8",
+        labelInk: current ? "#f3ead8" : "#b0a593",
+        go: canGo ? set("step", k) : () => {}
+      };
+    });
+
+    const bookTitle = S.customTitle.trim() || S.country || "your trip";
+    const advance = () => {
+      if (!valid[S.step]) return;
+      if (S.step === 4) this.setState({ done: true });
+      else this.setState({ step: S.step + 1, spread: 0 });
+    };
+
+    return {
+      basePrice, deliveryDays,
+      tripYear: p.tripYear ?? "2026",
+      size: "21 × 21",
+      total: basePrice,
+      country: S.country || "not chosen",
+      coverLabel: picked ? picked.name + " stamp cover" : "illustrated stamp cover",
+      bookTitle,
+      customTitle: S.customTitle,
+      query: S.query,
+      email: S.email, card: S.card, expiry: S.expiry, cvc: S.cvc,
+      onQuery: e => this.setState({ query: e.target.value }),
+      onTitle: e => this.setState({ customTitle: e.target.value }),
+      onEmail: e => this.setState({ email: e.target.value }),
+      onCard: e => this.setState({ card: e.target.value }),
+      onExpiry: e => this.setState({ expiry: e.target.value }),
+      onCvc: e => this.setState({ cvc: e.target.value }),
+      emailBorder: S.email && !emailOk ? "#c9352c" : "#46403a",
+      cardBorder: S.card && !cardOk ? "#c9352c" : "#46403a",
+      onFiles: e => { this.addFiles(e.target.files); e.target.value = ""; },
+      thumbs, hasPhotos: n > 0,
+      photoLabel: n ? n + (n === 1 ? " photo" : " photos") : "none yet",
+      photoCountLabel: n + (n === 1 ? " photo" : " photos"),
+      photoInk: n >= MIN ? "#1e8a5f" : "#e8b32c",
+      uploadPct: Math.min(100, Math.round((n / MIN) * 100)) + "%",
+      gridCols: (!S.done && S.step === 2) ? "1fr" : "repeat(auto-fit, minmax(290px, 1fr))",
+      showRail: S.done || S.step !== 2,
+      spreadCount,
+      spreadLabel: "spread " + (spreadIndex + 1) + " of " + spreadCount,
+      spreadLeft: chunk.slice(0, 1).map(withReplace),
+      spreadRight: chunk.slice(1).map(withReplace),
+      prevSpread: () => this.setState(s => ({ spread: Math.max(0, s.spread - 1) })),
+      nextSpread: () => this.setState(s => ({ spread: Math.min(spreadCount - 1, s.spread + 1) })),
+      reshuffle: () => this.setState(s => ({ seed: s.seed + 1, spread: 0 })),
+      countryList, steps,
+      stepCount: S.done ? "order placed" : "step " + S.step + " of 4",
+      stepNote: S.done ? "proof on its way" : "free until you pay",
+      reassurance: S.done
+        ? "Your proof is on its way — approve it and we print, stitch and post the book. Changes before approval are free."
+        : "Building and browsing your album is free. You see the price at checkout, and nothing prints until you approve the proof.",
+      progress: (S.done ? 100 : ([1,2,3,4].filter(k => valid[k]).length / 4) * 100) + "%",
+      previewArt: artUrl || "linear-gradient(150deg,#e8b32c,#c9352c)",
+      previewInk: "#f3ead8",
+      previewTitle: bookTitle,
+      spineColor: picked ? picked.spine : "#302b28",
+      isStep1: !S.done && S.step === 1,
+      isStep2: !S.done && S.step === 2,
+      isStep3: !S.done && S.step === 3,
+      isStep4: !S.done && S.step === 4,
+      isDone: S.done,
+      showNav: !S.done,
+      onNext: advance,
+      onBack: () => this.setState(s => ({ step: Math.max(1, s.step - 1) })),
+      nextLabel: nextLabels[S.step],
+      nextDisabled: !valid[S.step],
+      nextCursor: valid[S.step] ? "pointer" : "not-allowed",
+      nextBg: valid[S.step] ? "#c9352c" : "#46403a",
+      nextInk: valid[S.step] ? "#f3ead8" : "#8a7f6f",
+      blockedReason: valid[S.step] ? "" : reason[S.step],
+      backDisabled: S.step === 1,
+      backCursor: S.step === 1 ? "default" : "pointer",
+      backOpacity: S.step === 1 ? 0.3 : 1,
+      restart: () => this.setState({ step: 1, photos: [], seed: 0, spread: 0, country: "", customTitle: "", email: "", card: "", expiry: "", cvc: "", query: "", done: false }),
+      go: { s1: set("step", 1), s2: set("step", 2), s3: set("step", 3), s4: set("step", 4) }
+    };
+  }
+}
+</script>
+</body>
+</html>

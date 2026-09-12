@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Nunito:wght@600;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #262220; }
+  * { box-sizing: border-box; }
+  a { color: #f3ead8; text-decoration: none; }
+  a:hover { color: #e8b32c; }
+  ::selection { background: #e2631f; color: #f3ead8; }
+  @keyframes atlasoFloat { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)) } 50% { transform: translateY(-10px) rotate(var(--r,0deg)) } }
+  @keyframes atlasoSpin { to { transform: rotate(360deg) } }
+</style>
+</helmet>
+<div style="font-family: 'DM Sans', system-ui, sans-serif; color: #f3ead8; background: #262220; overflow-x: hidden">
+
+  <header style="position: sticky; top: 0; z-index: 40; background-color: #FFFFFF; border-bottom: 1px solid #3d3833; padding: 14px clamp(16px, 3vw, 34px); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+    <a href="./Atlaso.dc.html" style="display: flex; align-items: center; gap: 12px" aria-label="Atlaso home">
+      <span style="font-family: Nunito, sans-serif; font-weight: 800; font-size: 27px; letter-spacing: -0.03em; line-height: 1; color: #000000">atlaso<span style="color: #1FC0E2">.</span></span>
+    </a>
+    <nav style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">make a book</a>
+      <a href="./Atlaso How It Works.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">how it works</a>
+      <a href="./Atlaso Account.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">account</a>
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 800; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #262220; background: #e8b32c; padding: 8px 14px; border-radius: 999px">start ›</a>
+    </nav>
+  </header>
+
+  <section style="padding: clamp(52px, 7vw, 104px) clamp(20px, 5vw, 64px) clamp(36px, 4vw, 60px); max-width: 980px; margin: 0 auto">
+    <div style="font-weight: 800; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #e8b32c; margin-bottom: 18px">how it works</div>
+    <h1 style="font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: clamp(38px, 5vw, 72px); line-height: 1.0; letter-spacing: -0.04em; margin: 0 0 22px; text-wrap: pretty">From camera roll<br>to shelf, in four steps</h1>
+    <p style="font-size: 18px; line-height: 1.6; color: #c3b8a4; margin: 0; max-width: 52ch">You upload. We lay out, illustrate and print. Nothing is charged until you approve the proof.</p>
+  </section>
+
+  <section style="padding: 0 clamp(20px, 5vw, 64px) clamp(48px, 6vw, 88px); max-width: 980px; margin: 0 auto; display: grid; gap: 18px">
+    <div style="display: flex; gap: clamp(16px, 2.4vw, 28px); align-items: flex-start; background: #302b28; border-radius: 20px; padding: clamp(20px, 2.6vw, 30px); flex-wrap: wrap">
+      <div style="flex: none; width: 46px; height: 46px; border-radius: 999px; background: #e2631f; color: #f3ead8; display: grid; place-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">1</div>
+      <div style="flex: none; width: clamp(128px, 16vw, 168px); aspect-ratio: 1; border-radius: 16px; background: #262220; position: relative; overflow: hidden">
+        <div style="position: absolute; width: 54%; aspect-ratio: 0.82; background: #e8a0b4; border: 3px solid #f3ead8; left: 12%; top: 20%; transform: rotate(-11deg)"></div>
+        <div style="position: absolute; width: 54%; aspect-ratio: 0.82; background: #2ba3bd; border: 3px solid #f3ead8; left: 24%; top: 26%; transform: rotate(5deg)"></div>
+        <div style="position: absolute; width: 54%; aspect-ratio: 0.82; background: #e8b32c; border: 3px solid #f3ead8; left: 20%; top: 14%; transform: rotate(-2deg); display: grid; place-items: center"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; color: #262220">+</span></div>
+      </div>
+      <div>
+        <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 24px; margin: 0 0 8px">upload the roll</h2>
+        <p style="font-size: 15px; line-height: 1.65; color: #b0a593; margin: 0; max-width: 62ch">Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside — pull any back in.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: clamp(16px, 2.4vw, 28px); align-items: flex-start; background: #302b28; border-radius: 20px; padding: clamp(20px, 2.6vw, 30px); flex-wrap: wrap">
+      <div style="flex: none; width: 46px; height: 46px; border-radius: 999px; background: #1e8a5f; color: #f3ead8; display: grid; place-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">2</div>
+      <div style="flex: none; width: clamp(128px, 16vw, 168px); aspect-ratio: 1; border-radius: 16px; background: #262220; display: grid; place-items: center; padding: 14px">
+        <div style="display: flex; width: 100%; background: #f3ead8; padding: 6px; gap: 5px; box-shadow: 4px 6px 0 rgba(0,0,0,0.35)">
+          <div style="flex: 1; display: grid; border-right: 2px dashed #cfc2a8; padding-right: 5px"><div style="aspect-ratio: 0.92; background: #1e8a5f"></div></div>
+          <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: start">
+            <div style="aspect-ratio: 1; background: #e2631f"></div>
+            <div style="aspect-ratio: 1; background: #2489a3"></div>
+            <div style="aspect-ratio: 1; background: #e8b32c"></div>
+            <div style="aspect-ratio: 1; background: #b04a42"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 24px; margin: 0 0 8px">we build the album</h2>
+        <p style="font-size: 15px; line-height: 1.65; color: #b0a593; margin: 0; max-width: 62ch">Grouped by day, paired by shape and colour. Flip through every spread, swap any photo, regenerate the layout.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: clamp(16px, 2.4vw, 28px); align-items: flex-start; background: #302b28; border-radius: 20px; padding: clamp(20px, 2.6vw, 30px); flex-wrap: wrap">
+      <div style="flex: none; width: 46px; height: 46px; border-radius: 999px; background: #e8a0b4; color: #262220; display: grid; place-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">3</div>
+      <div style="flex: none; width: clamp(128px, 16vw, 168px); aspect-ratio: 1; border-radius: 16px; background: #262220; display: grid; place-items: center; padding: 16px">
+        <div style="display: flex; width: 76%; box-shadow: 5px 7px 0 rgba(0,0,0,0.4); border-radius: 2px 4px 4px 2px; overflow: hidden; transform: rotate(-3deg)">
+          <div style="flex: none; width: 8px; background: #2c4230"></div>
+          <img src="./assets/covers/bali.jpg" alt="Illustrated Bali stamp cover" style="display: block; flex: 1; min-width: 0; width: auto; height: auto">
+        </div>
+      </div>
+      <div>
+        <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 24px; margin: 0 0 8px">name it, and the cover draws itself</h2>
+        <p style="font-size: 15px; line-height: 1.65; color: #b0a593; margin: 0; max-width: 62ch">The country you pick gets a matching illustrated stamp cover, foil-stamped on the spine. Or type your own title.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: clamp(16px, 2.4vw, 28px); align-items: flex-start; background: #302b28; border-radius: 20px; padding: clamp(20px, 2.6vw, 30px); flex-wrap: wrap">
+      <div style="flex: none; width: 46px; height: 46px; border-radius: 999px; background: #1a63b8; color: #f3ead8; display: grid; place-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px">4</div>
+      <div style="flex: none; width: clamp(128px, 16vw, 168px); aspect-ratio: 1; border-radius: 16px; background: #262220; position: relative; overflow: hidden; display: grid; place-items: center">
+        <div style="width: 64%; aspect-ratio: 1.42; background: #f3ead8; position: relative; box-shadow: 5px 7px 0 rgba(0,0,0,0.35); transform: rotate(-3deg)">
+          <div style="position: absolute; inset: 0; clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 6%, 50% 54%, 0 6%); background: #cfc2a8"></div>
+          <div style="position: absolute; top: 7px; right: 7px; width: 26px; height: 30px; background: #c9352c"></div>
+        </div>
+        <div style="position: absolute; bottom: 14%; left: 10%; width: 34%; height: 14px; background: #1a63b8; transform: rotate(4deg)"></div>
+      </div>
+      <div>
+        <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 24px; margin: 0 0 8px">proof, print, post</h2>
+        <p style="font-size: 15px; line-height: 1.65; color: #b0a593; margin: 0; max-width: 62ch">A proof lands in your inbox within hours. Approve it and the book ships in six days.</p>
+      </div>
+    </div>
+  </section>
+
+  
+
+  
+
+  <section style="position: relative; padding: clamp(52px, 7vw, 104px) clamp(20px, 5vw, 64px); background: #c9352c; text-align: center; overflow: hidden">
+    <h2 style="font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: clamp(32px, 4.2vw, 60px); letter-spacing: -0.04em; margin: 0 0 14px; line-height: 0.98">ready when you are</h2>
+    <p style="font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 28px; color: #f3ead8">free to build · pay at checkout</p>
+    <a href="./Atlaso Builder.dc.html" style="display: inline-flex; align-items: center; gap: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; color: #262220; background: #e8b32c; padding: 18px 32px; border-radius: 999px">start my photo book <span style="font-family: 'DM Sans', sans-serif; font-weight: 500">→</span></a>
+  </section>
+
+  <footer style="background: #1c1917; border-top: 1px solid #3d3833; padding: clamp(40px, 5vw, 68px) clamp(20px, 5vw, 64px) 28px">
+    <div style="max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: clamp(24px, 3vw, 48px)">
+      <div style="max-width: 34ch">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; margin-bottom: 12px">atlaso<span style="color: #e2631f">.</span></div>
+        <p style="font-size: 14px; line-height: 1.6; color: #b0a593; margin: 0">Travel photobooks. Drop in your photos, we lay out the album, illustrate the cover and print it &mdash; delivered across India.</p>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">product</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="./Atlaso How It Works.dc.html">how it works</a>
+          <a href="./Atlaso Builder.dc.html">start a book</a>
+          <a href="./Atlaso Account.dc.html">account</a>
+        </nav>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">legal</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="#">privacy policy</a>
+          <a href="#">terms &amp; conditions</a>
+          <a href="#">refunds &amp; cancellation</a>
+          <a href="#">shipping &amp; delivery</a>
+        </nav>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #b0a593; margin-bottom: 14px">support</div>
+        <nav style="display: grid; gap: 10px; font-size: 14px">
+          <a href="#">contact us</a>
+          <a href="mailto:support@myatlaso.com">support@myatlaso.com</a>
+        </nav>
+      </div>
+    </div>
+    <div style="max-width: 1120px; margin: clamp(28px, 3vw, 44px) auto 0; padding-top: 20px; border-top: 1px solid #302b28; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 13px; color: #a89c8a">
+      <span>&copy; 2026 Atlaso. All rights reserved.</span>
+      <span>Made for travellers who keep their memories in print.</span>
+    </div>
+  </footer>
+   <nav style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">make a book</a>
+      <a href="./Atlaso How It Works.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">how it works</a>
+      <a href="./Atlaso Account.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">account</a>
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 800; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #262220; background: #e8b32c; padding: 8px 14px; border-radius: 999px">start ›</a>
+    </nav>
+    <div style="font-size: 13px; color: #8a7f6f">printed in Bristol · © 2026 Atlaso</div>
+      <a href="./Atlaso.dc.html" style="display: flex; align-items: center; gap: 12px" aria-label="Atlaso home">
+      <span style="font-family: Nunito, sans-serif; font-weight: 800; font-size: 27px; letter-spacing: -0.03em; line-height: 1; color: #000000">atlaso<span style="color: #1FC0E2">.</span></span>
+    </a>
+    <nav style="display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap">
+      <a href="#covers">covers</a>
+      <a href="./Atlaso Builder.dc.html">make a book</a>
+      <a href="./Atlaso Builder.dc.html">gift cards</a>
+    </nav>
+    <div style="font-size: 13px; color: #8a7f6f">printed in Bristol · © 2026 Atlaso</div>
+      <nav style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">make a book</a>
+      <a href="./Atlaso How It Works.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">how it works</a>
+      <a href="./Atlaso Account.dc.html" style="font-weight: 500; font-size: 14px; color: #4a443e">account</a>
+      <a href="./Atlaso Builder.dc.html" style="font-weight: 800; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #262220; background: #e8b32c; padding: 8px 14px; border-radius: 999px">start ›</a>
+    </nav>
+    <div style="font-size: 13px; color: #8a7f6f">printed in Bristol · © 2026 Atlaso</div>
+  
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

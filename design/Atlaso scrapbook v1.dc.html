@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Caveat:wght@500;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #fdf4e6; }
+  * { box-sizing: border-box; }
+  a { color: #1f1b16; text-decoration: none; }
+  a:hover { color: #e2452a; }
+  ::selection { background: #f5d77e; }
+  @keyframes atlasoWobble { 0%,100% { transform: rotate(-2deg) } 50% { transform: rotate(2deg) } }
+</style>
+</helmet>
+<div style="font-family: 'Work Sans', system-ui, sans-serif; color: #1f1b16; background: #fdf4e6; background-image: radial-gradient(#e6d5b8 1px, transparent 1px); background-size: 22px 22px; overflow-x: hidden">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px clamp(16px, 3vw, 32px); position: sticky; top: 0; background: #fdf4e6; border-bottom: 3px solid #1f1b16; z-index: 30">
+    <div style="display: flex; align-items: baseline; gap: 10px">
+      <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 28px; letter-spacing: -0.03em; line-height: 1">atlaso<span style="color: #e2452a">.</span></div>
+      <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a; transform: rotate(-4deg)">trips, printed</div>
+    </div>
+    <nav style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 500">
+      <a href="#builder" style="padding: 7px 14px; border-radius: 999px; background: #ffe9b0; border: 2px solid #1f1b16">make a book</a>
+      <a href="#formats" style="padding: 7px 14px; border-radius: 999px; background: #cdeee7; border: 2px solid #1f1b16">formats</a>
+      <a href="#how" style="padding: 7px 14px; border-radius: 999px; background: #f9cdd6; border: 2px solid #1f1b16">how it works</a>
+      <a href="#builder" style="padding: 9px 18px; border-radius: 999px; background: #e2452a; color: #fff; border: 2px solid #1f1b16; font-family: 'Playfair Display', serif; font-weight: 700; box-shadow: 3px 3px 0 #1f1b16">start my book</a>
+    </nav>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: clamp(24px, 4vw, 56px); align-items: center; padding: clamp(36px, 5vw, 76px) clamp(20px, 5vw, 72px); border-bottom: 3px solid #1f1b16">
+    <div style="display: flex; flex-direction: column; gap: 28px">
+      <div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; background: #2f4fd0; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; transform: rotate(-1.5deg); border: 2px solid #1f1b16">37 countries printed this week</div>
+      <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(42px, 5.6vw, 76px); line-height: 1.02; letter-spacing: -0.03em; margin: 0; font-weight: 900; text-wrap: pretty">
+        turn the camera roll<br />into a
+        <span style="display: inline-block; background: #f5b730; padding: 0 10px; transform: rotate(-1.2deg); border: 3px solid #1f1b16">real book</span>
+      </h1>
+      <p style="font-size: 17px; line-height: 1.6; color: #4a4136; margin: 0; max-width: 44ch">Dump in the photos, pick the country, choose a cover. We lay out the spreads, stamp the spine, and post it to your door.</p>
+      <div style="display: flex; align-items: center; gap: 22px; flex-wrap: wrap">
+        <a href="#builder" style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 21px; color: #fff; background: #e2452a; padding: 18px 30px; border-radius: 999px; border: 3px solid #1f1b16; box-shadow: 5px 5px 0 #1f1b16; display: inline-flex; align-items: center; gap: 12px" style-hover="box-shadow: 2px 2px 0 #1f1b16; transform: translate(3px, 3px)">start my photo book <span style="font-family: 'Work Sans', sans-serif; font-weight: 400">&#8594;</span></a>
+        <div style="font-family: 'Caveat', cursive; font-size: 20px; color: #1f8a7a; line-height: 1.3; transform: rotate(-2deg)">from &pound;{{ basePrice }}<br />&amp; it lands in {{ deliveryDays }} days!</div>
+      </div>
+    </div>
+
+    <div style="position: relative; display: grid; place-items: center; min-height: 440px; padding: 20px">
+      <div style="position: absolute; inset: 8%; background: #cdeee7; border: 3px solid #1f1b16; transform: rotate(3deg)"></div>
+      <div style="position: relative; width: 100%; max-width: 560px; display: flex; background: #fff; border: 3px solid #1f1b16; box-shadow: 8px 10px 0 #1f1b16; transform: rotate(-1.5deg); aspect-ratio: 1.5 / 1">
+        <div style="flex: 1; padding: 12px; display: grid; border-right: 2px dashed #d9c7a6">
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-1" shape="rect" placeholder="the big landscape one"></image-slot></div>
+        </div>
+        <div style="flex: 1; padding: 12px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px">
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-2" shape="rect" placeholder="portrait"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-3" shape="rect" placeholder="food"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-4" shape="rect" placeholder="street"></image-slot></div>
+          <div style="position: relative; overflow: hidden"><image-slot id="atlaso-spread-5" shape="rect" placeholder="harbour"></image-slot></div>
+        </div>
+        <div style="position: absolute; top: -14px; left: 26%; width: 96px; height: 28px; background: rgba(245,183,48,0.85); border: 2px solid #1f1b16; transform: rotate(-4deg)"></div>
+        <div style="position: absolute; bottom: -16px; right: 14%; width: 110px; height: 28px; background: rgba(242,184,198,0.9); border: 2px solid #1f1b16; transform: rotate(3deg)"></div>
+      </div>
+      <div style="position: absolute; bottom: 4px; left: 0; font-family: 'Caveat', cursive; font-size: 22px; background: #fff; border: 2px solid #1f1b16; padding: 4px 12px; transform: rotate(-5deg)">day 4 &mdash; Lisbon &#9829;</div>
+      <div style="position: absolute; top: 2px; right: 0; width: 74px; height: 74px; border-radius: 999px; border: 3px dashed #2f4fd0; color: #2f4fd0; display: grid; place-items: center; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; line-height: 1.2; transform: rotate(12deg); background: #fdf4e6">HAND<br />BOUND</div>
+    </div>
+  </section>
+
+  <div style="background: #1f1b16; color: #fdf4e6; padding: 12px 0; border-bottom: 3px solid #1f1b16; overflow: hidden; white-space: nowrap; font-family: 'Playfair Display', serif; font-size: 18px; letter-spacing: 0.06em">
+    <div style="display: flex; gap: 26px; padding-left: 20px">
+      <span>thick matte paper</span><span style="color: #f5b730">&#10022;</span><span>lay-flat spreads</span><span style="color: #cdeee7">&#10022;</span><span>foil-stamped spine</span><span style="color: #f9cdd6">&#10022;</span><span>endpaper map</span><span style="color: #f5b730">&#10022;</span><span>pay only if you love it</span><span style="color: #cdeee7">&#10022;</span><span>thick matte paper</span><span style="color: #f9cdd6">&#10022;</span><span>lay-flat spreads</span>
+    </div>
+  </div>
+
+  <section id="builder" style="padding: clamp(44px, 6vw, 92px) clamp(20px, 5vw, 72px); border-bottom: 3px solid #1f1b16">
+    <div style="max-width: 1180px; margin: 0 auto">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 28px">
+        <h2 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(32px, 3.6vw, 50px); letter-spacing: -0.025em; margin: 0">make your book</h2>
+        <div style="font-family: 'Caveat', cursive; font-size: 21px; color: #e2452a; transform: rotate(-2deg)">four steps, about three minutes</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 26px">
+        <button onClick="{{ go.s1 }}" style="text-align: left; cursor: pointer; font-family: 'Work Sans', sans-serif; border: 3px solid #1f1b16; border-radius: 4px; padding: 14px 16px; background: {{ tab.b1 }}; box-shadow: {{ tab.s1 }}; transform: {{ tab.t1 }}">
+          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7">step one</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; margin-top: 4px">photos</div>
+        </button>
+        <button onClick="{{ go.s2 }}" style="text-align: left; cursor: pointer; font-family: 'Work Sans', sans-serif; border: 3px solid #1f1b16; border-radius: 4px; padding: 14px 16px; background: {{ tab.b2 }}; box-shadow: {{ tab.s2 }}; transform: {{ tab.t2 }}">
+          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7">step two</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; margin-top: 4px">country</div>
+        </button>
+        <button onClick="{{ go.s3 }}" style="text-align: left; cursor: pointer; font-family: 'Work Sans', sans-serif; border: 3px solid #1f1b16; border-radius: 4px; padding: 14px 16px; background: {{ tab.b3 }}; box-shadow: {{ tab.s3 }}; transform: {{ tab.t3 }}">
+          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7">step three</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; margin-top: 4px">cover</div>
+        </button>
+        <button onClick="{{ go.s4 }}" style="text-align: left; cursor: pointer; font-family: 'Work Sans', sans-serif; border: 3px solid #1f1b16; border-radius: 4px; padding: 14px 16px; background: {{ tab.b4 }}; box-shadow: {{ tab.s4 }}; transform: {{ tab.t4 }}">
+          <div style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7">step four</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; margin-top: 4px">print it</div>
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 26px; align-items: start">
+
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: clamp(20px, 3vw, 32px); min-height: 430px">
+
+          <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <h3 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px; margin: 0 0 6px">drop in your trip photos</h3>
+              <p style="font-size: 14px; color: #5b5246; margin: 0 0 20px; line-height: 1.6; max-width: 46ch">Twenty to two hundred works best. We keep the sharp ones, group them by day, and lay out the spreads for you.</p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px">
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(-1.5deg)"><image-slot id="atlaso-up-1" placeholder="drop photo"></image-slot></div>
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(1.2deg)"><image-slot id="atlaso-up-2" placeholder="drop photo"></image-slot></div>
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(-0.8deg)"><image-slot id="atlaso-up-3" placeholder="drop photo"></image-slot></div>
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(2deg)"><image-slot id="atlaso-up-4" placeholder="drop photo"></image-slot></div>
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(-2deg)"><image-slot id="atlaso-up-5" placeholder="drop photo"></image-slot></div>
+                <div style="aspect-ratio: 1; position: relative; border: 2px dashed #c6b596; background: #fdf4e6; transform: rotate(0.9deg)"><image-slot id="atlaso-up-6" placeholder="drop photo"></image-slot></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; flex-wrap: wrap">
+                <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a">or connect a Google Photos album</div>
+                <button onClick="{{ go.s2 }}" style="cursor: pointer; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px; color: #fff; background: #1f1b16; border: 3px solid #1f1b16; padding: 13px 22px; border-radius: 999px">next: pick a country &#8594;</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <h3 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px; margin: 0 0 6px">where was this trip?</h3>
+              <p style="font-size: 14px; color: #5b5246; margin: 0 0 20px; line-height: 1.6; max-width: 46ch">The country sets your title page, the endpaper map, and the little place names under each spread.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px">
+                <sc-for list="{{ countries }}" as="c" hint-placeholder-count="10">
+                  <button onClick="{{ c.pick }}" style="cursor: pointer; font-family: 'Work Sans', sans-serif; font-weight: 500; font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 2px solid #1f1b16; background: {{ c.bg }}; color: #1f1b16; box-shadow: {{ c.shadow }}">{{ c.label }}</button>
+                </sc-for>
+              </div>
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 2px dashed #d9c7a6; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap">
+                <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a">multi-country trip? add a second later</div>
+                <button onClick="{{ go.s3 }}" style="cursor: pointer; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px; color: #fff; background: #1f1b16; border: 3px solid #1f1b16; padding: 13px 22px; border-radius: 999px">next: choose a cover &#8594;</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <h3 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px; margin: 0 0 6px">choose a cover</h3>
+              <p style="font-size: 14px; color: #5b5246; margin: 0 0 20px; line-height: 1.6; max-width: 46ch">All four are hardbound and stitched, with your country and dates foil-stamped on the spine.</p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 14px">
+                <sc-for list="{{ covers }}" as="cv" hint-placeholder-count="4">
+                  <button onClick="{{ cv.pick }}" style="cursor: pointer; font-family: 'Work Sans', sans-serif; text-align: left; padding: 10px; background: #fdf4e6; border: 3px solid #1f1b16; box-shadow: {{ cv.shadow }}; transform: {{ cv.tilt }}">
+                    <div style="aspect-ratio: 1 / 1.18; background: {{ cv.swatch }}; border: 2px solid #1f1b16; display: grid; place-items: center">
+                      <div style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 12px; letter-spacing: 0.16em; color: {{ cv.ink }}">ATLASO</div>
+                    </div>
+                    <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 15px; margin-top: 9px">{{ cv.name }}</div>
+                    <div style="font-size: 12px; color: #7a7060; margin-top: 2px">{{ cv.note }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 2px dashed #d9c7a6; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap">
+                <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a">spine text is free, always</div>
+                <button onClick="{{ go.s4 }}" style="cursor: pointer; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px; color: #fff; background: #1f1b16; border: 3px solid #1f1b16; padding: 13px 22px; border-radius: 999px">next: print it &#8594;</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <h3 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px; margin: 0 0 6px">print it &amp; post it</h3>
+              <p style="font-size: 14px; color: #5b5246; margin: 0 0 20px; line-height: 1.6; max-width: 46ch">Pick a size, check the spreads one last time, and we send it off. Nothing is charged until you hit print.</p>
+              <div style="display: grid; gap: 12px">
+                <sc-for list="{{ sizes }}" as="sz" hint-placeholder-count="3">
+                  <button onClick="{{ sz.pick }}" style="cursor: pointer; font-family: 'Work Sans', sans-serif; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; background: {{ sz.bg }}; border: 3px solid #1f1b16; box-shadow: {{ sz.shadow }}">
+                    <div>
+                      <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 17px">{{ sz.name }}</div>
+                      <div style="font-size: 12px; color: #5b5246; margin-top: 2px">{{ sz.note }}</div>
+                    </div>
+                    <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 20px; white-space: nowrap">&pound;{{ sz.price }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <button onClick="{{ go.s1 }}" style="cursor: pointer; width: 100%; margin-top: 20px; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 19px; color: #fff; background: #e2452a; border: 3px solid #1f1b16; box-shadow: 5px 5px 0 #1f1b16; padding: 16px; border-radius: 999px">print my book &mdash; &pound;{{ total }}</button>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div style="background: #ffe9b0; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: 22px; transform: rotate(0.8deg)">
+            <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; margin-bottom: 14px">your book so far</div>
+            <div style="display: grid; gap: 10px; font-size: 15px">
+              <div style="display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px dashed #c9ab63; padding-bottom: 8px"><span>photos</span><span style="font-weight: 600">{{ photoCount }} added</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px dashed #c9ab63; padding-bottom: 8px"><span>country</span><span style="font-weight: 600">{{ country }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px dashed #c9ab63; padding-bottom: 8px"><span>cover</span><span style="font-weight: 600">{{ cover }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; border-bottom: 2px dashed #c9ab63; padding-bottom: 8px"><span>size</span><span style="font-weight: 600">{{ size }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding-top: 4px"><span style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 18px">total</span><span style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 26px">&pound;{{ total }}</span></div>
+            </div>
+            <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #8a5a1a; margin-top: 12px">free shipping over &pound;60 &#9992;</div>
+          </div>
+
+          <div style="position: relative; background: #fff; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: 14px 14px 40px; transform: rotate(-1.6deg)">
+            <div style="aspect-ratio: 1 / 1; position: relative; overflow: hidden; background: #cdeee7"><image-slot id="atlaso-polaroid" placeholder="your cover photo"></image-slot></div>
+            <div style="font-family: 'Caveat', cursive; font-size: 21px; margin-top: 10px">{{ country }}, {{ tripYear }}</div>
+            <div style="position: absolute; top: -12px; right: 18px; width: 88px; height: 26px; background: rgba(207,238,231,0.9); border: 2px solid #1f1b16; transform: rotate(6deg)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="formats" style="padding: clamp(44px, 6vw, 92px) clamp(20px, 5vw, 72px); border-bottom: 3px solid #1f1b16; background: #cdeee7">
+    <div style="max-width: 1180px; margin: 0 auto">
+      <h2 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -0.025em; margin: 0 0 8px">three formats, one obsession</h2>
+      <p style="font-family: 'Caveat', cursive; font-size: 22px; color: #1f1b16; margin: 0 0 32px">thick paper that doesn't curl &mdash; we tested nine</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px">
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: 22px; transform: rotate(-0.8deg)">
+          <div style="aspect-ratio: 4 / 3; background: #f9cdd6; border: 2px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 30px">15 &times; 15</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 21px; margin-top: 14px">the pocket square</div>
+          <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 6px 0 0">A weekend away, 24 pages, fits in a coat pocket. The one people buy three of.</p>
+          <div style="font-weight: 700; margin-top: 12px">&pound;39</div>
+        </div>
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: 22px; transform: rotate(0.6deg)">
+          <div style="aspect-ratio: 4 / 3; background: #f5b730; border: 2px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 30px">21 &times; 21</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 21px; margin-top: 14px">the trip standard</div>
+          <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 6px 0 0">Two weeks, 48 lay-flat pages, endpaper map of everywhere you slept.</p>
+          <div style="font-weight: 700; margin-top: 12px">&pound;58</div>
+        </div>
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 7px 7px 0 #1f1b16; padding: 22px; transform: rotate(-1.1deg)">
+          <div style="aspect-ratio: 4 / 3; background: #2f4fd0; color: #fff; border: 2px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 30px">30 &times; 24</div>
+          <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 21px; margin-top: 14px">the coffee table</div>
+          <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 6px 0 0">Landscape, 72 pages, linen spine. For the year you went everywhere.</p>
+          <div style="font-weight: 700; margin-top: 12px">&pound;94</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" style="padding: clamp(44px, 6vw, 92px) clamp(20px, 5vw, 72px); border-bottom: 3px solid #1f1b16">
+    <div style="max-width: 1180px; margin: 0 auto">
+      <h2 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(30px, 3.4vw, 46px); letter-spacing: -0.025em; margin: 0 0 32px">how it works</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px">
+        <div style="display: flex; gap: 14px; align-items: flex-start">
+          <div style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #f5b730; border: 3px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; transform: rotate(-6deg)">1</div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px">upload the roll</div>
+            <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 4px 0 0">Drag a folder in. Duplicates and blurry frames get quietly set aside.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: flex-start">
+          <div style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #cdeee7; border: 3px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; transform: rotate(5deg)">2</div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px">pick the country</div>
+            <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 4px 0 0">We read the photo locations and draw the route across the endpapers.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: flex-start">
+          <div style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #f9cdd6; border: 3px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; transform: rotate(-4deg)">3</div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px">choose the cover</div>
+            <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 4px 0 0">Linen, canvas, or your own photo wrapped edge to edge.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: flex-start">
+          <div style="flex: none; width: 44px; height: 44px; border-radius: 999px; background: #e2452a; color: #fff; border: 3px solid #1f1b16; display: grid; place-items: center; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px; transform: rotate(7deg)">4</div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 19px">it arrives</div>
+            <p style="font-size: 14px; line-height: 1.6; color: #5b5246; margin: 4px 0 0">Printed and stitched in {{ deliveryDays }} days, wrapped in tissue paper.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 48px">
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 6px 6px 0 #1f1b16; padding: 22px; transform: rotate(-0.7deg)">
+          <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 19px; line-height: 1.45; margin: 0">&ldquo;Six years of photos sat in a folder called TEMP. Now they&rsquo;re on the shelf.&rdquo;</p>
+          <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a; margin-top: 12px">&mdash; Priya, Vietnam &amp; Laos</div>
+        </div>
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 6px 6px 0 #1f1b16; padding: 22px; transform: rotate(0.9deg)">
+          <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 19px; line-height: 1.45; margin: 0">&ldquo;My dad has never once opened an album link. He has read this twice.&rdquo;</p>
+          <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a; margin-top: 12px">&mdash; Tom, Peru</div>
+        </div>
+        <div style="background: #fffdf7; border: 3px solid #1f1b16; box-shadow: 6px 6px 0 #1f1b16; padding: 22px; transform: rotate(-1.2deg)">
+          <p style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 19px; line-height: 1.45; margin: 0">&ldquo;Took three minutes. The map on the inside cover made me cry a bit.&rdquo;</p>
+          <div style="font-family: 'Caveat', cursive; font-size: 19px; color: #1f8a7a; margin-top: 12px">&mdash; Hana, Portugal</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: clamp(48px, 7vw, 100px) clamp(20px, 5vw, 72px); background: #e2452a; color: #fff; border-bottom: 3px solid #1f1b16; text-align: center">
+    <h2 style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(34px, 4.4vw, 62px); letter-spacing: -0.03em; margin: 0 0 14px; line-height: 1.05">that trip deserves<br />better than a phone</h2>
+    <p style="font-family: 'Caveat', cursive; font-size: 24px; margin: 0 0 30px">free layout &middot; pay only if you love it</p>
+    <a href="#builder" style="display: inline-flex; align-items: center; gap: 12px; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 21px; color: #1f1b16; background: #f5b730; padding: 18px 32px; border-radius: 999px; border: 3px solid #1f1b16; box-shadow: 6px 6px 0 #1f1b16">start my photo book <span style="font-family: 'Work Sans', sans-serif; font-weight: 400">&#8594;</span></a>
+  </section>
+
+  <footer style="padding: 34px clamp(20px, 5vw, 72px); display: flex; flex-wrap: wrap; gap: 18px; align-items: center; justify-content: space-between; background: #1f1b16; color: #fdf4e6">
+    <div style="font-family: 'Playfair Display', serif; font-weight: 900; font-size: 24px">atlaso<span style="color: #f5b730">.</span></div>
+    <nav style="display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap">
+      <a href="#formats" style="color: #fdf4e6">formats</a>
+      <a href="#how" style="color: #fdf4e6">how it works</a>
+      <a href="#builder" style="color: #fdf4e6">make a book</a>
+      <a href="#builder" style="color: #fdf4e6">gift cards</a>
+    </nav>
+    <div style="font-size: 13px; color: #a49882">printed in Bristol &middot; &copy; 2026 Atlaso</div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;basePrice&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:39,&quot;tsType&quot;:&quot;number&quot;,&quot;unit&quot;:&quot;£&quot;,&quot;section&quot;:&quot;Pricing&quot;},&quot;deliveryDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:2,&quot;max&quot;:21,&quot;section&quot;:&quot;Pricing&quot;},&quot;photoCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:128,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Demo book&quot;},&quot;tripYear&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2026&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo book&quot;}}">
+class Component extends DCLogic {
+  state = { step: 1, country: "Portugal", cover: "Linen", size: "21 × 21" };
+
+  renderVals() {
+    const p = this.props;
+    const S = this.state;
+    const set = (k, v) => () => this.setState({ [k]: v });
+    const palette = ["#ffe9b0", "#cdeee7", "#f9cdd6", "#dfe3ff", "#ffd9c2"];
+
+    const countryList = ["Portugal", "Japan", "Morocco", "Iceland", "Vietnam", "Peru", "Italy", "Kenya", "Norway", "Mexico"];
+    const countries = countryList.map((name, i) => ({
+      label: name,
+      name,
+      bg: S.country === name ? "#f5b730" : palette[i % palette.length],
+      shadow: S.country === name ? "3px 3px 0 #1f1b16" : "none",
+      pick: set("country", name)
+    }));
+
+    const coverDefs = [
+      { name: "Linen", note: "natural, foil title", swatch: "#e8ddc6", ink: "#1f1b16" },
+      { name: "Canvas", note: "deep teal weave", swatch: "#1f8a7a", ink: "#fffdf7" },
+      { name: "Photo wrap", note: "your shot, edge to edge", swatch: "linear-gradient(135deg,#f5b730,#e2452a)", ink: "#fffdf7" },
+      { name: "Ink board", note: "matte black, gold foil", swatch: "#211d19", ink: "#f5b730" }
+    ];
+    const covers = coverDefs.map(c => ({
+      ...c,
+      shadow: S.cover === c.name ? "5px 5px 0 #e2452a" : "3px 3px 0 #1f1b16",
+      tilt: S.cover === c.name ? "rotate(-2deg)" : "rotate(0deg)",
+      pick: set("cover", c.name)
+    }));
+
+    const sizeDefs = [
+      { name: "15 × 15", note: "24 pages · pocket square", price: 39 },
+      { name: "21 × 21", note: "48 lay-flat pages · the standard", price: 58 },
+      { name: "30 × 24", note: "72 pages · linen spine", price: 94 }
+    ];
+    const sizes = sizeDefs.map(s => ({
+      ...s,
+      bg: S.size === s.name ? "#ffe9b0" : "#fffdf7",
+      shadow: S.size === s.name ? "5px 5px 0 #e2452a" : "3px 3px 0 #1f1b16",
+      pick: set("size", s.name)
+    }));
+
+    const tabColors = ["#ffe9b0", "#cdeee7", "#f9cdd6", "#dfe3ff"];
+    const tab = {};
+    for (let i = 1; i <= 4; i++) {
+      const on = S.step === i;
+      tab["b" + i] = on ? tabColors[i - 1] : "#fffdf7";
+      tab["s" + i] = on ? "5px 5px 0 #1f1b16" : "2px 2px 0 #1f1b16";
+      tab["t" + i] = on ? "rotate(-1.2deg)" : "rotate(0deg)";
+    }
+
+    const active = sizeDefs.find(s => s.name === S.size) || sizeDefs[1];
+
+    return {
+      basePrice: p.basePrice ?? 39,
+      deliveryDays: p.deliveryDays ?? 6,
+      tripYear: p.tripYear ?? "2026",
+      photoCount: p.photoCount ?? 128,
+      country: S.country,
+      cover: S.cover,
+      size: S.size,
+      total: active.price + (S.cover === "Photo wrap" ? 8 : 0),
+      countries, covers, sizes, tab,
+      isStep1: S.step === 1,
+      isStep2: S.step === 2,
+      isStep3: S.step === 3,
+      isStep4: S.step === 4,
+      go: { s1: set("step", 1), s2: set("step", 2), s3: set("step", 3), s4: set("step", 4) }
+    };
+  }
+}
+</script>
+</body>
+</html>
