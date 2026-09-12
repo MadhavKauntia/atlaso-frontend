@@ -38,7 +38,7 @@ export default function LandingPage() {
               start my photo book <span>→</span>
             </Link>
             <div className={s.ctaNote}>
-              free to build<br />ships in 6 days
+              free to build<br />ships in 3 days
             </div>
           </div>
         </div>
@@ -65,15 +65,11 @@ export default function LandingPage() {
               </div>
             </div>
             <div className={s.tapeTop} />
-            <div className={s.tapeBottom} />
           </div>
 
           <div className={s.postcard}>
             <img src="/assets/postcard-bali.png" alt="Bali postcard cover illustration" />
           </div>
-          <div className={s.stamp} />
-          <div className={s.dayPill}>day 4 — Lisbon</div>
-          <div className={s.layflat}>LAY<br />FLAT<br />★</div>
         </div>
       </section>
 

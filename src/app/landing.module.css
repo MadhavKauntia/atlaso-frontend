@@ -9,11 +9,6 @@
 
 ::selection { background: var(--sb-orange); color: var(--sb-cream); }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
-  50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
-}
-
 /* ─── Hero ─── */
 .hero {
   display: grid;
@@ -125,16 +120,6 @@
   background: var(--sb-gold);
   transform: rotate(-4deg);
 }
-.tapeBottom {
-  position: absolute;
-  bottom: -14px;
-  right: 16%;
-  width: 104px;
-  height: 26px;
-  background: var(--sb-blue);
-  transform: rotate(3deg);
-}
-
 .postcard {
   position: absolute;
   bottom: 0;
@@ -147,59 +132,6 @@
   z-index: 3;
 }
 .postcard img { display: block; width: 100%; height: auto; }
-
-.stamp {
-  position: absolute;
-  top: 2%;
-  right: 0;
-  width: clamp(64px, 15%, 92px);
-  aspect-ratio: 1;
-  background:
-    radial-gradient(circle at 50% 22%, var(--sb-orange) 26%, transparent 27%),
-    radial-gradient(circle at 78% 50%, var(--sb-orange) 26%, transparent 27%),
-    radial-gradient(circle at 50% 78%, var(--sb-orange) 26%, transparent 27%),
-    radial-gradient(circle at 22% 50%, var(--sb-orange) 26%, transparent 27%),
-    radial-gradient(circle at 50% 50%, var(--sb-orange) 30%, transparent 31%);
-  --r: -8deg;
-  animation: float 7s ease-in-out infinite;
-  z-index: 2;
-}
-
-.dayPill {
-  position: absolute;
-  bottom: 6%;
-  right: 2%;
-  font-family: var(--font-bricolage), sans-serif;
-  font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--sb-ink);
-  background: var(--sb-cream);
-  padding: 7px 12px;
-  border-radius: 999px;
-  transform: rotate(-7deg);
-  z-index: 3;
-}
-
-.layflat {
-  position: absolute;
-  top: 10%;
-  left: 0;
-  width: clamp(72px, 17%, 100px);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  background: var(--sb-green);
-  display: grid;
-  place-items: center;
-  text-align: center;
-  font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  line-height: 1.35;
-  color: var(--sb-cream);
-  transform: rotate(9deg);
-  z-index: 3;
-}
 
 /* ─── Ticker ─── */
 .ticker {
