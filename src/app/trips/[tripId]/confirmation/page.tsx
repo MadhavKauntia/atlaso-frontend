@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getBook, getBookByTripId, type Book } from "@/lib/api";
+import { getBook, getBookByTripId, downloadReceipt, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
 import Link from "next/link";
@@ -45,6 +45,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
 
   const [book, setBook] = useState<Book | null>(null);
   const [copied, setCopied] = useState(false);
+  const [receiptBusy, setReceiptBusy] = useState(false);
 
   useEffect(() => {
     const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
@@ -171,10 +172,16 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
           View order details →
         </button>
         <button
-          onClick={() => {}}
-          style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999, fontWeight: 800, fontSize: 14, background: "transparent", color: "var(--sb-gold)", border: "1px solid #5a5249", cursor: "pointer", fontFamily: "var(--font-bricolage), sans-serif" }}
+          onClick={() => {
+            setReceiptBusy(true);
+            downloadReceipt(tripId)
+              .catch(() => alert("Couldn't download your receipt. Please try again in a moment."))
+              .finally(() => setReceiptBusy(false));
+          }}
+          disabled={receiptBusy}
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999, fontWeight: 800, fontSize: 14, background: "transparent", color: "var(--sb-gold)", border: "1px solid #5a5249", cursor: receiptBusy ? "not-allowed" : "pointer", opacity: receiptBusy ? 0.6 : 1, fontFamily: "var(--font-bricolage), sans-serif" }}
         >
-          Download PDF preview
+          {receiptBusy ? "Preparing…" : "Download receipt"}
         </button>
       </div>
 

@@ -152,6 +152,7 @@ export async function verifyRazorpayPayment(payload: {
   razorpayPaymentId: string;
   razorpaySignature: string;
   tripId?: string;
+  quantity?: number;
 }): Promise<{ verified: boolean }> {
   const res = await apiFetch(`${BASE}/payments/verify`, {
     method: "POST",
@@ -370,6 +371,21 @@ export async function exportBook(book: Book): Promise<Book> {
 
 export function getBookPdfUrl(bookId: string): string {
   return `${BASE}/books/${bookId}/pdf`;
+}
+
+/** Downloads the payment receipt PDF for a trip's order (auth-protected). */
+export async function downloadReceipt(tripId: string): Promise<void> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/receipt`);
+  if (!res.ok) throw new Error(await res.text());
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `atlaso-receipt.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export async function updateSlotOffset(

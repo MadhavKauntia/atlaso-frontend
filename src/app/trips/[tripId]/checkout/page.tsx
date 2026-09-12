@@ -90,6 +90,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
               tripId,
+              quantity: qty,
             });
             if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice — please contact support.");
             router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
