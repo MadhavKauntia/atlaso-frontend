@@ -192,7 +192,21 @@ export default function AccountPage() {
           flex: 1,
         }}
       >
-        {loading && <p style={{ color: "var(--sb-muted)", fontSize: 15 }}>Loading…</p>}
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+            <span
+              style={{
+                width: 34,
+                height: 34,
+                border: "3px solid var(--sb-panel-2)",
+                borderTopColor: "var(--sb-gold)",
+                borderRadius: "50%",
+                animation: "accountSpin 0.8s linear infinite",
+              }}
+            />
+            <style>{`@keyframes accountSpin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
 
         {!loading && !hasAny && (
           <div
