@@ -1,140 +1,124 @@
-"use client";
-
 import Link from "next/link";
-import Nav from "@/components/Nav";
+import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import s from "./landing.module.css";
+
+const TICKER = [
+  ["high quality photo paper", "var(--sb-red)"],
+  ["hard-bound, coffee table book", "var(--sb-green)"],
+  ["layout generated instantly", "var(--sb-orange)"],
+  ["a cover for every country", "var(--sb-blue)"],
+  ["7-10 day delivery", "var(--sb-gold)"],
+];
+
+const COVERS = [
+  { art: "bali", spine: "#2c4230", alt: "Bali photobook cover", tf: "rotate(-5deg) translateY(18px)" },
+  { art: "italy", spine: "#f3b53f", alt: "Italy photobook cover", tf: "rotate(3deg) translateY(-14px)" },
+  { art: "thailand", spine: "#2ba3bd", alt: "Thailand photobook cover", tf: "rotate(-2deg) translateY(26px)" },
+  { art: "switzerland", spine: "#41599c", alt: "Switzerland photobook cover", tf: "rotate(6deg) translateY(-6px)" },
+];
 
 export default function LandingPage() {
   return (
     <div className={s.root}>
-      <Nav />
+      <SiteHeader />
 
       <section className={s.hero}>
-        <div className={`${s.corner} ${s.cornerTl}`}>
-          North<span className={s.cornerCoord}>48.8566° N</span>
-        </div>
-        <div className={`${s.corner} ${s.cornerTr}`}>
-          East<span className={s.cornerCoord}>2.3522° E</span>
-        </div>
-        <div className={`${s.corner} ${s.cornerBl}`}>
-          Est. 2025<span className={s.cornerCoord}>Vol. I</span>
-        </div>
-        <div className={`${s.corner} ${s.cornerBr}`}>
-          Chapter 01<span className={s.cornerCoord}>The beginning</span>
-        </div>
-
-        <div className={`${s.heroContent} ${s.stagger}`}>
-          <div className={s.eyebrow}>
-            <span className={s.eyebrowDot} />
-            AI-crafted travel photobooks
-          </div>
-
+        <div className={s.heroCopy}>
           <h1 className={s.h1}>
-            Your trip,<br />
-            <span className={s.italic}>bound</span> into a<br />
-            <span className={s.underline}>keepsake.</span>
+            your camera roll<br />
+            <em>is a photo book</em><br />
+            waiting to happen
           </h1>
-
           <p className={s.lede}>
-            Drop in the photos from your travels. Our AI curates, sequences, and lays them out
-            like a proper travel editor would.{" "}
-            <strong>You review, we print, it arrives at your door</strong> — a real, tactile
-            book of the trip you took.
+            Dump in the photos, pick the country. We lay out, illustrate and print it.
           </p>
-
           <div className={s.ctaRow}>
             <Link href="/create" className={s.cta}>
-              <span>Start your photobook</span>
-              <span className={s.ctaArrow}>→</span>
+              start my photo book <span>→</span>
             </Link>
             <div className={s.ctaNote}>
-              Free to preview<span className={s.ctaNoteSep}>·</span>Ships across India
-            </div>
-          </div>
-
-          <div className={s.heroMeta}>
-            <div className={s.metaItem}>
-              <span className={s.metaNum}>42k+</span>
-              <span className={s.metaLabel}>Books printed</span>
-            </div>
-            <div className={s.metaItem}>
-              <span className={s.metaNum}>9 min</span>
-              <span className={s.metaLabel}>Avg. to first draft</span>
-            </div>
-            <div className={s.metaItem}>
-              <span className={s.metaNum}>4.9★</span>
-              <span className={s.metaLabel}>From 2,100 reviews</span>
+              free to build<br />ships in 6 days
             </div>
           </div>
         </div>
 
         <div className={s.heroVisual}>
-          <div className={`${s.annotation} ${s.ann1}`}>
-            an evening in Lisbon
-            <span className={s.annotationArrow}> ↘</span>
+          <div className={s.spread}>
+            <div className={s.spreadLeft}>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/covers/greece.jpg" alt="A landscape from the trip" />
+              </div>
+            </div>
+            <div className={s.spreadRight}>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/covers/japan.jpg" alt="A portrait from the trip" />
+              </div>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/covers/vietnam.jpg" alt="Food from the trip" />
+              </div>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/covers/srilanka.jpg" alt="A street from the trip" />
+              </div>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/covers/thailand.jpg" alt="A harbour from the trip" />
+              </div>
+            </div>
+            <div className={s.tapeTop} />
+            <div className={s.tapeBottom} />
           </div>
 
-          <div className={`${s.polaroid} ${s.p1}`}>
-            <div className={`${s.polaroidImg} ${s.imgMountains}`} />
-            <div className={s.polaroidCaption}>Dolomites, Italy — July</div>
+          <div className={s.postcard}>
+            <img src="/assets/postcard-bali.png" alt="Bali postcard cover illustration" />
           </div>
-
-          <div className={`${s.polaroid} ${s.p2}`}>
-            <div className={`${s.polaroidImg} ${s.imgOcean}`} />
-            <div className={s.polaroidCaption}>Algarve coast, Portugal</div>
-          </div>
-
-          <div className={`${s.polaroid} ${s.p3}`}>
-            <div className={`${s.polaroidImg} ${s.imgCity}`} />
-            <div className={s.polaroidCaption}>Lisbon, at dusk</div>
-          </div>
-
-          <div className={`${s.polaroid} ${s.p4}`}>
-            <div className={`${s.polaroidImg} ${s.imgForest}`} />
-            <div className={s.polaroidCaption}>Harz forest, Germany</div>
-          </div>
-
-          <div className={s.sticker}>
-            Hand-<br />printed<br />★ no. 001
-          </div>
-
-          <div className={`${s.annotation} ${s.ann2}`}>
-            <span className={s.annotationArrow}>↗</span><br />
-            your best shots,<br />
-            curated.
-          </div>
+          <div className={s.stamp} />
+          <div className={s.dayPill}>day 4 — Lisbon</div>
+          <div className={s.layflat}>LAY<br />FLAT<br />★</div>
         </div>
       </section>
 
       <div className={s.ticker}>
         <div className={s.tickerTrack}>
-          <div className={s.tickerItem}>
-            <span>Drop in photos</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>AI drafts the story</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>You review &amp; edit</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>We print on archival paper</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>Ships in 7 days</span>
-            <span className={s.tickerSep}>✦</span>
-          </div>
-          <div className={s.tickerItem} aria-hidden="true">
-            <span>Drop in photos</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>AI drafts the story</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>You review &amp; edit</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>We print on archival paper</span>
-            <span className={s.tickerSep}>✦</span>
-            <span>Ships in 7 days</span>
-            <span className={s.tickerSep}>✦</span>
-          </div>
+          {[0, 1].map((dup) =>
+            TICKER.map(([label, color], i) => (
+              <span key={`${dup}-${i}`} aria-hidden={dup === 1 ? "true" : undefined}>
+                {label}
+                <span style={{ color: color as string, marginLeft: 22 }}>✦</span>
+              </span>
+            ))
+          )}
         </div>
       </div>
+
+      <section className={s.covers}>
+        <div className={s.coversHead}>
+          <h2>your keepsake for every trip</h2>
+          <p>21 × 21cm, 48 lay-flat pages, hardbound</p>
+        </div>
+        <div className={s.coversRow}>
+          {COVERS.map((c) => (
+            <figure key={c.art} className={s.coverFig} style={{ "--tf": c.tf } as React.CSSProperties}>
+              <div className={s.coverBook}>
+                <div className={s.coverSpine} style={{ background: c.spine }} />
+                <img className={s.coverImg} src={`/assets/covers/${c.art}.jpg`} alt={c.alt} />
+              </div>
+            </figure>
+          ))}
+        </div>
+        <div className={s.coversCta}>
+          <Link href="/create">make mine →</Link>
+        </div>
+      </section>
+
+      <section className={s.closing}>
+        <h2>
+          that trip deserves<br />better than a phone
+        </h2>
+        <p className={s.closingNote}>free layout · pay only if you love it</p>
+        <Link href="/create" className={s.closingCta}>
+          start my photo book <span>→</span>
+        </Link>
+      </section>
 
       <Footer />
     </div>

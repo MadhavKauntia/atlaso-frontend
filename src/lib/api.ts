@@ -1,5 +1,6 @@
 import { getToken, removeToken } from "@/lib/auth";
 import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
+import { renderCountryCoverPng } from "@/lib/covers/renderCountryCover";
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
@@ -69,6 +70,7 @@ export interface Book {
   subtitle: string | null;
   coverTemplateId: string | null;
   coverPaletteId: string | null;
+  coverCountry: string | null;
   status: string;
   generatedAt: string;
   pages: PageData[];
@@ -191,6 +193,18 @@ export async function saveCoverConfig(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ templateId, paletteId }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/** Persists the chosen country (illustrated stamp cover) on the book. */
+export async function saveCoverCountry(bookId: string, country: string): Promise<Book> {
+  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverCountry: country };
+  const res = await apiFetch(`${BASE}/books/${bookId}/cover`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ country }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -339,31 +353,10 @@ export async function getBookByTripId(tripId: string): Promise<Book> {
 export async function exportBook(book: Book): Promise<Book> {
   let coverImageBase64: string | undefined;
 
-  if (book.coverTemplateId && book.coverPaletteId) {
-    try {
-      const coverRes = await fetch("/api/covers/export?format=png", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: book.coverTemplateId,
-          paletteId: book.coverPaletteId,
-          title: book.title,
-          subtitle: book.subtitle ?? "",
-          volumeNumber: book.version,
-        }),
-      });
-      if (coverRes.ok) {
-        const blob = await coverRes.blob();
-        coverImageBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(",")[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      }
-    } catch {
-      // Fall through — backend will use plain text cover
-    }
+  try {
+    coverImageBase64 = await renderCountryCoverPng(book.coverCountry, book.title);
+  } catch {
+    // Fall through — backend will use plain text cover
   }
 
   const res = await apiFetch(`${BASE}/books/${book.id}/export`, {

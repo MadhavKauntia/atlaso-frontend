@@ -17,7 +17,6 @@ import {
 } from "@/lib/api";
 import { convertHeicBlob } from "@/lib/heic/heicPool";
 
-const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
 
@@ -264,13 +263,11 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 120, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
-
+    <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", paddingBottom: 120, fontFamily: "var(--font-dm-sans), sans-serif" }}>
       <FlowTopbar
         currentStep={1}
         rightSlot={
-          <span style={{ fontFamily: "var(--font-fraunces), serif", fontStyle: "italic", opacity: 0.7 }}>
+          <span style={{ fontFamily: "var(--font-dm-sans), sans-serif", color: "var(--sb-muted)" }}>
             Your work is saved as you go
           </span>
         }
@@ -278,13 +275,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
       <div className="flow-page-inner">
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 600, color: "var(--sb-gold)", marginBottom: 14, fontFamily: "var(--font-bricolage), sans-serif" }}>
             Step 1 of 4
           </div>
-          <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 14, color: "var(--ink)" }}>
-            Drop in your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>photos</span>.
+          <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 14, color: "var(--sb-cream)" }}>
+            add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
-          <p style={{ fontSize: 17, color: "var(--ink-soft)", maxWidth: 540, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
             Upload the shots from your trip. We'll arrange them into a 24-page book. You need at least 24 photos to get started — more gives you richer, fuller pages.
           </p>
         </div>
@@ -292,53 +289,54 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         <div
           {...getRootProps()}
           style={{
-            background: "#ffffff",
-            border: `2px dashed ${isDragActive ? "var(--blue)" : "var(--sky)"}`,
-            borderRadius: 16,
+            background: "var(--sb-bg-deep)",
+            border: `2px dashed ${isDragActive ? "var(--sb-gold)" : "#5a5249"}`,
+            borderRadius: 20,
             padding: "72px 32px",
             textAlign: "center",
             cursor: uploading ? "not-allowed" : "pointer",
             transition: "background 0.2s, border-color 0.2s",
-            ...(isDragActive && { background: "rgba(111,163,232,0.08)", borderColor: "var(--blue)" }),
+            ...(isDragActive && { background: "var(--sb-panel)", borderColor: "var(--sb-gold)" }),
           }}
         >
           <input {...getInputProps()} />
           <div style={{
             width: 56, height: 56, margin: "0 auto 20px",
-            background: "var(--wash)", borderRadius: "50%",
+            background: "var(--sb-panel)", borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--blue)", fontSize: 24,
+            color: "var(--sb-gold)", fontSize: 24,
           }}>↑</div>
-          <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 28, fontWeight: 400, marginBottom: 8, color: "var(--ink)" }}>
+          <div style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8, color: "var(--sb-cream)" }}>
             {isDragActive ? "Drop to upload" : "Drop photos here"}
           </div>
-          <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>
-            or browse your device · JPG, PNG, HEIC up to 25 MB each
+          <div style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 24 }}>
+            or browse your device · JPG, PNG or HEIC up to 25 MB each
           </div>
           <span style={{
-            display: "inline-block", padding: "12px 24px",
-            background: "var(--ink)", color: "#ffffff",
-            borderRadius: 100, fontWeight: 500, fontSize: 14,
+            display: "inline-block", padding: "14px 26px",
+            background: "var(--sb-gold)", color: "var(--sb-ink)",
+            borderRadius: 999, fontWeight: 800, fontSize: 14,
+            fontFamily: "var(--font-bricolage), sans-serif",
             pointerEvents: "none",
           }}>
-            Browse files
+            choose photos
           </span>
-          <div style={{ marginTop: 20, fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>
+          <div style={{ marginTop: 20, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
             We'll read the date and location from each photo to help build your story
           </div>
         </div>
 
         {error && (
-          <p style={{ color: "#b91c1c", fontSize: 14, marginTop: 12 }}>{error}</p>
+          <p style={{ color: "var(--sb-red)", fontSize: 14, marginTop: 12 }}>{error}</p>
         )}
 
         {totalCount > 0 && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "40px 0 16px" }}>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 22, fontWeight: 500, color: "var(--ink)" }}>
-                <span style={{ color: "var(--blue)", fontWeight: 600 }}>{totalCount}</span> photos uploaded
+              <div style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", color: "var(--sb-cream)" }}>
+                <span style={{ color: "var(--sb-gold)", fontWeight: 800 }}>{totalCount}</span> photos uploaded
               </div>
-              <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+              <div style={{ fontSize: 13, color: "var(--sb-muted)" }}>
                 {totalCount < 24
                   ? `${24 - totalCount} more needed to continue`
                   : totalCount < 48
@@ -383,10 +381,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           ) : inferred ? (
             <span>
               From what we can tell, your photos were taken around{" "}
-              <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>{inferred.place}</strong>
+              <strong style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, color: "var(--sb-cream)" }}>{inferred.place}</strong>
               {inferred.startDate && (
                 <> in{" "}
-                  <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)" }}>
+                  <strong style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, color: "var(--sb-cream)" }}>
                     {inferred.startDate}
                   </strong>
                 </>
@@ -403,17 +401,17 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             style={{
               display: "inline-flex", alignItems: "center", gap: 10,
               padding: "14px 26px",
-              background: canContinue ? "var(--ink)" : "rgba(10,26,58,0.25)",
-              color: "#ffffff", border: "none", borderRadius: 100,
-              fontWeight: 500, fontSize: 14, cursor: canContinue ? "pointer" : "not-allowed",
-              fontFamily: "inherit", transition: "transform 0.2s",
+              background: canContinue ? "var(--sb-red)" : "var(--sb-panel-2)",
+              color: canContinue ? "var(--sb-cream)" : "#8a7f6f", border: "none", borderRadius: 999,
+              fontWeight: 800, fontSize: 14, cursor: canContinue ? "pointer" : "not-allowed",
+              fontFamily: "var(--font-bricolage), sans-serif", transition: "transform 0.2s",
             }}
             onMouseEnter={(e) => canContinue && ((e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "")}
           >
             Continue
             <span style={{
-              width: 24, height: 24, background: "white", color: "var(--ink)",
+              width: 24, height: 24, background: canContinue ? "var(--sb-cream)" : "#8a7f6f", color: "var(--sb-red)",
               borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center",
               fontSize: 12,
             }}>→</span>
@@ -436,8 +434,8 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
   return (
     <div
       style={{
-        aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
-        background: "var(--muted, #e6ecf5)",
+        aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
+        background: "var(--sb-panel)",
         animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
       }}
     >
@@ -453,7 +451,7 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
         style={{
           position: "absolute", top: 6, right: 6,
           width: 22, height: 22, borderRadius: "50%",
-          background: "rgba(10,26,58,0.7)", color: "white",
+          background: "rgba(28,25,23,0.78)", color: "var(--sb-cream)",
           border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
@@ -467,8 +465,8 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
 function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
   return (
     <div style={{
-      aspectRatio: "1", borderRadius: 8, overflow: "hidden", position: "relative",
-      background: "var(--muted, #e6ecf5)",
+      aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
+      background: "var(--sb-panel)",
     }}>
       {card.previewUrl && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -476,30 +474,30 @@ function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: s
       )}
       {card.error ? (
         <div style={{
-          position: "absolute", inset: 0, background: "rgba(185,28,28,0.8)",
+          position: "absolute", inset: 0, background: "rgba(201,53,44,0.82)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
         }}>
-          <span style={{ color: "white", fontSize: 18 }}>✕</span>
+          <span style={{ color: "var(--sb-cream)", fontSize: 18 }}>✕</span>
           <button onClick={() => onDismiss(card.tempId)} style={{
-            background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)",
-            borderRadius: 4, color: "white", fontSize: 10, padding: "3px 8px", cursor: "pointer",
+            background: "rgba(243,234,216,0.2)", border: "1px solid rgba(243,234,216,0.45)",
+            borderRadius: 6, color: "var(--sb-cream)", fontSize: 10, padding: "3px 8px", cursor: "pointer",
           }}>Dismiss</button>
         </div>
       ) : card.converting ? (
         <div style={{
           position: "absolute", inset: 0,
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-          background: "rgba(230,236,245,0.92)",
+          background: "rgba(28,25,23,0.82)",
         }}>
-          <div style={{ width: 20, height: 20, border: "2px solid var(--blue)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <span style={{ fontSize: 10, fontWeight: 500, color: "var(--ink-soft)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Converting</span>
+          <div style={{ width: 20, height: 20, border: "2px solid var(--sb-gold)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--sb-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Converting</span>
         </div>
       ) : (
         <>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "rgba(28,25,23,0.55)" }} />
           <div style={{
             position: "absolute", bottom: 0, left: 0, height: 3,
-            width: `${card.progress || 20}%`, background: "var(--blue)", transition: "width 0.1s",
+            width: `${card.progress || 20}%`, background: "var(--sb-gold)", transition: "width 0.1s",
           }} />
         </>
       )}

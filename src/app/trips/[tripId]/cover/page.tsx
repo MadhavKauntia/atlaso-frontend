@@ -1,27 +1,22 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
-import CoverRenderer from "@/components/covers/CoverRenderer";
-import { TEMPLATES, ArchIllustration, SunIllustration, RidgeIllustration } from "@/lib/covers/templates";
-import { PAIRINGS, type CoverPairing } from "@/lib/covers/palette";
-import { sanitizeCoverTitle, sanitizeCoverSubtitle } from "@/lib/covers/text-utils";
-import { suggestTemplate } from "@/lib/covers/suggest";
+import CountryCover from "@/components/covers/CountryCover";
+import { COUNTRIES } from "@/lib/covers/countries";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { getToken, setToken } from "@/lib/auth";
-import { googleAuth, getTrip, getBook, saveCoverConfig, updateTrip, claimTrip } from "@/lib/api";
-import type { CoverTemplate } from "@/lib/covers/types";
+import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib/api";
 
-const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
-
-const TEMPLATE_LIST = Object.values(TEMPLATES);
-const ILLUSTRATION_MAP: Record<string, React.ComponentType<{ accentColor: string; backgroundColor: string }>> = {
-  archway: ArchIllustration,
-  "rising-sun": SunIllustration,
-  ridgeline: RidgeIllustration,
-};
+/** Best-effort: preselect a country when we inferred a place from the photos. */
+function matchCountry(...hints: (string | undefined)[]): string | null {
+  const hay = hints.filter(Boolean).join(" ").toLowerCase();
+  if (!hay) return null;
+  const hit = COUNTRIES.find((c) => hay.includes(c.name.toLowerCase()) || hay.includes(c.slug));
+  return hit?.slug ?? null;
+}
 
 export default function CoverPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
@@ -29,12 +24,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const bookId = searchParams.get("bookId") ?? null;
   const router = useRouter();
 
-  const [destination, setDestination] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState(TEMPLATE_LIST[0].id);
-  const [selectedPaletteId, setSelectedPaletteId] = useState(TEMPLATE_LIST[0].paletteId);
-  const [userPickedStyle, setUserPickedStyle] = useState(false);
-  const [suggestToast, setSuggestToast] = useState(false);
+  const [title, setTitle] = useState("");
+  const [country, setCountry] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [inferred, setInferred] = useState<{ place: string; country?: string; coordStr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,57 +35,36 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [showLoginModal, setShowLoginModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const template: CoverTemplate = TEMPLATES[selectedTemplateId] ?? TEMPLATE_LIST[0];
-  const pairing: CoverPairing = PAIRINGS[selectedPaletteId] ?? Object.values(PAIRINGS)[0];
-  const compatiblePairings = template.compatiblePalettes.map((id) => PAIRINGS[id]).filter(Boolean);
-
-  const coverTitle = sanitizeCoverTitle(destination);
-  const coverSubtitle = sanitizeCoverSubtitle(subtitle);
+  const filtered = query.trim()
+    ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : COUNTRIES;
 
   useEffect(() => {
     const run = async () => {
       try {
         const raw = sessionStorage.getItem("atlaso_inferred");
+        let inf: { place: string; country?: string; coordStr: string } | null = null;
         if (raw) {
-          const inf = JSON.parse(raw);
+          inf = JSON.parse(raw);
           setInferred(inf);
-          if (!userPickedStyle && inf.place) {
-            const suggestion = suggestTemplate(inf.place.toLowerCase());
-            setSelectedTemplateId(suggestion.templateId);
-            setSelectedPaletteId(suggestion.paletteId);
-            setSuggestToast(true);
-          }
         }
 
         if (bookId) {
           const [trip, book] = await Promise.all([getTrip(tripId), getBook(bookId)]);
-          setDestination(book.title || trip.name || "");
-          setSubtitle(book.subtitle || "");
-          if (book.coverTemplateId && TEMPLATES[book.coverTemplateId]) {
-            setSelectedTemplateId(book.coverTemplateId);
-            setSelectedPaletteId(book.coverPaletteId || TEMPLATES[book.coverTemplateId].paletteId);
-            setUserPickedStyle(true);
-          }
+          setTitle(book.title || trip.name || "");
+          if (book.coverCountry) setCountry(book.coverCountry);
+          else setCountry(matchCountry(inf?.country, inf?.place));
         } else {
           const trip = await getTrip(tripId);
-          const tripName = (trip.name && trip.name !== "Untitled Trip") ? trip.name : "";
-          if (raw) {
-            const inf = JSON.parse(raw);
-            setDestination(inf.country || inf.place?.split(",")[0]?.trim() || tripName);
-          } else {
-            setDestination(tripName);
-          }
+          const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
+          setTitle(tripName || inf?.country || inf?.place?.split(",")[0]?.trim() || "");
+          setCountry(matchCountry(inf?.country, inf?.place));
+
           const prefsRaw = localStorage.getItem("atlaso_cover_prefs");
           if (prefsRaw) {
             const prefs = JSON.parse(prefsRaw);
-            if (prefs.title) setDestination(prefs.title);
-            if (prefs.subtitle) setSubtitle(prefs.subtitle);
-            if (prefs.templateId && TEMPLATES[prefs.templateId]) {
-              setSelectedTemplateId(prefs.templateId);
-              setSelectedPaletteId(prefs.paletteId || TEMPLATES[prefs.templateId].paletteId);
-              setUserPickedStyle(true);
-              setSuggestToast(false);
-            }
+            if (prefs.title) setTitle(prefs.title);
+            if (prefs.country) setCountry(prefs.country);
           }
         }
       } catch {
@@ -103,19 +74,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       }
     };
     run();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId, bookId]);
-
-  const handleDestChange = useCallback((val: string) => {
-    setDestination(val);
-    if (!userPickedStyle) {
-      const sug = suggestTemplate(val.toLowerCase().trim());
-      if (TEMPLATES[sug.templateId]) {
-        setSelectedTemplateId(sug.templateId);
-        setSelectedPaletteId(sug.paletteId);
-      }
-    }
-  }, [userPickedStyle]);
 
   const showSaved = () => {
     setSavedIndicator(true);
@@ -123,48 +83,34 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     saveTimer.current = setTimeout(() => setSavedIndicator(false), 2000);
   };
 
-  const handleSelectTemplate = (id: string) => {
-    setUserPickedStyle(true);
-    setSuggestToast(false);
-    const tmpl = TEMPLATES[id];
-    const newPalette = tmpl.compatiblePalettes.includes(selectedPaletteId) ? selectedPaletteId : tmpl.paletteId;
-    setSelectedTemplateId(id);
-    setSelectedPaletteId(newPalette);
-  };
-
-  const handleSelectPalette = (id: string) => {
-    setUserPickedStyle(true);
-    setSuggestToast(false);
-    setSelectedPaletteId(id);
-  };
-
+  // Auto-save the chosen country when editing an existing book.
   useEffect(() => {
-    if (!bookId || loading) return;
+    if (!bookId || loading || !country) return;
     const t = setTimeout(async () => {
       try {
-        await saveCoverConfig(bookId, selectedTemplateId, selectedPaletteId);
+        await saveCoverCountry(bookId, country);
         showSaved();
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     }, 500);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, selectedTemplateId, selectedPaletteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId, country]);
+
+  const persistPrefs = () => {
+    localStorage.setItem(
+      "atlaso_cover_prefs",
+      JSON.stringify({ title: title.trim(), country: country ?? "" })
+    );
+  };
 
   const handleGenerate = async () => {
-    // Save cover prefs now so generating page has them regardless of login timing
-    const title = sanitizeCoverTitle(destination) || "TRIP";
-    localStorage.setItem("atlaso_cover_prefs", JSON.stringify({
-      title,
-      subtitle: coverSubtitle,
-      templateId: selectedTemplateId,
-      paletteId: selectedPaletteId,
-    }));
-
+    persistPrefs();
     if (!getToken()) {
       setShowLoginModal(true);
       return;
     }
-
     setSaving(true);
     setError(null);
     try {
@@ -198,7 +144,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId) return;
     setSaving(true);
     try {
-      await saveCoverConfig(bookId, selectedTemplateId, selectedPaletteId);
+      if (country) await saveCoverCountry(bookId, country);
       router.push(`/trips/${tripId}/preview?bookId=${bookId}`);
     } catch {
       setError("Could not save cover.");
@@ -207,48 +153,91 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     }
   };
 
-  return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)", paddingBottom: 100, fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    cursor: "pointer",
+    fontFamily: "var(--font-dm-sans), sans-serif",
+    border: "none",
+    borderRadius: 999,
+    padding: "11px 18px",
+    fontSize: 14,
+    fontWeight: 600,
+    background: active ? "var(--sb-gold)" : "var(--sb-panel-2)",
+    color: active ? "var(--sb-ink)" : "var(--sb-cream)",
+    transition: "background 140ms ease",
+  });
 
+  const inputStyle: React.CSSProperties = {
+    fontFamily: "var(--font-dm-sans), sans-serif",
+    fontSize: 15,
+    color: "var(--sb-cream)",
+    background: "var(--sb-bg)",
+    border: "1px solid var(--sb-panel-2)",
+    borderRadius: 12,
+    padding: "13px 16px",
+    width: "100%",
+    boxSizing: "border-box",
+    outline: "none",
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--sb-bg)",
+        color: "var(--sb-cream)",
+        paddingBottom: 110,
+        fontFamily: "var(--font-dm-sans), sans-serif",
+      }}
+    >
       {showLoginModal && (
         <div
           style={{
-            position: "fixed", inset: 0, background: "rgba(10,26,58,0.65)",
-            zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,17,15,0.7)",
+            zIndex: 300,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
           }}
           onClick={() => setShowLoginModal(false)}
         >
           <div
             style={{
-              background: "var(--paper)", borderRadius: 20, padding: "48px 52px",
-              maxWidth: 420, width: "90%", textAlign: "center",
-              boxShadow: "0 32px 80px rgba(10,26,58,0.25)",
+              background: "var(--sb-panel)",
+              borderRadius: 20,
+              padding: "44px 48px",
+              maxWidth: 420,
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{
-              width: 48, height: 48, background: "var(--blue)", borderRadius: "50%",
-              margin: "0 auto 24px", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-                <line x1="4" y1="22" x2="4" y2="15"/>
-              </svg>
-            </div>
-            <h2 style={{
-              fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 300,
-              letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 12, lineHeight: 1.1,
-            }}>
+            <h2
+              style={{
+                fontFamily: "var(--font-dm-sans), sans-serif",
+                fontSize: 28,
+                fontWeight: 700,
+                letterSpacing: "-0.03em",
+                color: "var(--sb-cream)",
+                marginBottom: 12,
+                lineHeight: 1.1,
+              }}
+            >
               One last step
             </h2>
-            <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.65 }}>
+            <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.65 }}>
               Your photos and cover are ready. Sign in to generate your photobook — it takes one click.
             </p>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <GoogleLogin
                 onSuccess={handleLoginSuccess}
-                onError={() => { setError("Sign-in failed. Please try again."); setShowLoginModal(false); }}
+                onError={() => {
+                  setError("Sign-in failed. Please try again.");
+                  setShowLoginModal(false);
+                }}
                 size="large"
                 shape="pill"
                 text="continue_with"
@@ -256,7 +245,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             </div>
             <button
               onClick={() => setShowLoginModal(false)}
-              style={{ background: "none", border: "none", fontSize: 13, color: "var(--ink-soft)", cursor: "pointer", opacity: 0.7 }}
+              style={{ background: "none", border: "none", fontSize: 13, color: "var(--sb-muted-2)", cursor: "pointer" }}
             >
               Cancel
             </button>
@@ -267,165 +256,136 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       <FlowTopbar
         currentStep={2}
         rightSlot={
-          <a href="#" onClick={(e) => { e.preventDefault(); router.push(`/trips/${tripId}/upload`); }}
-            style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-            ← Back to photos
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(`/trips/${tripId}/upload`);
+            }}
+            style={{ fontSize: 13, color: "var(--sb-muted-2)", textDecoration: "none" }}
+          >
+            ← back to photos
           </a>
         }
       />
 
       {loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-          <div style={{ width: 32, height: 32, border: "2px solid rgba(10,26,58,0.12)", borderTopColor: "var(--blue)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              border: "2px solid #46403a",
+              borderTopColor: "var(--sb-gold)",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : (
         <div className="flow-cover-grid">
-
           {/* LEFT: Controls */}
           <div>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>Step 2 of 4</div>
-            <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 12, color: "var(--ink)" }}>
-              Name your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>trip</span>, design its cover.
+            <div
+              style={{
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                fontWeight: 700,
+                color: "var(--sb-gold)",
+                marginBottom: 14,
+              }}
+            >
+              Step 2 of 4
+            </div>
+            <h1
+              className="flow-hero-h1"
+              style={{
+                fontFamily: "var(--font-dm-sans), sans-serif",
+                fontWeight: 800,
+                lineHeight: 1,
+                letterSpacing: "-0.035em",
+                marginBottom: 12,
+                color: "var(--sb-cream)",
+              }}
+            >
+              name your book
             </h1>
-            <p style={{ fontSize: 15, color: "var(--ink-soft)", marginBottom: 36, lineHeight: 1.5 }}>
-              This is the first thing you'll see when you open your book. Every keystroke shows up on the right.
+            <p style={{ fontSize: 15, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.6, maxWidth: "48ch" }}>
+              Pick a country for its illustrated stamp cover, or write your own title.
             </p>
 
-            {suggestToast && inferred && (
-              <div style={{
-                marginBottom: 20, padding: "10px 14px",
-                background: "rgba(30,82,212,0.06)", border: "1px solid rgba(30,82,212,0.2)",
-                borderRadius: 8, fontSize: 12, color: "var(--blue)",
-                display: "flex", alignItems: "center", gap: 8,
-              }}>
-                <span>✨ We picked a style for {inferred.place.split(",")[0]} — feel free to change it</span>
-                <button onClick={() => setSuggestToast(false)} style={{ background: "none", border: "none", color: "var(--blue)", cursor: "pointer", marginLeft: "auto", opacity: 0.7, fontSize: 16, padding: 0 }}>×</button>
-              </div>
-            )}
+            {error && <p style={{ color: "#ef8b7f", fontSize: 14, marginBottom: 16 }}>{error}</p>}
 
-            {error && <p style={{ color: "#b91c1c", fontSize: 14, marginBottom: 16 }}>{error}</p>}
-
-            {/* Destination */}
+            {/* Title */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 500, color: "var(--ink-soft)", marginBottom: 10 }}>
-                <span>Destination</span>
-                <span style={{ opacity: 0.6 }}>{destination.length} / 12</span>
+              <div
+                style={{
+                  fontSize: 12,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  color: "var(--sb-muted-2)",
+                  marginBottom: 10,
+                }}
+              >
+                book title
               </div>
               <input
-                value={destination}
-                onChange={(e) => handleDestChange(e.target.value)}
-                maxLength={12}
-                placeholder="LISBON"
-                style={{
-                  width: "100%", padding: "14px 16px", fontSize: 17,
-                  border: "1px solid rgba(10,26,58,0.15)", borderRadius: 10,
-                  background: "#ffffff", fontFamily: "inherit", color: "var(--ink)",
-                  textTransform: "uppercase", outline: "none",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "var(--blue)"; e.target.style.boxShadow = "0 0 0 3px rgba(30,82,212,0.12)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "rgba(10,26,58,0.15)"; e.target.style.boxShadow = "none"; }}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={40}
+                placeholder="or name it yourself — “Nonna’s kitchen, 2025”"
+                style={inputStyle}
               />
               {inferred && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "var(--blue)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ display: "inline-block", padding: "2px 8px", background: "rgba(30,82,212,0.08)", borderRadius: 100, fontSize: 11 }}>Detected from photos</span>
+                <div style={{ marginTop: 8, fontSize: 12, color: "var(--sb-gold)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ padding: "2px 8px", background: "rgba(232,179,44,0.12)", borderRadius: 100, fontSize: 11 }}>
+                    detected from photos
+                  </span>
                   {inferred.coordStr}
                 </div>
               )}
             </div>
 
-            {/* Subtitle */}
+            {/* Country picker */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 500, color: "var(--ink-soft)", marginBottom: 10 }}>
-                <span>Description <span style={{ fontWeight: 400, opacity: 0.55, textTransform: "none", letterSpacing: 0 }}>(optional)</span></span>
-                <span style={{ opacity: 0.6 }}>{subtitle.length} / 40</span>
+              <div
+                style={{
+                  fontSize: 12,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  color: "var(--sb-muted-2)",
+                  marginBottom: 11,
+                }}
+              >
+                cover — pick a country
               </div>
               <input
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                maxLength={40}
-                placeholder="a week in spring, 2025"
-                style={{
-                  width: "100%", padding: "14px 16px", fontSize: 15,
-                  border: "1px solid rgba(10,26,58,0.15)", borderRadius: 10,
-                  background: "#ffffff", fontFamily: "inherit", color: "var(--ink)",
-                  outline: "none", transition: "border-color 0.2s, box-shadow 0.2s",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "var(--blue)"; e.target.style.boxShadow = "0 0 0 3px rgba(30,82,212,0.12)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "rgba(10,26,58,0.15)"; e.target.style.boxShadow = "none"; }}
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search countries"
+                aria-label="Search countries"
+                style={{ ...inputStyle, marginBottom: 12 }}
               />
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif" }}>
-                Try a date range, a mood, or a short tagline
-              </div>
-            </div>
-
-            {/* Template selector */}
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 500, color: "var(--ink-soft)", marginBottom: 14 }}>Template style</div>
-              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "thin" }}>
-                {TEMPLATE_LIST.map((tmpl) => {
-                  const tmplPairing = PAIRINGS[tmpl.compatiblePalettes.includes(selectedPaletteId) ? selectedPaletteId : tmpl.paletteId];
-                  const isActive = tmpl.id === selectedTemplateId;
-                  return (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => handleSelectTemplate(tmpl.id)}
-                      style={{
-                        flexShrink: 0, width: 68, height: 90,
-                        borderRadius: 4, border: `2px solid ${isActive ? "var(--blue)" : "transparent"}`,
-                        cursor: "pointer", overflow: "hidden",
-                        transition: "transform 0.15s, border-color 0.15s",
-                        transform: "translateY(0)",
-                        padding: 0, background: "none",
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
-                    >
-                      <CoverRenderer
-                        template={tmpl}
-                        pairing={tmplPairing}
-                        title={coverTitle || "TRIP"}
-                        subtitle=""
-                        mode="preview"
-                        style={{ width: "100%", height: "100%", display: "block" }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Palette selector */}
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 500, color: "var(--ink-soft)", marginBottom: 14 }}>Color pairing</div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {compatiblePairings.map((p) => {
-                  const isActive = p.id === selectedPaletteId;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleSelectPalette(p.id)}
-                      title={p.name}
-                      style={{
-                        display: "flex", cursor: "pointer",
-                        borderRadius: 50, border: `2px solid ${isActive ? "var(--blue)" : "transparent"}`,
-                        padding: 2,
-                        transition: "transform 0.15s, border-color 0.15s",
-                        background: "none",
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-                    >
-                      <div style={{ width: 22, height: 22, borderRadius: "50%", background: p.background, flexShrink: 0 }} />
-                      <div style={{ width: 22, height: 22, borderRadius: "50%", background: p.accent, marginLeft: -8, border: "2px solid white", flexShrink: 0 }} />
-                    </button>
-                  );
-                })}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                {filtered.map((c) => (
+                  <button
+                    key={c.slug}
+                    type="button"
+                    onClick={() => setCountry(c.slug)}
+                    aria-pressed={country === c.slug}
+                    style={chipStyle(country === c.slug)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+                {filtered.length === 0 && (
+                  <span style={{ fontSize: 14, color: "var(--sb-muted-2)" }}>No countries match “{query}”.</span>
+                )}
               </div>
             </div>
           </div>
@@ -433,32 +393,43 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           {/* RIGHT: Preview */}
           <div style={{ position: "sticky", top: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
             {savedIndicator && (
-              <div style={{ position: "absolute", top: -32, fontSize: 12, color: "var(--blue)", opacity: savedIndicator ? 1 : 0, transition: "opacity 0.3s" }}>
-                Saved
-              </div>
+              <div style={{ marginBottom: 12, fontSize: 12, color: "var(--sb-gold)" }}>Saved</div>
             )}
+            <CountryCover
+              country={country}
+              title={title}
+              style={{ width: 320, transform: "rotate(-2deg)" }}
+            />
             <div
-              style={{ filter: "drop-shadow(0 20px 50px rgba(10,26,58,0.2))", transition: "transform 0.4s cubic-bezier(0.2,0.8,0.2,1)", cursor: "default" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px) rotate(-1deg)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ""; }}
+              style={{
+                marginTop: 24,
+                fontSize: 13,
+                color: "var(--sb-muted-2)",
+                textAlign: "center",
+              }}
             >
-              <CoverRenderer
-                template={template}
-                pairing={pairing}
-                title={coverTitle}
-                subtitle={coverSubtitle}
-                mode="preview"
-                style={{ width: 360, height: 480, display: "block", borderRadius: 2 }}
-              />
+              {country ? "illustrated stamp cover" : "pick a country to see its cover"}
             </div>
-            <div style={{ marginTop: 24, fontSize: 13, color: "var(--ink-soft)", fontStyle: "italic", fontFamily: "var(--font-fraunces), serif", textAlign: "center" }}>
-              Live preview · updates as you type
-            </div>
-            <div style={{ marginTop: 20, display: "flex", gap: 24, padding: "14px 20px", background: "#ffffff", borderRadius: 12, border: "1px solid rgba(10,26,58,0.08)" }}>
-              {[["Size", "8 × 10 inch"], ["Paper", "Archival matte"], ["Print", "300 dpi"]].map(([lbl, val]) => (
+            <div
+              style={{
+                marginTop: 20,
+                display: "flex",
+                gap: 24,
+                padding: "14px 20px",
+                background: "var(--sb-panel)",
+                borderRadius: 14,
+              }}
+            >
+              {[
+                ["Size", "21 × 21 cm"],
+                ["Pages", "48 lay-flat"],
+                ["Binding", "Hardbound"],
+              ].map(([lbl, val]) => (
                 <div key={lbl} style={{ fontSize: 12, textAlign: "center" }}>
-                  <div style={{ textTransform: "uppercase", letterSpacing: "0.15em", fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>{lbl}</div>
-                  <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 14 }}>{val}</div>
+                  <div style={{ textTransform: "uppercase", letterSpacing: "0.14em", fontSize: 10, color: "var(--sb-muted-2)", marginBottom: 4 }}>
+                    {lbl}
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--sb-cream)" }}>{val}</div>
                 </div>
               ))}
             </div>
@@ -469,7 +440,10 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       <FlowBottomBar
         leftContent={
           !bookId ? (
-            <span>Next: our AI will generate your photobook — <strong style={{ fontFamily: "var(--font-fraunces), serif", color: "var(--ink)", fontWeight: 500 }}>sign in takes one click</strong></span>
+            <span>
+              Next: our AI generates your photobook —{" "}
+              <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>sign in takes one click</strong>
+            </span>
           ) : null
         }
         rightButton={
@@ -477,19 +451,21 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             onClick={bookId ? handleSaveThenPreview : handleGenerate}
             disabled={saving || loading}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
               padding: "14px 26px",
-              background: saving || loading ? "rgba(10,26,58,0.25)" : "var(--ink)",
-              color: "#ffffff", border: "none", borderRadius: 100,
-              fontWeight: 500, fontSize: 14,
+              background: saving || loading ? "var(--sb-panel-2)" : "var(--sb-red)",
+              color: saving || loading ? "#8a7f6f" : "var(--sb-cream)",
+              border: "none",
+              borderRadius: 999,
+              fontFamily: "var(--font-bricolage), sans-serif",
+              fontWeight: 800,
+              fontSize: 16,
               cursor: saving || loading ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
             }}
           >
-            {bookId ? (saving ? "Saving…" : "Continue →") : (saving ? "Starting…" : "Generate my photobook")}
-            {!saving && (
-              <span style={{ width: 24, height: 24, background: "white", color: "var(--ink)", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>→</span>
-            )}
+            {bookId ? (saving ? "Saving…" : "continue →") : saving ? "Starting…" : "build my photobook →"}
           </button>
         }
       />

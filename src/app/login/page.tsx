@@ -32,32 +32,31 @@ function LoginContent() {
     <AppShell maxWidth="420px">
       <div style={{ textAlign: "center", paddingTop: 40 }}>
         <div style={{
-          width: 48, height: 48,
-          background: "var(--blue)",
-          borderRadius: "50%",
-          margin: "0 auto 32px",
-          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "var(--font-nunito), sans-serif",
+          fontWeight: 800,
+          fontSize: 30,
+          letterSpacing: "-0.03em",
+          color: "var(--sb-cream)",
+          marginBottom: 36,
+          lineHeight: 1,
         }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-            <line x1="4" y1="22" x2="4" y2="15"/>
-          </svg>
+          atlaso<span style={{ color: "var(--sb-gold)" }}>.</span>
         </div>
 
         <h1 style={{
-          fontFamily: "var(--font-fraunces), serif",
+          fontFamily: "var(--font-dm-sans), sans-serif",
           fontSize: 34,
-          fontWeight: 300,
-          letterSpacing: "-0.02em",
-          color: "var(--ink)",
+          fontWeight: 800,
+          letterSpacing: "-0.035em",
+          color: "var(--sb-cream)",
           marginBottom: 12,
           lineHeight: 1.1,
         }}>
-          Welcome to Atlaso
+          welcome back
         </h1>
 
-        <p style={{ color: "var(--ink-soft)", fontSize: 15, marginBottom: 40, lineHeight: 1.6 }}>
-          Sign in to start creating your travel photobook.
+        <p style={{ color: "var(--sb-muted)", fontSize: 15, marginBottom: 40, lineHeight: 1.6 }}>
+          Sign in to build your travel photo book — free until you approve the proof.
         </p>
 
         <div style={{ display: "flex", justifyContent: "center" }}>
@@ -70,11 +69,11 @@ function LoginContent() {
           />
         </div>
 
-        <p style={{ marginTop: 32, fontSize: 13, color: "var(--ink-soft)", opacity: 0.7 }}>
+        <p style={{ marginTop: 32, fontSize: 13, color: "var(--sb-muted-2)", lineHeight: 1.6 }}>
           By continuing, you agree to our{" "}
-          <Link href="/terms" style={{ color: "var(--blue)", textDecoration: "underline" }}>Terms of Service</Link>{" "}
+          <Link href="/terms" style={{ color: "var(--sb-gold)", textDecoration: "underline" }}>Terms of Service</Link>{" "}
           and{" "}
-          <Link href="/privacy" style={{ color: "var(--blue)", textDecoration: "underline" }}>Privacy Policy</Link>.
+          <Link href="/privacy" style={{ color: "var(--sb-gold)", textDecoration: "underline" }}>Privacy Policy</Link>.
         </p>
       </div>
     </AppShell>

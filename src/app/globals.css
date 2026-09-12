@@ -84,6 +84,23 @@
   --wash: #d7e3f4;
   --gold: #c8a557;
   --white: #ffffff;
+
+  /* ─── Scrapbook redesign palette ─── */
+  --sb-bg: #262220;
+  --sb-bg-deep: #1c1917;
+  --sb-panel: #302b28;
+  --sb-panel-2: #46403a;
+  --sb-cream: #f3ead8;
+  --sb-cream-edge: #cfc2a8;
+  --sb-ink: #262220;
+  --sb-muted: #b0a593;
+  --sb-muted-2: #9c9080;
+  --sb-red: #c9352c;
+  --sb-gold: #e8b32c;
+  --sb-orange: #e2631f;
+  --sb-blue: #1a63b8;
+  --sb-green: #1e8a5f;
+  --sb-cyan: #1fc0e2;
 }
 
 * {

@@ -8,72 +8,85 @@ interface FlowTopbarProps {
 }
 
 const STEPS = [
-  { num: 1, label: "Upload" },
-  { num: 2, label: "Design cover" },
-  { num: 3, label: "Preview" },
-  { num: 4, label: "Order" },
+  { num: 1, label: "photos" },
+  { num: 2, label: "cover" },
+  { num: 3, label: "preview" },
+  { num: 4, label: "order" },
 ];
 
 export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) {
   return (
-    <div className="flow-topbar" style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      borderBottom: "1px solid rgba(10,26,58,0.08)",
-      background: "#ffffff",
-      position: "sticky",
-      top: 0,
-      zIndex: 20,
-    }}>
-      <Link href="/" style={{
-        fontFamily: "var(--font-fraunces), serif",
-        fontWeight: 800,
-        fontSize: 22,
+    <div
+      className="flow-topbar"
+      style={{
         display: "flex",
+        justifyContent: "space-between",
         alignItems: "center",
-        gap: 8,
-        color: "var(--ink)",
-        textDecoration: "none",
-      }}>
-        <span style={{ width: 9, height: 9, background: "var(--blue)", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
-        Atlaso
+        gap: 16,
+        flexWrap: "wrap",
+        borderBottom: "1px solid #ece5d8",
+        background: "#ffffff",
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+      }}
+    >
+      <Link
+        href="/"
+        style={{
+          fontFamily: "var(--font-nunito), sans-serif",
+          fontWeight: 800,
+          fontSize: 24,
+          letterSpacing: "-0.03em",
+          lineHeight: 1,
+          color: "#000000",
+          textDecoration: "none",
+        }}
+      >
+        atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
       </Link>
 
-      <div style={{ display: "flex", gap: 20, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.15em" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.6vw, 18px)", flexWrap: "wrap" }}>
         {STEPS.map((step) => {
           const done = step.num < currentStep;
           const active = step.num === currentStep;
           return (
-            <div key={step.num} style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: done ? "var(--ink)" : active ? "var(--blue)" : "rgba(10,26,58,0.4)",
-            }}>
-              <div style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                border: "1px solid currentColor",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 11,
-                fontWeight: 500,
-                background: done ? "var(--ink)" : active ? "var(--blue)" : "transparent",
-                color: done || active ? "white" : "currentColor",
-                flexShrink: 0,
-              }}>
+            <div key={step.num} style={{ display: "flex", alignItems: "center", gap: 9, opacity: done || active ? 1 : 0.5 }}>
+              <span
+                style={{
+                  flex: "none",
+                  width: 26,
+                  height: 26,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "var(--font-dm-sans), sans-serif",
+                  background: active ? "var(--sb-gold)" : done ? "var(--sb-green)" : "#ece5d8",
+                  color: active ? "var(--sb-ink)" : done ? "#ffffff" : "#8a7f6f",
+                }}
+              >
                 {done ? "✓" : step.num}
-              </div>
-              <span className="flow-step-label">{step.label}</span>
+              </span>
+              <span
+                className="flow-step-label"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-dm-sans), sans-serif",
+                  color: active ? "#262220" : "#8a7f6f",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {step.label}
+              </span>
             </div>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{rightSlot}</div>
+      <div style={{ fontSize: 13, color: "#8a7f6f", fontFamily: "var(--font-dm-sans), sans-serif" }}>{rightSlot}</div>
     </div>
   );
 }

@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken, removeToken } from "@/lib/auth";
 import { getTrips, deleteTripById, type Trip } from "@/lib/api";
-
-const GRAIN = "data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E";
+import Footer from "@/components/Footer";
 
 function resumeUrl(trip: Trip): string {
   return trip.status === "BOOK_GENERATED"
@@ -25,7 +24,7 @@ function statusLabel(status: string): string {
 }
 
 function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function AccountPage() {
@@ -65,91 +64,251 @@ export default function AccountPage() {
   const hasAny = trips.length > 0;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-inter-tight, 'Inter Tight'), sans-serif" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100, opacity: 0.15, mixBlendMode: "multiply", backgroundImage: `url("${GRAIN}")` }} />
-
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "52px 32px 80px" }}>
-        {/* Top bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 52 }}>
-          <Link href="/" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 800, fontSize: 22, color: "var(--ink)", textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 10, height: 10, background: "var(--blue)", borderRadius: "50%", display: "inline-block" }} />
-            Atlaso
+    <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans), sans-serif", display: "flex", flexDirection: "column" }}>
+      {/* Top bar — white atlaso header with sign-out */}
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          background: "#ffffff",
+          borderBottom: "1px solid #ece5d8",
+          padding: "14px clamp(16px, 3vw, 34px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
+          href="/"
+          aria-label="Atlaso home"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            fontFamily: "var(--font-nunito), sans-serif",
+            fontWeight: 800,
+            fontSize: 27,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: "#000000",
+            textDecoration: "none",
+          }}
+        >
+          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+          <Link
+            href="/create"
+            style={{
+              fontFamily: "var(--font-bricolage), sans-serif",
+              fontWeight: 800,
+              fontSize: 12,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--sb-ink)",
+              background: "var(--sb-gold)",
+              padding: "8px 14px",
+              borderRadius: 999,
+              textDecoration: "none",
+            }}
+          >
+            new book ›
           </Link>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Link href="/create" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 20px", background: "var(--ink)", color: "#fff", borderRadius: 100, fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
-              + New book
-            </Link>
-            <button onClick={handleSignOut} style={{ background: "none", border: "none", fontSize: 13, color: "var(--ink-soft)", cursor: "pointer", padding: 0 }}>
-              Sign out
-            </button>
+          <button
+            onClick={handleSignOut}
+            style={{
+              fontFamily: "var(--font-dm-sans), sans-serif",
+              fontWeight: 500,
+              fontSize: 14,
+              color: "#4a443e",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            sign out
+          </button>
+        </div>
+      </header>
+
+      {/* Profile header */}
+      <section
+        style={{
+          padding: "clamp(40px, 5vw, 72px) clamp(20px, 5vw, 64px) clamp(28px, 3vw, 40px)",
+          maxWidth: 1080,
+          width: "100%",
+          margin: "0 auto",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+          <div
+            style={{
+              width: 62,
+              height: 62,
+              borderRadius: 999,
+              background: "var(--sb-gold)",
+              color: "var(--sb-ink)",
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "var(--font-bricolage), sans-serif",
+              fontWeight: 800,
+              fontSize: 24,
+            }}
+          >
+            {avatarInitials(trips)}
+          </div>
+          <div>
+            <h1
+              style={{
+                fontFamily: "var(--font-dm-sans), sans-serif",
+                fontWeight: 800,
+                fontSize: "clamp(28px, 3.2vw, 40px)",
+                letterSpacing: "-0.03em",
+                margin: 0,
+                color: "var(--sb-cream)",
+              }}
+            >
+              your travels
+            </h1>
+            <div style={{ fontSize: 14, color: "var(--sb-muted-2)", marginTop: 4 }}>
+              {hasAny
+                ? `${trips.length} book${trips.length === 1 ? "" : "s"} in the works · keep the memories in print`
+                : "start your first travel photobook"}
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Page title */}
-        <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 300, fontSize: "clamp(40px, 6vw, 64px)", lineHeight: 1, letterSpacing: "-0.03em", color: "var(--ink)", margin: "0 0 52px" }}>
-          Your <span style={{ fontStyle: "italic", color: "var(--blue)" }}>books.</span>
-        </h1>
-
-        {loading && (
-          <p style={{ color: "var(--ink-soft)", fontSize: 15 }}>Loading…</p>
-        )}
+      {/* Content */}
+      <section
+        style={{
+          padding: "0 clamp(20px, 5vw, 64px) clamp(48px, 6vw, 88px)",
+          maxWidth: 1080,
+          width: "100%",
+          margin: "0 auto",
+          flex: 1,
+        }}
+      >
+        {loading && <p style={{ color: "var(--sb-muted)", fontSize: 15 }}>Loading…</p>}
 
         {!loading && !hasAny && (
-          <div style={{ textAlign: "center", padding: "80px 0" }}>
-            <p style={{ fontFamily: "var(--font-fraunces), serif", fontStyle: "italic", fontSize: 22, color: "var(--ink-soft)", marginBottom: 28 }}>
-              No designs yet.
+          <div
+            style={{
+              background: "var(--sb-panel)",
+              borderRadius: 18,
+              padding: "clamp(40px, 6vw, 72px) 28px",
+              textAlign: "center",
+            }}
+          >
+            <p style={{ fontSize: 18, color: "var(--sb-muted)", margin: "0 0 24px" }}>
+              No books yet. Your travels are waiting to be printed.
             </p>
-            <Link href="/create" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "16px 30px", background: "var(--ink)", color: "#fff", borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
+            <Link href="/create" style={primaryBtn}>
               Start your first book →
             </Link>
           </div>
         )}
 
-        {!loading && inProgress.length > 0 && (
-          <section style={{ marginBottom: 48 }}>
-            <SectionLabel>In progress</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {inProgress.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Resume" href={resumeUrl(trip)} />
-              ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {!loading && inProgress.length > 0 && (
+            <div>
+              <SectionTitle>in progress</SectionTitle>
+              <div style={{ display: "grid", gap: 12 }}>
+                {inProgress.map((trip) => (
+                  <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Resume" href={resumeUrl(trip)} />
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {!loading && pendingDesigns.length > 0 && (
-          <section style={{ marginBottom: 48 }}>
-            <SectionLabel>Pending designs</SectionLabel>
-            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 16, marginTop: -8 }}>
-              Ready to order — review your book and place your order when you&apos;re happy with it.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {pendingDesigns.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Review" href={`/trips/${trip.id}/preview`} />
-              ))}
+          {!loading && pendingDesigns.length > 0 && (
+            <div>
+              <SectionTitle>ready to order</SectionTitle>
+              <p style={{ fontSize: 14, color: "var(--sb-muted-2)", margin: "-4px 0 12px" }}>
+                Review your book and place your order when you&apos;re happy with it.
+              </p>
+              <div style={{ display: "grid", gap: 12 }}>
+                {pendingDesigns.map((trip) => (
+                  <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Review" href={`/trips/${trip.id}/preview`} />
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {!loading && completedOrders.length > 0 && (
-          <section>
-            <SectionLabel>Completed orders</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {completedOrders.map((trip) => (
-                <OrderCard key={trip.id} trip={trip} />
-              ))}
+          {!loading && completedOrders.length > 0 && (
+            <div>
+              <SectionTitle>your library</SectionTitle>
+              <div style={{ display: "grid", gap: 12 }}>
+                {completedOrders.map((trip) => (
+                  <OrderCard key={trip.id} trip={trip} />
+                ))}
+              </div>
             </div>
-          </section>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+const primaryBtn: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  fontFamily: "var(--font-bricolage), sans-serif",
+  fontWeight: 800,
+  fontSize: 14,
+  color: "var(--sb-cream)",
+  background: "var(--sb-red)",
+  padding: "13px 24px",
+  borderRadius: 999,
+  textDecoration: "none",
+};
+
+const goldBtn: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontFamily: "var(--font-bricolage), sans-serif",
+  fontWeight: 800,
+  fontSize: 14,
+  color: "var(--sb-ink)",
+  background: "var(--sb-gold)",
+  padding: "11px 18px",
+  borderRadius: 999,
+  textDecoration: "none",
+};
+
+function avatarInitials(trips: Trip[]): string {
+  // No user profile in the data model — derive a friendly mark.
+  const first = trips[0]?.name?.trim();
+  if (first) {
+    const parts = first.split(/\s+/).filter(Boolean);
+    const letters = parts.slice(0, 2).map((p) => p[0]).join("");
+    if (letters) return letters.toUpperCase();
+  }
+  return "AT";
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 16 }}>
+    <h2
+      style={{
+        fontFamily: "var(--font-dm-sans), sans-serif",
+        fontWeight: 700,
+        fontSize: 21,
+        letterSpacing: "-0.02em",
+        margin: "0 0 12px",
+        color: "var(--sb-cream)",
+      }}
+    >
       {children}
-    </div>
+    </h2>
   );
 }
 
@@ -165,46 +324,72 @@ function TripCard({
   href: string;
 }) {
   return (
-    <div style={{
-      background: "#fff",
-      borderRadius: 12,
-      padding: "18px 22px",
-      display: "flex",
-      alignItems: "center",
-      gap: 16,
-      boxShadow: "0 1px 3px rgba(10,26,58,0.07), 0 4px 12px rgba(10,26,58,0.04)",
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontFamily: "var(--font-fraunces), serif",
-          fontSize: 17, fontWeight: 500,
-          color: "var(--ink)", marginBottom: 4,
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-        }}>
+    <div
+      style={{
+        background: "var(--sb-panel)",
+        borderRadius: 18,
+        padding: 18,
+        display: "flex",
+        gap: 16,
+        alignItems: "center",
+        flexWrap: "wrap",
+      }}
+    >
+      {/* Spine + cover placeholder */}
+      <div
+        style={{
+          flex: "none",
+          display: "flex",
+          width: 66,
+          height: 84,
+          borderRadius: "2px 4px 4px 2px",
+          overflow: "hidden",
+          boxShadow: "4px 6px 0 rgba(0,0,0,0.3)",
+        }}
+      >
+        <div style={{ flex: "none", width: 6, background: "var(--sb-orange)" }} />
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: "var(--sb-panel-2)",
+            display: "grid",
+            placeItems: "center",
+            fontFamily: "var(--font-bricolage), sans-serif",
+            fontWeight: 800,
+            fontSize: 20,
+            color: "var(--sb-muted)",
+          }}
+        >
+          {(trip.name?.[0] ?? "?").toUpperCase()}
+        </div>
+      </div>
+
+      <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-dm-sans), sans-serif",
+            fontWeight: 700,
+            fontSize: 17,
+            color: "var(--sb-cream)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
           {trip.name}
         </div>
-        <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ fontSize: 13, color: "var(--sb-muted-2)", marginTop: 3, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {trip.destination && <span>{trip.destination}</span>}
           {trip.createdAt && <span>{fmt(trip.createdAt)}</span>}
           {actionLabel === "Resume" && (
-            <span style={{ color: "var(--blue)", fontWeight: 500 }}>
-              {statusLabel(trip.status)}
-            </span>
+            <span style={{ color: "var(--sb-gold)", fontWeight: 600 }}>{statusLabel(trip.status)}</span>
           )}
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-        <Link
-          href={href}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "9px 18px",
-            background: "var(--ink)", color: "#fff",
-            borderRadius: 100, fontSize: 13, fontWeight: 500,
-            textDecoration: "none",
-          }}
-        >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <Link href={href} style={goldBtn}>
           {actionLabel} →
         </Link>
         <DeleteButton onClick={() => onDelete(trip.id)} />
@@ -215,43 +400,75 @@ function TripCard({
 
 function OrderCard({ trip }: { trip: Trip }) {
   return (
-    <Link
-      href={`/trips/${trip.id}/confirmation`}
-      style={{ textDecoration: "none" }}
-    >
-      <div style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: "18px 22px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        boxShadow: "0 1px 3px rgba(10,26,58,0.07), 0 4px 12px rgba(10,26,58,0.04)",
-        cursor: "pointer",
-        transition: "box-shadow 0.15s",
-      }}
-        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(10,26,58,0.12), 0 8px 24px rgba(10,26,58,0.07)")}
-        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(10,26,58,0.07), 0 4px 12px rgba(10,26,58,0.04)")}
+    <Link href={`/trips/${trip.id}/confirmation`} style={{ textDecoration: "none" }}>
+      <div
+        style={{
+          background: "var(--sb-panel)",
+          borderRadius: 18,
+          padding: 18,
+          display: "flex",
+          gap: 16,
+          alignItems: "center",
+          flexWrap: "wrap",
+          transition: "background 160ms ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sb-panel-2)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--sb-panel)")}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: "var(--font-fraunces), serif",
-            fontSize: 17, fontWeight: 500,
-            color: "var(--ink)", marginBottom: 4,
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
+        <div
+          style={{
+            flex: "none",
+            display: "flex",
+            width: 66,
+            height: 84,
+            borderRadius: "2px 4px 4px 2px",
+            overflow: "hidden",
+            boxShadow: "4px 6px 0 rgba(0,0,0,0.3)",
+          }}
+        >
+          <div style={{ flex: "none", width: 6, background: "var(--sb-green)" }} />
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: "var(--sb-panel-2)",
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "var(--font-bricolage), sans-serif",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "var(--sb-muted)",
+            }}
+          >
+            {(trip.name?.[0] ?? "?").toUpperCase()}
+          </div>
+        </div>
+
+        <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-dm-sans), sans-serif",
+              fontWeight: 700,
+              fontSize: 17,
+              color: "var(--sb-cream)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {trip.name}
           </div>
-          <div style={{ fontSize: 13, color: "var(--ink-soft)", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontSize: 13, color: "var(--sb-muted-2)", marginTop: 3, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             {trip.destination && <span>{trip.destination}</span>}
             {trip.createdAt && <span>{fmt(trip.createdAt)}</span>}
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#2d9650", fontWeight: 500 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#2d9650", display: "inline-block" }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--sb-green)", fontWeight: 600 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sb-green)", display: "inline-block" }} />
               Order placed
             </span>
           </div>
         </div>
-        <div style={{ fontSize: 13, color: "var(--ink-soft)", flexShrink: 0 }}>
+
+        <div style={{ fontSize: 13, color: "var(--sb-muted)", flexShrink: 0, fontWeight: 600 }}>
           View order →
         </div>
       </div>
@@ -265,24 +482,30 @@ function DeleteButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title="Delete"
       style={{
-        width: 34, height: 34,
-        background: "none", border: "1px solid rgba(10,26,58,0.15)",
-        borderRadius: "50%", cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "var(--ink-soft)", fontSize: 13,
-        transition: "background 0.15s, color 0.15s, border-color 0.15s",
+        width: 36,
+        height: 36,
+        background: "none",
+        border: "1px solid var(--sb-panel-2)",
+        borderRadius: "50%",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "var(--sb-muted)",
+        fontSize: 13,
+        transition: "background 160ms ease, color 160ms ease, border-color 160ms ease",
       }}
       onMouseEnter={(e) => {
         const b = e.currentTarget as HTMLButtonElement;
-        b.style.background = "rgba(185,28,28,0.08)";
-        b.style.color = "#b91c1c";
-        b.style.borderColor = "rgba(185,28,28,0.3)";
+        b.style.background = "rgba(201,53,44,0.15)";
+        b.style.color = "var(--sb-red)";
+        b.style.borderColor = "var(--sb-red)";
       }}
       onMouseLeave={(e) => {
         const b = e.currentTarget as HTMLButtonElement;
         b.style.background = "none";
-        b.style.color = "var(--ink-soft)";
-        b.style.borderColor = "rgba(10,26,58,0.15)";
+        b.style.color = "var(--sb-muted)";
+        b.style.borderColor = "var(--sb-panel-2)";
       }}
     >
       ✕

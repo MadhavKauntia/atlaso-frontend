@@ -14,11 +14,10 @@ export default function PolicyPage({
   return (
     <div className={s.page}>
       <div className={s.topbar}>
-        <Link href="/" className={s.topbarLogo}>
-          <span style={{ width: 9, height: 9, background: "var(--blue)", borderRadius: "50%", display: "inline-block" }} />
-          Atlaso
+        <Link href="/" className={s.topbarLogo} aria-label="Atlaso home">
+          atlaso<span className={s.topbarLogoDot}>.</span>
         </Link>
-        <Link href="/" className={s.topbarBack}>← Back to home</Link>
+        <Link href="/" className={s.topbarBack}>← back to home</Link>
       </div>
 
       <div className={s.container}>

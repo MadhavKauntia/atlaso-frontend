@@ -5,24 +5,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, createRazorpayOrder, verifyRazorpayPayment, type Book } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import CoverRenderer from "@/components/covers/CoverRenderer";
-import { TEMPLATES } from "@/lib/covers/templates";
-import { PAIRINGS } from "@/lib/covers/palette";
+import CountryCover from "@/components/covers/CountryCover";
 import Link from "next/link";
 
-const DEFAULT_TEMPLATE_ID = "archway";
-const DEFAULT_PAIRING_ID = "lisbon-sun";
 const BOOK_PRICE = 1999; // ₹ per copy, all-inclusive (shipping + taxes included)
 
+const DASH = "1px dashed #46403a";
+
 const FIELD_STYLE: React.CSSProperties = {
-  width: "100%", padding: "12px 14px", fontSize: 15,
-  border: "1px solid rgba(10,26,58,0.15)", borderRadius: 8,
-  background: "#fff", fontFamily: "inherit", color: "var(--ink)",
+  width: "100%", padding: "13px 16px", fontSize: 15,
+  border: "1px solid var(--sb-panel-2)", borderRadius: 12,
+  background: "var(--sb-bg)", fontFamily: "inherit", color: "var(--sb-cream)",
   outline: "none",
 };
 const LABEL_STYLE: React.CSSProperties = {
   display: "block", fontSize: 11, textTransform: "uppercase",
-  letterSpacing: "0.15em", color: "var(--ink-soft)", marginBottom: 6, fontWeight: 500,
+  letterSpacing: "0.15em", color: "var(--sb-muted)", marginBottom: 6, fontWeight: 700,
 };
 
 export default function CheckoutPage({ params }: { params: Promise<{ tripId: string }> }) {
@@ -54,8 +52,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
   if (!ready) return null;
 
-  const template = TEMPLATES[book?.coverTemplateId ?? DEFAULT_TEMPLATE_ID] ?? TEMPLATES[DEFAULT_TEMPLATE_ID];
-  const pairing = PAIRINGS[book?.coverPaletteId ?? DEFAULT_PAIRING_ID] ?? PAIRINGS[DEFAULT_PAIRING_ID];
   const pageCount = book?.pages?.length ?? 48;
 
   const total = BOOK_PRICE * qty;
@@ -86,7 +82,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
           email,
           contact: phone,
         },
-        theme: { color: "#1e52d4" },
+        theme: { color: "#c9352c" },
         handler: async (response) => {
           try {
             const result = await verifyRazorpayPayment({
@@ -121,25 +117,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)", position: "relative" }}>
-      {/* Grain */}
-      <div style={{
-        position: "fixed", inset: 0, pointerEvents: "none", zIndex: 100,
-        opacity: 0.1, mixBlendMode: "multiply",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E")`,
-      }} />
-
-      {/* Topbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(10,26,58,0.08)", background: "#fff" }}>
-        <Link href="/" style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 800, fontSize: 22, display: "flex", alignItems: "center", gap: 8, color: "var(--ink)", textDecoration: "none" }}>
-          <span style={{ width: 9, height: 9, background: "var(--blue)", borderRadius: "50%", display: "inline-block" }} />
-          Atlaso
+    <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", position: "relative" }}>
+      {/* Topbar — white atlaso header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 48px", borderBottom: "1px solid rgba(38,34,32,0.08)", background: "#fff" }}>
+        <Link href="/" style={{ fontFamily: "var(--font-nunito), sans-serif", fontWeight: 800, fontSize: 24, letterSpacing: "-0.02em", color: "var(--sb-ink)", textDecoration: "none" }}>
+          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--ink-soft)" }}>
-          <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(45,150,80,0.12)", color: "#2d9650", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>🔒</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6b6459" }}>
+          <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(30,138,95,0.14)", color: "var(--sb-green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>🔒</span>
           Secure checkout
         </div>
-        <Link href={`/trips/${tripId}/order?bookId=${bookId}`} style={{ fontSize: 13, color: "var(--ink-soft)", textDecoration: "none" }}>
+        <Link href={`/trips/${tripId}/order?bookId=${bookId}`} style={{ fontSize: 13, color: "#6b6459", textDecoration: "none" }}>
           ← Back to order
         </Link>
       </div>
@@ -148,12 +136,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
         {/* LEFT: form */}
         <div>
-          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 500, color: "var(--blue)", marginBottom: 14 }}>Checkout</div>
-          <h1 style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 40, fontWeight: 300, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: 12, color: "var(--ink)" }}>
-            Where should we <em style={{ fontStyle: "italic", color: "var(--blue)" }}>send</em> it?
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 700, color: "var(--sb-gold)", marginBottom: 14 }}>Checkout</div>
+          <h1 style={{ fontFamily: "var(--font-dm-sans)", fontSize: 40, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 12, color: "var(--sb-cream)" }}>
+            Where should we <span style={{ color: "var(--sb-red)" }}>send</span> it?
           </h1>
-          <p style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 32, lineHeight: 1.5 }}>
-            Enter your shipping address and payment details. We'll print within 3 days and deliver across India.
+          <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.5 }}>
+            Enter your shipping address and payment details. We&apos;ll print within 3 days and deliver across India.
           </p>
 
           {/* 1. Contact */}
@@ -175,7 +163,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               <input value={address1} onChange={(e) => setAddress1(e.target.value)} style={FIELD_STYLE} />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={LABEL_STYLE}>Address line 2 <span style={{ color: "var(--ink-soft)", textTransform: "none", letterSpacing: "normal" }}>(optional)</span></label>
+              <label style={LABEL_STYLE}>Address line 2 <span style={{ color: "var(--sb-muted-2)", textTransform: "none", letterSpacing: "normal" }}>(optional)</span></label>
               <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." style={FIELD_STYLE} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -200,34 +188,34 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           {/* 3. Payment */}
           <FormSection num={3} title="Payment">
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: "rgba(30,82,212,0.04)", border: "1px solid rgba(30,82,212,0.15)", borderRadius: 10 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: "var(--sb-bg)", border: "1px solid var(--sb-panel-2)", borderRadius: 12 }}>
               <div style={{ fontSize: 18, lineHeight: 1 }}>🔒</div>
-              <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-                You&apos;ll complete payment securely via <strong style={{ color: "var(--ink)" }}>Razorpay</strong> — card, UPI, netbanking, and wallets — after you press <strong style={{ color: "var(--ink)" }}>Pay</strong>. Your card details never touch our servers.
+              <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5 }}>
+                You&apos;ll complete payment securely via <strong style={{ color: "var(--sb-cream)" }}>Razorpay</strong> — card, UPI, netbanking, and wallets — after you press <strong style={{ color: "var(--sb-cream)" }}>Pay</strong>. Your card details never touch our servers.
               </div>
             </div>
           </FormSection>
         </div>
 
         {/* RIGHT: summary */}
-        <div style={{ position: "sticky", top: 20, background: "#fff", borderRadius: 16, border: "1px solid rgba(10,26,58,0.08)", padding: 24 }}>
-          <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 500, marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(10,26,58,0.08)" }}>
+        <div style={{ position: "sticky", top: 20, background: "var(--sb-panel)", borderRadius: 18, padding: 24 }}>
+          <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 18, fontWeight: 800, marginBottom: 16, paddingBottom: 14, borderBottom: DASH, color: "var(--sb-cream)" }}>
             Order summary
           </div>
 
-          <div style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: "1px solid rgba(10,26,58,0.06)" }}>
-            <div style={{ width: 58, height: 78, borderRadius: 2, boxShadow: "0 4px 10px rgba(10,26,58,0.15)", flexShrink: 0, overflow: "hidden" }}>
-              <CoverRenderer template={template} pairing={pairing} title={book?.title ?? "Your Trip"} subtitle={book?.subtitle ?? ""} style={{ width: 58, height: 78, display: "block" }} />
+          <div style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: DASH }}>
+            <div style={{ flexShrink: 0 }}>
+              <CountryCover country={book?.coverCountry} title={book?.title ?? "Your Trip"} style={{ width: 58 }} />
             </div>
             <div style={{ flex: 1, fontSize: 13 }}>
-              <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 16, marginBottom: 4 }}>{book?.title ?? "Your Trip"}</div>
-              <div style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>
+              <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 16, marginBottom: 4, color: "var(--sb-cream)" }}>{book?.title ?? "Your Trip"}</div>
+              <div style={{ color: "var(--sb-muted)", fontSize: 12, lineHeight: 1.5 }}>
                 {book?.subtitle && <>{book.subtitle}<br /></>}
-                Hardcover photobook<br />
+                Hardbound photobook<br />
                 {pageCount} pages · Qty: {qty}
               </div>
             </div>
-            <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500, fontSize: 15, whiteSpace: "nowrap" }}>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 15, whiteSpace: "nowrap", color: "var(--sb-cream)" }}>
               ₹{BOOK_PRICE.toLocaleString("en-IN")}
             </div>
           </div>
@@ -238,19 +226,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               { label: "Shipping & taxes", value: "Included" },
             ].map((row) => (
               <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
-                <div style={{ color: "var(--ink-soft)" }}>{row.label}</div>
-                <div style={{ fontFamily: "var(--font-fraunces), serif", fontWeight: 500 }}>{row.value}</div>
+                <div style={{ color: "var(--sb-muted)" }}>{row.label}</div>
+                <div style={{ fontWeight: 700, color: "var(--sb-cream)" }}>{row.value}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 16, borderTop: "1px solid rgba(10,26,58,0.08)" }}>
-            <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 15 }}>Total</div>
-            <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>₹{total.toLocaleString("en-IN")}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 16, borderTop: DASH }}>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 15, fontWeight: 800, color: "var(--sb-cream)" }}>Total</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{total.toLocaleString("en-IN")}</div>
           </div>
 
           {payError && (
-            <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(235,87,87,0.08)", border: "1px solid rgba(235,87,87,0.25)", borderRadius: 8, fontSize: 13, color: "#c0392b", lineHeight: 1.4 }}>
+            <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(201,53,44,0.12)", border: "1px solid rgba(201,53,44,0.4)", borderRadius: 10, fontSize: 13, color: "#f0a39d", lineHeight: 1.4 }}>
               {payError}
             </div>
           )}
@@ -260,10 +248,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             disabled={paying}
             style={{
               display: "flex", width: "100%", marginTop: 20,
-              padding: 16, background: "var(--ink)", color: "#fff",
-              border: "none", borderRadius: 100, fontSize: 15, fontWeight: 500,
-              cursor: paying ? "default" : "pointer", fontFamily: "inherit", alignItems: "center", justifyContent: "center", gap: 10,
-              opacity: paying ? 0.6 : 1,
+              padding: 16, background: paying ? "var(--sb-panel-2)" : "var(--sb-red)", color: paying ? "#8a7f6f" : "var(--sb-cream)",
+              border: "none", borderRadius: 999, fontSize: 15, fontWeight: 800,
+              cursor: paying ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >
             {paying ? "Processing…" : `🔒 Pay ₹${total.toLocaleString("en-IN")} securely`}
@@ -275,8 +262,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               "Free reprint if your book arrives damaged",
               "30-day satisfaction guarantee",
             ].map((text) => (
-              <div key={text} style={{ display: "flex", gap: 10, fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.45 }}>
-                <div style={{ width: 16, height: 16, background: "rgba(45,150,80,0.12)", color: "#2d9650", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, flexShrink: 0 }}>✓</div>
+              <div key={text} style={{ display: "flex", gap: 10, fontSize: 12, color: "var(--sb-muted)", lineHeight: 1.45 }}>
+                <div style={{ width: 16, height: 16, background: "rgba(30,138,95,0.18)", color: "var(--sb-green)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, flexShrink: 0 }}>✓</div>
                 {text}
               </div>
             ))}
@@ -290,10 +277,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
 function FormSection({ num, title, children }: { num: number; title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid rgba(10,26,58,0.08)", borderRadius: 14, padding: 24, marginBottom: 20 }}>
+    <div style={{ background: "var(--sb-panel)", borderRadius: 18, padding: 24, marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 18 }}>
-        <div style={{ fontFamily: "var(--font-fraunces), serif", fontSize: 18, fontWeight: 500 }}>
-          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--ink)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 500, marginRight: 8 }}>{num}</span>
+        <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 18, fontWeight: 800, color: "var(--sb-cream)" }}>
+          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--sb-red)", color: "var(--sb-cream)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, marginRight: 8 }}>{num}</span>
           {title}
         </div>
       </div>

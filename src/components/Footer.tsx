@@ -1,5 +1,5 @@
 import Link from "next/link";
-import s from "./legal.module.css";
+import s from "./site.module.css";
 
 const YEAR = new Date().getFullYear();
 
@@ -9,34 +9,39 @@ export default function Footer() {
       <div className={s.footerInner}>
         <div className={s.footerBrand}>
           <Link href="/" className={s.footerLogo}>
-            <span className={s.footerLogoMark} />
-            Atlaso
+            atlaso<span className={s.footerLogoDot}>.</span>
           </Link>
           <p className={s.footerTagline}>
-            AI-crafted travel photobooks. Drop in your photos, we curate the story and print it on
-            archival paper, delivered across India.
+            Travel photobooks. Drop in your photos, we lay out the album, illustrate the cover and
+            print it — delivered across India.
           </p>
         </div>
 
         <div className={s.footerCol}>
           <div className={s.footerColTitle}>Product</div>
-          <Link href="/how-it-works" className={s.footerLink}>How it works</Link>
-          <Link href="/create" className={s.footerLink}>Start a book</Link>
-          <Link href="/account" className={s.footerLink}>Account</Link>
+          <nav>
+            <Link href="/how-it-works" className={s.footerLink}>how it works</Link>
+            <Link href="/create" className={s.footerLink}>start a book</Link>
+            <Link href="/account" className={s.footerLink}>account</Link>
+          </nav>
         </div>
 
         <div className={s.footerCol}>
           <div className={s.footerColTitle}>Legal</div>
-          <Link href="/privacy" className={s.footerLink}>Privacy Policy</Link>
-          <Link href="/terms" className={s.footerLink}>Terms &amp; Conditions</Link>
-          <Link href="/refund" className={s.footerLink}>Refund &amp; Cancellation</Link>
-          <Link href="/shipping" className={s.footerLink}>Shipping &amp; Delivery</Link>
+          <nav>
+            <Link href="/privacy" className={s.footerLink}>privacy policy</Link>
+            <Link href="/terms" className={s.footerLink}>terms &amp; conditions</Link>
+            <Link href="/refund" className={s.footerLink}>refunds &amp; cancellation</Link>
+            <Link href="/shipping" className={s.footerLink}>shipping &amp; delivery</Link>
+          </nav>
         </div>
 
         <div className={s.footerCol}>
           <div className={s.footerColTitle}>Support</div>
-          <Link href="/contact" className={s.footerLink}>Contact us</Link>
-          <a href="mailto:support@myatlaso.com" className={s.footerLink}>support@myatlaso.com</a>
+          <nav>
+            <Link href="/contact" className={s.footerLink}>contact us</Link>
+            <a href="mailto:support@myatlaso.com" className={s.footerLink}>support@myatlaso.com</a>
+          </nav>
         </div>
       </div>
 

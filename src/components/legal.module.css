@@ -1,180 +1,121 @@
-/* Shared styles for the footer and legal/policy pages. */
-
-.footer {
-  background: var(--ink);
-  color: rgba(255, 255, 255, 0.72);
-  padding: 56px 32px 40px;
-}
-
-.footerInner {
-  max-width: 1080px;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: space-between;
-}
-
-.footerBrand {
-  max-width: 300px;
-}
-
-.footerLogo {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-fraunces), serif;
-  font-weight: 800;
-  font-size: 22px;
-  color: #fff;
-  text-decoration: none;
-  margin-bottom: 14px;
-}
-
-.footerLogoMark {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--blue);
-  display: inline-block;
-}
-
-.footerTagline {
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.footerCol {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.footerColTitle {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 4px;
-}
-
-.footerLink {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.72);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.footerLink:hover {
-  color: #fff;
-}
-
-.footerBottom {
-  max-width: 1080px;
-  margin: 40px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: space-between;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* ---- Policy page ---- */
+/* Styles for PolicyPage (topbar + prose). Footer.tsx no longer imports this file. */
 
 .page {
   min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--sb-bg);
+  color: var(--sb-cream);
+  font-family: var(--font-dm-sans), sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ---- Topbar: white atlaso header ---- */
+
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
-  border-bottom: 1px solid rgba(10, 26, 58, 0.08);
-  background: #fff;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px clamp(16px, 3vw, 34px);
+  border-bottom: 1px solid #ece5d8;
+  background: #ffffff;
 }
 
 .topbarLogo {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-fraunces), serif;
+  font-family: var(--font-nunito), sans-serif;
   font-weight: 800;
-  font-size: 22px;
-  color: var(--ink);
+  font-size: 27px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #000000;
   text-decoration: none;
 }
+.topbarLogo:hover { color: #000000; }
+.topbarLogoDot { color: var(--sb-cyan); }
 
 .topbarBack {
-  font-size: 13px;
-  color: var(--ink-soft);
+  font-family: var(--font-dm-sans), sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #4a443e;
   text-decoration: none;
+  transition: color 160ms ease;
 }
+.topbarBack:hover { color: #000000; }
+
+/* ---- Body ---- */
 
 .container {
-  max-width: 760px;
+  max-width: 68ch;
+  width: 100%;
   margin: 0 auto;
-  padding: 56px 32px 80px;
+  padding: clamp(40px, 5vw, 72px) clamp(20px, 5vw, 32px) clamp(48px, 6vw, 88px);
+  flex: 1;
 }
 
 .eyebrow {
+  font-family: var(--font-dm-sans), sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.25em;
-  font-weight: 500;
-  color: var(--blue);
+  font-weight: 700;
+  color: var(--sb-gold);
   margin-bottom: 14px;
 }
 
 .title {
-  font-family: var(--font-fraunces), serif;
-  font-size: 42px;
-  font-weight: 300;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 800;
   line-height: 1.05;
-  letter-spacing: -0.02em;
-  margin-bottom: 10px;
+  letter-spacing: -0.03em;
+  color: var(--sb-cream);
+  margin: 0 0 10px;
 }
 
 .updated {
   font-size: 13px;
-  color: var(--ink-soft);
+  color: var(--sb-muted-2);
   margin-bottom: 40px;
 }
 
+/* ---- Prose ---- */
+
 .prose {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.7;
-  color: var(--ink-soft);
+  color: var(--sb-muted);
 }
 
 .prose h2 {
-  font-family: var(--font-fraunces), serif;
+  font-family: var(--font-dm-sans), sans-serif;
   font-size: 22px;
-  font-weight: 500;
-  color: var(--ink);
-  margin: 36px 0 12px;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sb-cream);
+  margin: 40px 0 12px;
 }
 
 .prose h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-  margin: 24px 0 8px;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sb-cream);
+  margin: 28px 0 8px;
 }
 
 .prose p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 .prose ul {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   padding-left: 22px;
 }
 
@@ -183,11 +124,15 @@
 }
 
 .prose a {
-  color: var(--blue);
+  color: var(--sb-gold);
   text-decoration: underline;
+  transition: color 160ms ease;
+}
+.prose a:hover {
+  color: var(--sb-orange);
 }
 
 .prose strong {
-  color: var(--ink);
-  font-weight: 600;
+  color: var(--sb-cream);
+  font-weight: 700;
 }

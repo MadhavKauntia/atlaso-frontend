@@ -23,6 +23,7 @@ interface CoverPrefs {
   subtitle: string;
   templateId: string;
   paletteId: string;
+  country: string;
 }
 
 function readCoverPrefs(): Partial<CoverPrefs> {
@@ -102,6 +103,7 @@ export function mockBook(tripId: string, bookId?: string): Book {
     subtitle: prefs.subtitle || "a week in spring, 2025",
     coverTemplateId: prefs.templateId || "archway",
     coverPaletteId: prefs.paletteId || "lisbon-sun",
+    coverCountry: prefs.country || "italy",
     status: "READY_FOR_PREVIEW",
     generatedAt: "2025-05-01T10:00:00Z",
     pages: PAGES,
