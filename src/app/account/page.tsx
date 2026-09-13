@@ -4,11 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { removeToken, getCachedUser } from "@/lib/auth";
-import { getTrips, getMe, deleteTripById, type Trip, type User } from "@/lib/api";
+import { getTrips, getMe, getBookByTripId, deleteTripById, type Trip, type User } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Footer from "@/components/Footer";
 import Brand from "@/components/Brand";
 import FullPageLoader from "@/components/FullPageLoader";
+import CountryCover from "@/components/covers/CountryCover";
+
+interface Cover {
+  coverCountry: string | null;
+  title: string;
+  subtitle: string;
+}
 
 function resumeUrl(trip: Trip): string {
   return trip.status === "BOOK_GENERATED"
@@ -35,13 +42,32 @@ export default function AccountPage() {
   const ready = useRequireAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [user, setUser] = useState<User | null>(getCachedUser());
+  const [covers, setCovers] = useState<Record<string, Cover>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!ready) return;
     getMe().then(setUser).catch(() => {});
     getTrips()
-      .then(setTrips)
+      .then((t) => {
+        setTrips(t);
+        // Load real book covers for trips that have a generated book.
+        const withBooks = t.filter((x) => x.status === "BOOK_GENERATED" || x.status === "ORDERED");
+        Promise.all(
+          withBooks.map(async (trip) => {
+            try {
+              const book = await getBookByTripId(trip.id);
+              return [trip.id, { coverCountry: book.coverCountry ?? null, title: book.title, subtitle: book.subtitle ?? "" }] as const;
+            } catch {
+              return null;
+            }
+          })
+        ).then((entries) => {
+          const map: Record<string, Cover> = {};
+          for (const e of entries) if (e) map[e[0]] = e[1];
+          setCovers(map);
+        });
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [ready]);
@@ -249,7 +275,7 @@ export default function AccountPage() {
               </p>
               <div style={{ display: "grid", gap: 12 }}>
                 {pendingDesigns.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Review" href={`/trips/${trip.id}/preview`} />
+                  <TripCard key={trip.id} trip={trip} cover={covers[trip.id]} onDelete={handleDelete} actionLabel="Review" href={`/trips/${trip.id}/preview`} />
                 ))}
               </div>
             </div>
@@ -260,7 +286,7 @@ export default function AccountPage() {
               <SectionTitle>your library</SectionTitle>
               <div style={{ display: "grid", gap: 12 }}>
                 {completedOrders.map((trip) => (
-                  <OrderCard key={trip.id} trip={trip} />
+                  <OrderCard key={trip.id} trip={trip} cover={covers[trip.id]} />
                 ))}
               </div>
             </div>
@@ -333,11 +359,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function TripCard({
   trip,
+  cover,
   onDelete,
   actionLabel,
   href,
 }: {
   trip: Trip;
+  cover?: Cover;
   onDelete: (id: string) => void;
   actionLabel: "Resume" | "Review";
   href: string;
@@ -354,35 +382,7 @@ function TripCard({
         flexWrap: "wrap",
       }}
     >
-      {/* Spine + cover placeholder */}
-      <div
-        style={{
-          flex: "none",
-          display: "flex",
-          width: 66,
-          height: 84,
-          borderRadius: "2px 4px 4px 2px",
-          overflow: "hidden",
-          boxShadow: "4px 6px 0 rgba(0,0,0,0.3)",
-        }}
-      >
-        <div style={{ flex: "none", width: 6, background: "var(--sb-orange)" }} />
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            background: "var(--sb-panel-2)",
-            display: "grid",
-            placeItems: "center",
-            fontFamily: "var(--font-bricolage), sans-serif",
-            fontWeight: 800,
-            fontSize: 20,
-            color: "var(--sb-muted)",
-          }}
-        >
-          {(trip.name?.[0] ?? "?").toUpperCase()}
-        </div>
-      </div>
+      <BookThumb trip={trip} cover={cover} spineColor="var(--sb-orange)" />
 
       <div style={{ flex: "1 1 150px", minWidth: 0 }}>
         <div
@@ -417,7 +417,7 @@ function TripCard({
   );
 }
 
-function OrderCard({ trip }: { trip: Trip }) {
+function OrderCard({ trip, cover }: { trip: Trip; cover?: Cover }) {
   return (
     <Link href={`/trips/${trip.id}/confirmation`} style={{ textDecoration: "none" }}>
       <div
@@ -434,34 +434,7 @@ function OrderCard({ trip }: { trip: Trip }) {
         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sb-panel-2)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "var(--sb-panel)")}
       >
-        <div
-          style={{
-            flex: "none",
-            display: "flex",
-            width: 66,
-            height: 84,
-            borderRadius: "2px 4px 4px 2px",
-            overflow: "hidden",
-            boxShadow: "4px 6px 0 rgba(0,0,0,0.3)",
-          }}
-        >
-          <div style={{ flex: "none", width: 6, background: "var(--sb-green)" }} />
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: "var(--sb-panel-2)",
-              display: "grid",
-              placeItems: "center",
-              fontFamily: "var(--font-bricolage), sans-serif",
-              fontWeight: 800,
-              fontSize: 20,
-              color: "var(--sb-muted)",
-            }}
-          >
-            {(trip.name?.[0] ?? "?").toUpperCase()}
-          </div>
-        </div>
+        <BookThumb trip={trip} cover={cover} spineColor="var(--sb-green)" />
 
         <div style={{ flex: "1 1 150px", minWidth: 0 }}>
           <div
@@ -492,6 +465,47 @@ function OrderCard({ trip }: { trip: Trip }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+/** The trip's real book cover when available, otherwise the letter placeholder. */
+function BookThumb({ trip, cover, spineColor }: { trip: Trip; cover?: Cover; spineColor: string }) {
+  if (cover) {
+    return (
+      <div style={{ flex: "none", width: 62 }}>
+        <CountryCover country={cover.coverCountry} title={cover.title} description={cover.subtitle} style={{ width: 62 }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        flex: "none",
+        display: "flex",
+        width: 66,
+        height: 84,
+        borderRadius: "2px 4px 4px 2px",
+        overflow: "hidden",
+        boxShadow: "4px 6px 0 rgba(0,0,0,0.3)",
+      }}
+    >
+      <div style={{ flex: "none", width: 6, background: spineColor }} />
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          background: "var(--sb-panel-2)",
+          display: "grid",
+          placeItems: "center",
+          fontFamily: "var(--font-bricolage), sans-serif",
+          fontWeight: 800,
+          fontSize: 20,
+          color: "var(--sb-muted)",
+        }}
+      >
+        {(trip.name?.[0] ?? "?").toUpperCase()}
+      </div>
+    </div>
   );
 }
 
