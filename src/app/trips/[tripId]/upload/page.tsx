@@ -38,6 +38,61 @@ async function runPool<T>(items: T[], limit: number, worker: (item: T, index: nu
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
 }
 
+// Longest-edge cap for uploaded images. A 6.9×9.8" book at ~260dpi needs at
+// most ~2560px on the long edge for a full-page photo, and most sit smaller —
+// so this keeps print quality while cutting upload bytes (often by half or more
+// versus full-res camera files).
+const MAX_EDGE = 2560;
+const JPEG_QUALITY = 0.82;
+
+async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: number): Promise<Blob> {
+  if (typeof OffscreenCanvas !== "undefined") {
+    const canvas = new OffscreenCanvas(w, h);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
+    return canvas.convertToBlob({ type: "image/jpeg", quality });
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/jpeg", quality)
+  );
+}
+
+/**
+ * Downscale an image to MAX_EDGE (re-encoding to JPEG) before upload, and
+ * return its final dimensions. Images already within the cap pass through
+ * untouched (no needless re-encode). Also serves as the single decode we need
+ * for dimensions, so there's no separate decode step.
+ */
+async function prepareForUpload(file: File, maxEdge: number, quality: number): Promise<{ file: File; width: number; height: number }> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return { file, width: 0, height: 0 }; // undecodable — upload as-is
+  }
+  const { width, height } = bitmap;
+  const longest = Math.max(width, height);
+  if (longest <= maxEdge) {
+    bitmap.close();
+    return { file, width, height };
+  }
+  const scale = maxEdge / longest;
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
+  try {
+    const blob = await encodeJpeg(bitmap, w, h, quality);
+    bitmap.close();
+    const name = file.name.replace(/\.(png|webp|jpeg|jpg)$/i, ".jpg");
+    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h };
+  } catch {
+    bitmap.close();
+    return { file, width, height };
+  }
+}
+
 interface PendingCard {
   tempId: string;
   previewUrl: string;
@@ -157,7 +212,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         // Preferred: off-main-thread worker pool (native decode → heic-to fallback),
         // downscaled so uploads stay small and the UI stays responsive.
         try {
-          const blob = await convertHeicBlob(f, { maxEdge: 3000, quality: 0.85 });
+          const blob = await convertHeicBlob(f, { maxEdge: MAX_EDGE, quality: JPEG_QUALITY });
           return new File([blob], jpegName, { type: "image/jpeg" });
         } catch {
           // Fallback for environments without workers: convert on the main thread.
@@ -176,8 +231,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         }
       }
 
-      // Each file runs its own prepare → initiate → upload → confirm pipeline independently.
-      // Non-HEIC files skip conversion and start uploading immediately while HEIC files convert.
+      // Each file runs its own convert(HEIC) → downscale → initiate → upload →
+      // confirm pipeline independently, capped by the concurrency pool.
       const processFile = async (f: File, i: number) => {
         let currentTempId = tempIds[i];
         try {
@@ -186,20 +241,22 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
 
           if (HEIC_TYPES.has(f.type)) {
             file = await convertHeic(f);
+          }
+
+          // Downscale to a print-appropriate size before upload — the biggest
+          // lever on upload time. Also gives us the final dimensions (one decode).
+          const prepared = await prepareForUpload(file, MAX_EDGE, JPEG_QUALITY);
+          file = prepared.file;
+          const dims = { width: prepared.width, height: prepared.height };
+
+          if (HEIC_TYPES.has(f.type)) {
             heicPreviewUrl = URL.createObjectURL(file);
             setPendingCards((prev) => prev.map((c) =>
               c.tempId === tempIds[i] ? { ...c, converting: false, previewUrl: heicPreviewUrl! } : c
             ));
           }
 
-          const [dims, exif, gps] = await Promise.all([
-            new Promise<{ width: number; height: number }>((resolve) => {
-              const url = URL.createObjectURL(file);
-              const img = new Image();
-              img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
-              img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(url); };
-              img.src = url;
-            }),
+          const [exif, gps] = await Promise.all([
             // Read EXIF from the ORIGINAL file — conversion/downscaling strips it,
             // and exifr can read HEIC metadata directly.
             exifr.parse(f, ["DateTimeOriginal"]).catch(() => null),
