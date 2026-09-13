@@ -167,7 +167,12 @@
 /* ─── Covers section ─── */
 .covers {
   padding: clamp(48px, 6vw, 96px) clamp(20px, 5vw, 64px);
-  background: var(--sb-cream);
+  background-color: var(--sb-cream);
+  /* Same light grid as the hero, in dark ink so it reads on the cream bg. */
+  background-image:
+    linear-gradient(rgba(38, 34, 32, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(38, 34, 32, 0.04) 1px, transparent 1px);
+  background-size: 46px 46px;
   color: var(--sb-ink);
 }
 .coversHead { max-width: 720px; margin: 0 auto; text-align: center; }
@@ -230,7 +235,12 @@
 .closing {
   position: relative;
   padding: clamp(52px, 7vw, 104px) clamp(20px, 5vw, 64px);
-  background: var(--sb-red);
+  background-color: var(--sb-red);
+  /* Same light grid, in soft white so it reads on the red bg. */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 46px 46px;
   text-align: center;
   overflow: hidden;
 }

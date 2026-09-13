@@ -74,9 +74,10 @@ export default function AccountPage() {
     <div style={{
       minHeight: "100vh",
       backgroundColor: "var(--sb-bg)",
-      // Same very light graph-paper grid as the landing hero.
+      // Same graph-paper grid as the landing hero, a touch stronger here since
+      // the account layout leaves much less open dark space for it to show.
       backgroundImage:
-        "linear-gradient(rgba(243, 234, 216, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(243, 234, 216, 0.035) 1px, transparent 1px)",
+        "linear-gradient(rgba(243, 234, 216, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(243, 234, 216, 0.06) 1px, transparent 1px)",
       backgroundSize: "46px 46px",
       color: "var(--sb-cream)",
       fontFamily: "var(--font-dm-sans), sans-serif",
