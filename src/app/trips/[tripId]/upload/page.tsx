@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import FlowTopbar from "@/components/layout/FlowTopbar";
@@ -19,6 +19,24 @@ import { convertHeicBlob } from "@/lib/heic/heicPool";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
+
+// How many files to run through the convert→upload pipeline at once. Firing all
+// of them concurrently (e.g. 1000) floods the CPU (EXIF + decode) and network,
+// freezing the UI. A small pool keeps things responsive and roughly matches the
+// browser's per-host connection cap and the HEIC worker pool size.
+const UPLOAD_CONCURRENCY = 6;
+
+/** Run an async worker over items with a fixed concurrency limit. */
+async function runPool<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>): Promise<void> {
+  let cursor = 0;
+  const run = async () => {
+    while (cursor < items.length) {
+      const i = cursor++;
+      await worker(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+}
 
 interface PendingCard {
   tempId: string;
@@ -239,7 +257,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         }
       };
 
-      await Promise.all(files.map((f, i) => processFile(f, i)));
+      await runPool(files, UPLOAD_CONCURRENCY, (f, i) => processFile(f, i));
       runInference();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
@@ -285,6 +303,20 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     }
     router.push(`/trips/${tripId}/cover`);
   };
+
+  // Stable handlers so memoized tiles don't re-render on every progress tick.
+  const handleDeletePhoto = useCallback((id: string) => {
+    deletePhoto(tripId, id).catch(() => {});
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  }, [tripId]);
+
+  const handleDismissPending = useCallback((id: string) => {
+    setPendingCards((prev) => {
+      const c = prev.find((x) => x.tempId === id);
+      if (c?.previewUrl) URL.revokeObjectURL(c.previewUrl);
+      return prev.filter((x) => x.tempId !== id);
+    });
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", paddingBottom: 120, fontFamily: "var(--font-dm-sans), sans-serif" }}>
@@ -375,23 +407,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               gap: 10,
             }}>
               {photos.map((photo, i) => (
-                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i}
-                  onDelete={(id) => {
-                    deletePhoto(tripId, id).catch(() => {});
-                    setPhotos((prev) => prev.filter((p) => p.id !== id));
-                  }}
-                />
+                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i} onDelete={handleDeletePhoto} />
               ))}
               {pendingCards.map((card) => (
-                <PendingTile key={card.tempId} card={card}
-                  onDismiss={(id) => {
-                    setPendingCards((prev) => {
-                      const c = prev.find((x) => x.tempId === id);
-                      if (c?.previewUrl) URL.revokeObjectURL(c.previewUrl);
-                      return prev.filter((x) => x.tempId !== id);
-                    });
-                  }}
-                />
+                <PendingTile key={card.tempId} card={card} onDismiss={handleDismissPending} />
               ))}
             </div>
           </>
@@ -449,25 +468,39 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .photo-tile .remove-btn { opacity: 0; transition: opacity 0.15s ease; }
+        .photo-tile:hover .remove-btn { opacity: 1; }
       `}</style>
     </div>
   );
 }
 
-function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: string; index: number; onDelete: (id: string) => void }) {
+const PhotoTile = memo(function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: string; index: number; onDelete: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <div
+      className="photo-tile"
       style={{
         aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
         background: "var(--sb-panel)",
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 150px",
         animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
       }}
     >
+      {/* A fixed square placeholder loader until the image decodes. */}
+      {!loaded && (
+        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+          <div style={{ width: 18, height: 18, border: "2px solid var(--sb-panel-2)", borderTopColor: "var(--sb-gold)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        </div>
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
         alt=""
+        loading="lazy"
+        decoding="async"
         onLoad={() => setLoaded(true)}
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
       />
@@ -482,20 +515,21 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
         }}
         className="remove-btn"
       >×</button>
-      <style>{`.remove-btn { opacity: 0 !important; } div:hover > .remove-btn { opacity: 1 !important; }`}</style>
     </div>
   );
-}
+});
 
-function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
+const PendingTile = memo(function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: string) => void }) {
   return (
     <div style={{
       aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
       background: "var(--sb-panel)",
+      contentVisibility: "auto",
+      containIntrinsicSize: "auto 150px",
     }}>
       {card.previewUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.previewUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={card.previewUrl} alt="" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       )}
       {card.error ? (
         <div style={{
@@ -526,7 +560,6 @@ function PendingTile({ card, onDismiss }: { card: PendingCard; onDismiss: (id: s
           }} />
         </>
       )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-}
+});
