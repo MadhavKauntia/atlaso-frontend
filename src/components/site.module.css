@@ -87,7 +87,7 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--sb-muted);
-  margin: 0;
+  margin: 14px 0 0;
 }
 .footerColTitle {
   font-size: 11px;

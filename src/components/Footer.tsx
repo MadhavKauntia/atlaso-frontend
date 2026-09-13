@@ -9,7 +9,7 @@ export default function Footer() {
     <footer className={s.footer}>
       <div className={s.footerInner}>
         <div className={s.footerBrand}>
-          <Brand dark height={24} />
+          <Brand dark height={24} style={{ marginLeft: "-11px" }} />
           <p className={s.footerTagline}>
             Travel photobooks that build themselves. Drop in your photos, pick a country, and your
             book is ready in minutes, and we print and ship it across India.
