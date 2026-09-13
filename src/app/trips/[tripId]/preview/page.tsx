@@ -342,29 +342,24 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        background: "var(--sb-bg-deep)", padding: "18px 48px",
-        display: "flex", justifyContent: "flex-end", alignItems: "center",
-        borderTop: "1px solid #46403a", zIndex: 10,
-      }}>
-        <button
-          onClick={() => router.push(`/trips/${tripId}/order?bookId=${bookId}`)}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 10,
-            padding: "14px 26px", background: "var(--sb-red)", color: "var(--sb-cream)",
-            borderRadius: 999, fontWeight: 800, fontSize: 14, border: "none", cursor: "pointer",
-            fontFamily: "var(--font-bricolage)",
-          }}
-        >
-          Continue to order
-          <span style={{
-            width: 24, height: 24, background: "var(--sb-cream)", color: "var(--sb-red)",
-            borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
-          }}>→</span>
-        </button>
-      </div>
+      {/* Sticky continue button (no bar) */}
+      <button
+        onClick={() => router.push(`/trips/${tripId}/order?bookId=${bookId}`)}
+        style={{
+          position: "fixed", bottom: 18, right: 48, zIndex: 10,
+          display: "inline-flex", alignItems: "center", gap: 10,
+          padding: "14px 26px", background: "var(--sb-red)", color: "var(--sb-cream)",
+          borderRadius: 999, fontWeight: 800, fontSize: 14, border: "none", cursor: "pointer",
+          fontFamily: "var(--font-bricolage)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+        }}
+      >
+        Continue to order
+        <span style={{
+          width: 24, height: 24, background: "var(--sb-cream)", color: "var(--sb-red)",
+          borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
+        }}>→</span>
+      </button>
 
       {picker && (
         <PhotoPickerModal
