@@ -45,6 +45,12 @@ async function runPool<T>(items: T[], limit: number, worker: (item: T, index: nu
 const MAX_EDGE = 2560;
 const JPEG_QUALITY = 0.82;
 
+// A small display thumbnail generated from the same decode, kept in memory for
+// this session so grid tiles render instantly without re-fetching the full
+// image from S3. ~360px covers a retina ~180px tile; ~20-30KB each.
+const THUMB_EDGE = 360;
+const THUMB_QUALITY = 0.72;
+
 async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: number): Promise<Blob> {
   if (typeof OffscreenCanvas !== "undefined") {
     const canvas = new OffscreenCanvas(w, h);
@@ -66,7 +72,7 @@ async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: nu
  * untouched (no needless re-encode). Also serves as the single decode we need
  * for dimensions, so there's no separate decode step.
  */
-async function prepareForUpload(file: File, maxEdge: number, quality: number): Promise<{ file: File; width: number; height: number }> {
+async function prepareForUpload(file: File, maxEdge: number, quality: number): Promise<{ file: File; width: number; height: number; thumbUrl?: string }> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -74,10 +80,19 @@ async function prepareForUpload(file: File, maxEdge: number, quality: number): P
     return { file, width: 0, height: 0 }; // undecodable — upload as-is
   }
   const { width, height } = bitmap;
-  const longest = Math.max(width, height);
+  const longest = Math.max(width, height) || 1;
+
+  // Tiny display thumbnail from the same decode (near-free) for instant tiles.
+  let thumbUrl: string | undefined;
+  try {
+    const ts = Math.min(THUMB_EDGE, longest) / longest;
+    const thumbBlob = await encodeJpeg(bitmap, Math.max(1, Math.round(width * ts)), Math.max(1, Math.round(height * ts)), THUMB_QUALITY);
+    thumbUrl = URL.createObjectURL(thumbBlob);
+  } catch { /* no thumb — tile falls back to the S3 image */ }
+
   if (longest <= maxEdge) {
     bitmap.close();
-    return { file, width, height };
+    return { file, width, height, thumbUrl };
   }
   const scale = maxEdge / longest;
   const w = Math.round(width * scale);
@@ -86,10 +101,10 @@ async function prepareForUpload(file: File, maxEdge: number, quality: number): P
     const blob = await encodeJpeg(bitmap, w, h, quality);
     bitmap.close();
     const name = file.name.replace(/\.(png|webp|jpeg|jpg)$/i, ".jpg");
-    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h };
+    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h, thumbUrl };
   } catch {
     bitmap.close();
-    return { file, width, height };
+    return { file, width, height, thumbUrl };
   }
 }
 
@@ -164,6 +179,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   // Number of concurrent upload batches in flight, so adding more photos
   // mid-upload doesn't clobber the `uploading` flag.
   const activeBatches = useRef(0);
+  // photoId -> local thumbnail object URL, so confirmed tiles render instantly
+  // from memory instead of re-fetching the full image from S3.
+  const thumbUrls = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (initialFetch.current) return;
@@ -237,23 +255,27 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         let currentTempId = tempIds[i];
         try {
           let file = f;
-          let heicPreviewUrl: string | undefined;
 
           if (HEIC_TYPES.has(f.type)) {
             file = await convertHeic(f);
           }
 
           // Downscale to a print-appropriate size before upload — the biggest
-          // lever on upload time. Also gives us the final dimensions (one decode).
+          // lever on upload time. Also gives us the final dimensions and a tiny
+          // display thumbnail from the same decode (one pass).
           const prepared = await prepareForUpload(file, MAX_EDGE, JPEG_QUALITY);
           file = prepared.file;
           const dims = { width: prepared.width, height: prepared.height };
+          const thumbUrl = prepared.thumbUrl;
 
-          if (HEIC_TYPES.has(f.type)) {
-            heicPreviewUrl = URL.createObjectURL(file);
-            setPendingCards((prev) => prev.map((c) =>
-              c.tempId === tempIds[i] ? { ...c, converting: false, previewUrl: heicPreviewUrl! } : c
-            ));
+          // Show the lightweight thumbnail as soon as it exists (also clears the
+          // HEIC "converting" state), replacing any instant placeholder preview.
+          if (thumbUrl) {
+            setPendingCards((prev) => prev.map((c) => {
+              if (c.tempId !== tempIds[i]) return c;
+              if (c.previewUrl && c.previewUrl !== thumbUrl) URL.revokeObjectURL(c.previewUrl);
+              return { ...c, converting: false, previewUrl: thumbUrl };
+            }));
           }
 
           const [exif, gps] = await Promise.all([
@@ -273,22 +295,19 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             fileSize: file.size,
           }]);
 
-          const cardPreviewUrl = heicPreviewUrl ?? URL.createObjectURL(file);
-          const card: PendingCard = { tempId: init.photoId, previewUrl: cardPreviewUrl, name: file.name, progress: 0, error: null };
-
-          // Replace placeholder card in-place so grid order stays stable
+          // Re-key the placeholder card to the real photo id, keeping its thumbnail.
           setPendingCards((prev) => {
             const idx = prev.findIndex((c) => c.tempId === tempIds[i]);
-            if (idx < 0) return [...prev, card];
+            if (idx < 0) return prev;
             const next = [...prev];
-            if (next[idx].previewUrl && next[idx].previewUrl !== heicPreviewUrl) URL.revokeObjectURL(next[idx].previewUrl);
-            next[idx] = card;
+            next[idx] = { ...next[idx], tempId: init.photoId, name: file.name, progress: 0, error: null, converting: false };
             return next;
           });
           currentTempId = init.photoId;
+          if (thumbUrl) thumbUrls.current.set(init.photoId, thumbUrl);
 
           await uploadToS3(init.uploadUrl, file, (pct) => {
-            setPendingCards((prev) => prev.map((c) => c.tempId === card.tempId ? { ...c, progress: pct } : c));
+            setPendingCards((prev) => prev.map((c) => c.tempId === init.photoId ? { ...c, progress: pct } : c));
           });
 
           const [photo] = await confirmUploads(tripId, [{
@@ -304,8 +323,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             longitude: gps?.longitude ?? null,
           } as ConfirmUploadRequest]);
 
-          URL.revokeObjectURL(card.previewUrl);
-          setPendingCards((prev) => prev.filter((c) => c.tempId !== card.tempId));
+          // Keep the thumbnail URL alive — the confirmed tile now renders from it.
+          setPendingCards((prev) => prev.filter((c) => c.tempId !== init.photoId));
           setPhotos((prev) => [...prev, photo]);
         } catch {
           setPendingCards((prev) => prev.map((c) =>
@@ -365,7 +384,15 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const handleDeletePhoto = useCallback((id: string) => {
     deletePhoto(tripId, id).catch(() => {});
     setPhotos((prev) => prev.filter((p) => p.id !== id));
+    const t = thumbUrls.current.get(id);
+    if (t) { URL.revokeObjectURL(t); thumbUrls.current.delete(id); }
   }, [tripId]);
+
+  // Free all in-memory thumbnail URLs when leaving the page.
+  useEffect(() => {
+    const urls = thumbUrls.current;
+    return () => { urls.forEach((u) => URL.revokeObjectURL(u)); urls.clear(); };
+  }, []);
 
   const handleDismissPending = useCallback((id: string) => {
     setPendingCards((prev) => {
@@ -464,7 +491,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               gap: 10,
             }}>
               {photos.map((photo, i) => (
-                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i} onDelete={handleDeletePhoto} />
+                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i} thumbUrl={thumbUrls.current.get(photo.id)} onDelete={handleDeletePhoto} />
               ))}
               {pendingCards.map((card) => (
                 <PendingTile key={card.tempId} card={card} onDismiss={handleDismissPending} />
@@ -533,7 +560,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   );
 }
 
-const PhotoTile = memo(function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: string; index: number; onDelete: (id: string) => void }) {
+const PhotoTile = memo(function PhotoTile({ photo, tripId, index, thumbUrl, onDelete }: { photo: Photo; tripId: string; index: number; thumbUrl?: string; onDelete: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <div
@@ -552,7 +579,7 @@ const PhotoTile = memo(function PhotoTile({ photo, tripId, index, onDelete }: { 
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
+        src={thumbUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
         alt=""
         loading="lazy"
         decoding="async"
