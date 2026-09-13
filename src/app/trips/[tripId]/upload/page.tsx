@@ -51,6 +51,11 @@ const JPEG_QUALITY = 0.82;
 const THUMB_EDGE = 360;
 const THUMB_QUALITY = 0.72;
 
+// Upload caps (mirrored server-side). Per-file guards against browser OOM on a
+// huge decode; per-book guards vision-analysis cost.
+const MAX_PHOTOS = 500;
+const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
+
 async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: number): Promise<Blob> {
   if (typeof OffscreenCanvas !== "undefined") {
     const canvas = new OffscreenCanvas(w, h);
@@ -182,6 +187,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   // photoId -> local thumbnail object URL, so confirmed tiles render instantly
   // from memory instead of re-fetching the full image from S3.
   const thumbUrls = useRef<Map<string, string>>(new Map());
+  // Current accepted count (confirmed + in-flight), read synchronously in the
+  // drop handler to enforce the per-book cap without a stale closure.
+  const acceptedCount = useRef(0);
 
   useEffect(() => {
     if (initialFetch.current) return;
@@ -199,17 +207,35 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (result) setInferred(result);
   }, []);
 
-  const handleFiles = useCallback(async (files: File[]) => {
+  const handleFiles = useCallback(async (dropped: File[]) => {
+    if (!dropped.length) return;
+
+    // Filter out anything we can't accept, keeping the rest, and summarise what
+    // was skipped rather than rejecting the whole drop.
+    let files = dropped.filter((f) => ALLOWED_TYPES.has(f.type));
+    const wrongType = dropped.length - files.length;
+
+    const beforeSize = files.length;
+    files = files.filter((f) => f.size <= MAX_FILE_BYTES);
+    const tooLarge = beforeSize - files.length;
+
+    const remaining = Math.max(0, MAX_PHOTOS - acceptedCount.current);
+    const overflow = Math.max(0, files.length - remaining);
+    if (overflow > 0) files = files.slice(0, remaining);
+
+    const skipped: string[] = [];
+    if (wrongType) skipped.push(`${wrongType} skipped (only JPG, PNG, WebP or HEIC).`);
+    if (tooLarge) skipped.push(`${tooLarge} skipped (each photo must be under 50 MB).`);
+    if (overflow) skipped.push(`${overflow} skipped (a book can hold up to ${MAX_PHOTOS} photos).`);
+    setError(skipped.length ? skipped.join(" ") : null);
+
     if (!files.length) return;
-    const invalid = files.filter((f) => !ALLOWED_TYPES.has(f.type));
-    if (invalid.length) {
-      setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC).`);
-      return;
-    }
+    // Reserve the slots immediately so back-to-back drops respect the cap.
+    acceptedCount.current += files.length;
+
     activeBatches.current += 1;
     setUploading(true);
     setBatchTotal((n) => n + files.length);
-    setError(null);
 
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
     const initialCards: PendingCard[] = files.map((f, i) => ({
@@ -371,6 +397,11 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const uploadPartial = activeCards.reduce((s, c) => s + (c.converting ? 0 : c.progress) / 100, 0);
   const uploadPct = batchTotal > 0 ? Math.min(100, Math.round(((uploadDone + uploadPartial) / batchTotal) * 100)) : 0;
 
+  // Keep the accepted-count ref authoritative for the drop handler's cap check.
+  useEffect(() => {
+    acceptedCount.current = photos.length + pendingCards.filter((c) => !c.error).length;
+  }, [photos, pendingCards]);
+
   const handleContinue = () => {
     if (inferred && photos.length > 0) {
       sessionStorage.setItem(`atlaso_inferred_${tripId}`, JSON.stringify(inferred));
@@ -422,7 +453,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            The moment they're in, they're automatically arranged into a photo book. You need at least 50 photos to get started, and more than that allows us to curate the best ones.
+            The moment they're in, they're automatically arranged into a photo book. You need at least 50 photos to get started, and adding more, up to 500, lets us curate the best ones.
           </p>
         </div>
 
@@ -450,7 +481,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             {isDragActive ? "Drop to upload" : "Drop photos here"}
           </div>
           <div style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 24 }}>
-            or browse your device · JPG, PNG or HEIC up to 25 MB each
+            or browse your device · JPG, PNG or HEIC up to 50 MB each
           </div>
           <span style={{
             display: "inline-block", padding: "14px 26px",
@@ -477,7 +508,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
                 <span style={{ color: "var(--sb-gold)", fontWeight: 800 }}>{totalCount}</span> photos uploaded
               </div>
               <div style={{ fontSize: 13, color: "var(--sb-muted)" }}>
-                {totalCount < 50
+                {totalCount >= MAX_PHOTOS
+                  ? `${MAX_PHOTOS} photo limit reached`
+                  : totalCount < 50
                   ? `${50 - totalCount} more needed to continue`
                   : totalCount < 100
                   ? `${100 - totalCount} more for fuller pages`
