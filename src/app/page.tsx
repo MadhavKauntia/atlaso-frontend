@@ -48,21 +48,24 @@ export default function LandingPage() {
           <div className={s.spread}>
             <div className={s.spreadLeft}>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/covers/greece.jpg" alt="A landscape from the trip" />
+                <img className={s.slotImg} src="/assets/hero/hero-1.jpg" alt="A photo from the trip" />
+              </div>
+              <div className={s.slot}>
+                <img className={s.slotImg} src="/assets/hero/hero-3.jpg" alt="A photo from the trip" />
               </div>
             </div>
             <div className={s.spreadRight}>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/covers/japan.jpg" alt="A portrait from the trip" />
+                <img className={s.slotImg} src="/assets/hero/hero-5.jpg" alt="A photo from the trip" />
               </div>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/covers/vietnam.jpg" alt="Food from the trip" />
+                <img className={s.slotImg} src="/assets/hero/hero-2.jpg" alt="A photo from the trip" />
               </div>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/covers/srilanka.jpg" alt="A street from the trip" />
+                <img className={s.slotImg} src="/assets/hero/hero-6.jpg" alt="A photo from the trip" />
               </div>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/covers/thailand.jpg" alt="A harbour from the trip" />
+                <img className={s.slotImg} src="/assets/hero/hero-4.jpg" alt="A photo from the trip" />
               </div>
             </div>
             <div className={s.tapeTop} />
