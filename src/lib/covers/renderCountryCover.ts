@@ -2,7 +2,7 @@ import { getCountry, stampUrl, countryArtUrl } from "@/lib/covers/countries";
 
 const COVER_W = 1414;
 const COVER_H = 2000; // 0.707 portrait, matches the cover art
-const TITLE_FONT = "'Roboto Serif', Georgia, serif";
+const TITLE_FONT = "'Aloja', 'Roboto Serif', Georgia, serif";
 const DESC_FONT = "'Gochi Hand', 'Comic Sans MS', cursive";
 
 /**
@@ -23,14 +23,11 @@ export async function renderCountryCoverPng(
   const art = countryArtUrl(def);
 
   // Ensure the cover fonts are loaded before drawing to canvas.
-  try {
-    await Promise.all([
-      document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
-      document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
-    ]);
-  } catch {
-    /* fall back to system fonts */
-  }
+  await Promise.allSettled([
+    document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
+    document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
+  ]);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
