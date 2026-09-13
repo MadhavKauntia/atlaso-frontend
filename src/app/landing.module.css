@@ -3,7 +3,13 @@
 .root {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
   color: var(--sb-cream);
-  background: var(--sb-bg);
+  background-color: var(--sb-bg);
+  /* Very light graph-paper grid — adds a subtle scrapbook texture behind the
+     dark sections (hero, closing gaps). Cream lines at ~3% opacity. */
+  background-image:
+    linear-gradient(rgba(243, 234, 216, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(243, 234, 216, 0.035) 1px, transparent 1px);
+  background-size: 46px 46px;
   overflow-x: hidden;
 }
 
