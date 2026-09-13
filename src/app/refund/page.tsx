@@ -3,12 +3,12 @@ import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
   title: "Refund & Cancellation Policy | Atlaso",
-  description: "When Atlaso orders can be cancelled or refunded.",
+  description: "Atlaso's refund, replacement, and cancellation terms.",
 };
 
 export default function RefundPolicyPage() {
   return (
-    <PolicyPage title="Refund & Cancellation Policy" updated="12 September 2026">
+    <PolicyPage title="Refund & Cancellation Policy" updated="13 September 2026">
       <p>
         Every Atlaso photobook is <strong>personalised and made to order</strong> from your own photos.
         Because each book is custom-printed for you, our refund and cancellation terms are set out below.
@@ -17,10 +17,10 @@ export default function RefundPolicyPage() {
 
       <h2>Cancellations</h2>
       <p>
-        You may request to cancel your order only <strong>before it enters production</strong>. Once printing
-        has begun, the order cannot be cancelled, as the book is custom-made and cannot be resold. To request
-        a cancellation, email <a href="mailto:support@myatlaso.com">support@myatlaso.com</a> with your order
-        number as soon as possible after ordering.
+        Because every book is personalised and goes into production as soon as you order,{" "}
+        <strong>orders cannot be cancelled once they are placed</strong>. Please review your book carefully in
+        the preview before you order. If your book arrives damaged or is printed incorrectly, you are covered by
+        the refund and replacement terms below.
       </p>
 
       <h2>Refunds and replacements</h2>
@@ -37,7 +37,7 @@ export default function RefundPolicyPage() {
       <h2>How to make a claim</h2>
       <p>
         If your order is damaged or printed incorrectly, email
-        {" "}<a href="mailto:support@myatlaso.com">support@myatlaso.com</a> <strong>within 7 days of delivery</strong>
+        {" "}<a href="mailto:support@myatlaso.com">support@myatlaso.com</a> <strong>within 7 days of delivery</strong>{" "}
         with your order number and clear photos showing the issue. We may ask for additional details to verify
         the claim.
       </p>
@@ -46,7 +46,7 @@ export default function RefundPolicyPage() {
       <p>
         For a valid claim, we will <strong>reprint and reship your photobook free of charge</strong>. If we are
         unable to produce a satisfactory replacement, we will issue a <strong>full refund</strong> to your
-        original payment method via Razorpay, typically within 5–7 business days of approval.
+        original payment method via Razorpay, typically within 5 to 7 business days of approval.
       </p>
 
       <h2>Not eligible</h2>
