@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { generateBook, regenerateBook, saveCoverCountry, updateTrip } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import FullPageLoader from "@/components/FullPageLoader";
 import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 import Link from "next/link";
@@ -105,7 +106,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     run().catch((err) => setError(err instanceof Error ? err.message : "Generation failed"));
   }, [ready, tripId, regenerateFrom]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!ready) return null;
+  if (!ready) return <FullPageLoader />;
 
   const displayTitle = coverPrefs?.title || "your trip";
   const displayCountry = coverPrefs?.country || null;

@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getToken, removeToken, getCachedUser } from "@/lib/auth";
+import { removeToken, getCachedUser } from "@/lib/auth";
 import { getTrips, getMe, deleteTripById, type Trip, type User } from "@/lib/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import Footer from "@/components/Footer";
 import Brand from "@/components/Brand";
+import FullPageLoader from "@/components/FullPageLoader";
 
 function resumeUrl(trip: Trip): string {
   return trip.status === "BOOK_GENERATED"
@@ -30,21 +32,19 @@ function fmt(iso: string) {
 
 export default function AccountPage() {
   const router = useRouter();
+  const ready = useRequireAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [user, setUser] = useState<User | null>(getCachedUser());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login?next=/account");
-      return;
-    }
+    if (!ready) return;
     getMe().then(setUser).catch(() => {});
     getTrips()
       .then(setTrips)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [ready]);
 
   const handleDelete = async (tripId: string) => {
     if (!confirm("Delete this design? This cannot be undone.")) return;
@@ -60,6 +60,10 @@ export default function AccountPage() {
     removeToken();
     router.push("/");
   };
+
+  // Never render the page (or a blank screen) while the auth check is pending —
+  // show a clean loader until we know the user is signed in, otherwise redirect.
+  if (!ready) return <FullPageLoader />;
 
   const inProgress = trips.filter((t) => t.status !== "BOOK_GENERATED" && t.status !== "ORDERED");
   const pendingDesigns = trips.filter((t) => t.status === "BOOK_GENERATED");

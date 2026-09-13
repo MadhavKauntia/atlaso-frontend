@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, type Book, type User } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import FullPageLoader from "@/components/FullPageLoader";
 import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 import Link from "next/link";
@@ -55,7 +56,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
     getMe().then(setUser).catch(() => {});
   }, [bookId]);
 
-  if (!ready) return null;
+  if (!ready) return <FullPageLoader />;
 
   const pageCount = book?.pages?.length ?? 50;
   const total = BOOK_PRICE * qty;

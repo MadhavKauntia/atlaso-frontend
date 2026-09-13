@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, downloadReceipt, getOrderForTrip, type Book, type OrderSummary } from "@/lib/api";
 import { getCachedUser } from "@/lib/auth";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import FullPageLoader from "@/components/FullPageLoader";
 import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 
@@ -56,7 +57,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
     getOrderForTrip(tripId).then(setOrder).catch(() => {});
   }, [bookId, tripId]);
 
-  if (!ready) return null;
+  if (!ready) return <FullPageLoader />;
 
   const title = book?.title ?? "Your Trip";
 

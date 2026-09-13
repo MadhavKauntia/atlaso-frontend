@@ -7,6 +7,7 @@ import {
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import FullPageLoader from "@/components/FullPageLoader";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 
@@ -47,7 +48,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     return () => document.removeEventListener("keydown", onKey);
   });
 
-  if (!ready) return null;
+  if (!ready) return <FullPageLoader />;
 
   if (loading) {
     return (

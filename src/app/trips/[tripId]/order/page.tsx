@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, exportBook, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import FullPageLoader from "@/components/FullPageLoader";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 
@@ -43,7 +44,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
     }).catch(() => {});
   }, [bookId]);
 
-  if (!ready) return null;
+  if (!ready) return <FullPageLoader />;
 
   const total = BOOK_PRICE * qty;
   const pageCount = book?.pages?.length ?? 0;
