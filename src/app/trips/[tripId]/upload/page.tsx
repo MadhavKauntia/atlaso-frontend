@@ -81,10 +81,16 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inferred, setInferred] = useState<InferredLocation | null>(null);
+  // Total files across all in-flight upload batches (reset once everything
+  // settles) — drives the overall progress bar.
+  const [batchTotal, setBatchTotal] = useState(0);
 
   const allCoords = useRef<{ lat: number; lon: number }[]>([]);
   const allDates = useRef<number[]>([]);
   const initialFetch = useRef(false);
+  // Number of concurrent upload batches in flight, so adding more photos
+  // mid-upload doesn't clobber the `uploading` flag.
+  const activeBatches = useRef(0);
 
   useEffect(() => {
     if (initialFetch.current) return;
@@ -109,7 +115,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       setError(`Only photos are allowed (JPEG, PNG, WebP, HEIC).`);
       return;
     }
+    activeBatches.current += 1;
     setUploading(true);
+    setBatchTotal((n) => n + files.length);
     setError(null);
 
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
@@ -236,7 +244,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
-      setUploading(false);
+      activeBatches.current -= 1;
+      // Only clear the progress bar once every concurrent batch has settled.
+      if (activeBatches.current <= 0) {
+        activeBatches.current = 0;
+        setUploading(false);
+        setBatchTotal(0);
+      }
     }
   }, [tripId, runInference]);
 
@@ -249,12 +263,19 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       "image/heic": [".heic"],
       "image/heif": [".heif"],
     },
-    disabled: uploading,
     multiple: true,
   });
 
   const totalCount = photos.length + pendingCards.filter((c) => !c.error).length;
   const canContinue = photos.length >= 50 && !uploading;
+
+  // Overall upload progress across the in-flight batch. Confirmed files leave
+  // pendingCards, so completed = batchTotal - pendingCards.length, plus the
+  // partial progress of the files still uploading.
+  const activeCards = pendingCards.filter((c) => !c.error);
+  const uploadDone = Math.max(0, batchTotal - pendingCards.length);
+  const uploadPartial = activeCards.reduce((s, c) => s + (c.converting ? 0 : c.progress) / 100, 0);
+  const uploadPct = batchTotal > 0 ? Math.min(100, Math.round(((uploadDone + uploadPartial) / batchTotal) * 100)) : 0;
 
   const handleContinue = () => {
     if (inferred && photos.length > 0) {
@@ -289,6 +310,31 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           </p>
         </div>
 
+        {uploading && batchTotal > 0 && (
+          <div style={{
+            background: "var(--sb-panel)",
+            border: "1px solid #46403a",
+            borderRadius: 16,
+            padding: "16px 20px",
+            marginBottom: 20,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+                Uploading your photos… {uploadDone} of {batchTotal} done
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "var(--sb-gold)", fontFamily: "var(--font-bricolage), sans-serif" }}>
+                {uploadPct}%
+              </span>
+            </div>
+            <div style={{ height: 8, background: "var(--sb-bg-deep)", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ width: `${uploadPct}%`, height: "100%", background: "var(--sb-gold)", borderRadius: 999, transition: "width 0.3s ease" }} />
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+              You can keep adding more photos while these upload.
+            </div>
+          </div>
+        )}
+
         <div
           {...getRootProps()}
           style={{
@@ -297,7 +343,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             borderRadius: 20,
             padding: "72px 32px",
             textAlign: "center",
-            cursor: uploading ? "not-allowed" : "pointer",
+            cursor: "pointer",
             transition: "background 0.2s, border-color 0.2s",
             ...(isDragActive && { background: "var(--sb-panel)", borderColor: "var(--sb-gold)" }),
           }}
