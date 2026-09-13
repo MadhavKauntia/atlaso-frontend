@@ -310,18 +310,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           </p>
         </div>
 
-        {uploading && batchTotal > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7, fontSize: 12.5, color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-              <span>Uploading {uploadDone} of {batchTotal}</span>
-              <span style={{ color: "var(--sb-gold)", fontWeight: 700 }}>{uploadPct}%</span>
-            </div>
-            <div style={{ height: 3, background: "var(--sb-panel-2)", borderRadius: 999, overflow: "hidden" }}>
-              <div style={{ width: `${uploadPct}%`, height: "100%", background: "var(--sb-gold)", borderRadius: 999, transition: "width 0.3s ease" }} />
-            </div>
-          </div>
-        )}
-
         <div
           {...getRootProps()}
           style={{
@@ -411,6 +399,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       </div>
 
       <FlowBottomBar
+        progress={uploading ? uploadPct : null}
         leftContent={
           pendingCards.some((c) => c.converting) ? (
             <span>Converting your iPhone photos to JPEG before uploading. This only takes a moment.</span>
