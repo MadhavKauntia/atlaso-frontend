@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Brand from "@/components/Brand";
 import { getToken, removeToken } from "@/lib/auth";
 
 interface Props {
@@ -31,19 +31,7 @@ export default function AppShell({ children, maxWidth = "900px" }: Props) {
           justifyContent: "space-between",
         }}
       >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "var(--font-nunito), sans-serif",
-            fontWeight: 800,
-            fontSize: 24,
-            letterSpacing: "-0.03em",
-            color: "#000000",
-            textDecoration: "none",
-          }}
-        >
-          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-        </Link>
+        <Brand height={26} />
 
         {isLoggedIn && (
           <button

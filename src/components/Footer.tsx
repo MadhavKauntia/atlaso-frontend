@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Brand from "@/components/Brand";
 import s from "./site.module.css";
 
 const YEAR = new Date().getFullYear();
@@ -8,9 +9,7 @@ export default function Footer() {
     <footer className={s.footer}>
       <div className={s.footerInner}>
         <div className={s.footerBrand}>
-          <Link href="/" className={s.footerLogo}>
-            atlaso<span className={s.footerLogoDot}>.</span>
-          </Link>
+          <Brand dark height={24} />
           <p className={s.footerTagline}>
             Travel photobooks that build themselves. Drop in your photos, pick a country, and your
             book is ready in minutes — we print and ship it across India.

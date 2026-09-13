@@ -35,19 +35,21 @@ export default function CountryCover({
   const def = getCountry(country);
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
-  const spineColor = def?.spine ?? "#302b28";
+  const bg = def?.bg ?? "#302b28";
+  const spineColor = def?.spine ?? bg;
   const ink = def?.ink ?? "#f3ead8";
-  const bg = def?.bg ?? spineColor;
 
   const displayTitle = (title || def?.name || "your trip").toUpperCase();
   const displayDesc = description.trim();
+  // Shrink the title for longer names so it stays on one line.
+  const tl = displayTitle.length;
+  const titleCqw = tl <= 6 ? 14 : tl <= 9 ? 11 : tl <= 12 ? 9 : 7.5;
 
   let face: React.ReactNode;
 
   if (stamp) {
-    // Composite cover: solid bg + stamp + dynamic title & description.
-    // Positions match the legacy jpg covers (stamp ~37% wide, centered at 44%
-    // height; title baseline ~72%; description ~81%).
+    // Composite cover: solid bg + title + description + stamp (top to bottom),
+    // matching the sample layout.
     face = (
       <div
         style={{
@@ -60,34 +62,21 @@ export default function CountryCover({
           overflow: "hidden",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={stamp}
-          alt={def ? `${def.name} stamp` : "stamp"}
-          style={{
-            position: "absolute",
-            top: "25.5%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "42%",
-            height: "auto",
-            display: "block",
-          }}
-        />
         <div
           style={{
             position: "absolute",
-            top: "66%",
+            top: "16%",
             left: 0,
             right: 0,
             fontFamily: TITLE_FONT,
             fontWeight: 700,
-            fontSize: "14cqw",
+            fontSize: `${titleCqw}cqw`,
             lineHeight: 1,
             letterSpacing: "0.01em",
             color: ink,
             textAlign: "center",
             textTransform: "uppercase",
+            whiteSpace: "nowrap",
             padding: "0 6%",
           }}
         >
@@ -97,11 +86,11 @@ export default function CountryCover({
           <div
             style={{
               position: "absolute",
-              top: "79%",
+              top: "31%",
               left: 0,
               right: 0,
               fontFamily: DESC_FONT,
-              fontSize: "4cqw",
+              fontSize: "4.5cqw",
               lineHeight: 1.2,
               color: ink,
               opacity: 0.95,
@@ -112,6 +101,20 @@ export default function CountryCover({
             {displayDesc}
           </div>
         )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={stamp}
+          alt={def ? `${def.name} stamp` : "stamp"}
+          style={{
+            position: "absolute",
+            top: "40%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "38%",
+            height: "auto",
+            display: "block",
+          }}
+        />
       </div>
     );
   } else if (art) {

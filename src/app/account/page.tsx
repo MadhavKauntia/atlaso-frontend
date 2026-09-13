@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getToken, removeToken } from "@/lib/auth";
 import { getTrips, deleteTripById, type Trip } from "@/lib/api";
 import Footer from "@/components/Footer";
+import Brand from "@/components/Brand";
 
 function resumeUrl(trip: Trip): string {
   return trip.status === "BOOK_GENERATED"
@@ -81,23 +82,7 @@ export default function AccountPage() {
           flexWrap: "wrap",
         }}
       >
-        <Link
-          href="/"
-          aria-label="Atlaso home"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            fontFamily: "var(--font-nunito), sans-serif",
-            fontWeight: 800,
-            fontSize: 27,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            color: "#000000",
-            textDecoration: "none",
-          }}
-        >
-          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-        </Link>
+        <Brand height={26} />
         <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
           <Link
             href="/create"

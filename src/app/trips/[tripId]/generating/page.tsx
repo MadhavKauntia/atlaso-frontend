@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { generateBook, regenerateBook, saveCoverCountry, updateTrip } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
+import Brand from "@/components/Brand";
 import Link from "next/link";
 
 const STEPS = [
@@ -195,19 +196,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
           alignItems: "center",
         }}
       >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "var(--font-nunito), sans-serif",
-            fontWeight: 800,
-            fontSize: 24,
-            letterSpacing: "-0.03em",
-            color: "#000",
-            textDecoration: "none",
-          }}
-        >
-          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-        </Link>
+        <Brand height={26} />
       </div>
 
       {/* Main content */}

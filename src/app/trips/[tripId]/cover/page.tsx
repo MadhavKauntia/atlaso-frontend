@@ -347,20 +347,20 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               name your book
             </h1>
             <p style={{ fontSize: 15, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.6, maxWidth: "48ch" }}>
-              Pick a country for its illustrated stamp cover, then name your book and add a description.
+              Pick a cover for your book, then give it a title and a short description.
             </p>
 
             {error && <p style={{ color: "#ef8b7f", fontSize: 14, marginBottom: 16 }}>{error}</p>}
 
             {/* 1. Country picker */}
             <div style={{ marginBottom: 28 }}>
-              <div style={fieldLabel}>cover — pick a country</div>
+              <div style={fieldLabel}>cover — pick a design</div>
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search countries"
-                aria-label="Search countries"
+                placeholder="Search covers"
+                aria-label="Search covers"
                 style={{ ...inputStyle, marginBottom: 12 }}
               />
               <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
@@ -376,7 +376,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                   </button>
                 ))}
                 {filtered.length === 0 && (
-                  <span style={{ fontSize: 14, color: "var(--sb-muted-2)" }}>No countries match “{query}”.</span>
+                  <span style={{ fontSize: 14, color: "var(--sb-muted-2)" }}>No covers match “{query}”.</span>
                 )}
               </div>
             </div>
@@ -391,7 +391,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                 value={title}
                 onChange={(e) => onTitleChange(e.target.value)}
                 maxLength={40}
-                placeholder="Defaults to the country — edit to rename"
+                placeholder="Defaults to the cover — edit to rename"
                 style={inputStyle}
               />
             </div>
@@ -432,7 +432,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               style={{ width: 320, transform: "rotate(-2deg)" }}
             />
             <div style={{ marginTop: 24, fontSize: 13, color: "var(--sb-muted-2)", textAlign: "center" }}>
-              {country ? "live preview · updates as you type" : "pick a country to see its cover"}
+              {country ? "live preview · updates as you type" : "pick a cover to preview it"}
             </div>
             <div
               style={{

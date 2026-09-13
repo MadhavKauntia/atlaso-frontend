@@ -48,26 +48,28 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, COVER_W, COVER_H);
 
-    // stamp illustration — ~42% wide, vertically centred at 44%
-    const img = await loadImage(stamp);
-    const sw = COVER_W * 0.42;
-    const sh = img.naturalHeight ? (sw / img.naturalWidth) * img.naturalHeight : sw / 0.8;
-    ctx.drawImage(img, (COVER_W - sw) / 2, COVER_H * 0.44 - sh / 2, sw, sh);
-
-    // title
+    // title (top) — shrink for longer names
+    const tl = displayTitle.length;
+    const titleH = tl <= 6 ? 0.1 : tl <= 9 ? 0.078 : tl <= 12 ? 0.064 : 0.053;
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `700 ${Math.round(COVER_H * 0.095)}px ${TITLE_FONT}`;
-    ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.74, COVER_W * 0.82);
+    ctx.font = `700 ${Math.round(COVER_H * titleH)}px ${TITLE_FONT}`;
+    ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.26, COVER_W * 0.82);
 
-    // description
+    // description (below title)
     if (displayDesc) {
       ctx.globalAlpha = 0.95;
-      ctx.font = `400 ${Math.round(COVER_H * 0.028)}px ${DESC_FONT}`;
-      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.8, COVER_W * 0.82);
+      ctx.font = `400 ${Math.round(COVER_H * 0.03)}px ${DESC_FONT}`;
+      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.35, COVER_W * 0.82);
       ctx.globalAlpha = 1;
     }
+
+    // stamp illustration (bottom) — ~38% wide, top at 40%
+    const img = await loadImage(stamp);
+    const sw = COVER_W * 0.38;
+    const sh = img.naturalHeight ? (sw / img.naturalWidth) * img.naturalHeight : sw / 0.809;
+    ctx.drawImage(img, (COVER_W - sw) / 2, COVER_H * 0.4, sw, sh);
   } else if (art) {
     const img = await loadImage(art);
     canvas.width = img.naturalWidth || COVER_W;

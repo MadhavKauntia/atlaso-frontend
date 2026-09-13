@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Brand from "@/components/Brand";
 
 interface FlowTopbarProps {
   currentStep: 1 | 2 | 3 | 4;
@@ -31,20 +31,7 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
         zIndex: 20,
       }}
     >
-      <Link
-        href="/"
-        style={{
-          fontFamily: "var(--font-nunito), sans-serif",
-          fontWeight: 800,
-          fontSize: 24,
-          letterSpacing: "-0.03em",
-          lineHeight: 1,
-          color: "#000000",
-          textDecoration: "none",
-        }}
-      >
-        atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-      </Link>
+      <Brand height={26} />
 
       <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.6vw, 18px)", flexWrap: "wrap" }}>
         {STEPS.map((step) => {

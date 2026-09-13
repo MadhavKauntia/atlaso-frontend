@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, downloadReceipt, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
-import Link from "next/link";
+import Brand from "@/components/Brand";
 
 const TIMELINE_STEPS = [
   { label: "Order placed", status: "done" as const },
@@ -67,9 +67,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", position: "relative" }}>
       {/* Topbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 48px", borderBottom: "1px solid rgba(38,34,32,0.08)", background: "#fff" }}>
-        <Link href="/" style={{ fontFamily: "var(--font-nunito), sans-serif", fontWeight: 800, fontSize: 24, display: "flex", alignItems: "center", gap: 2, color: "var(--sb-ink)", textDecoration: "none", letterSpacing: "-0.02em" }}>
-          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-        </Link>
+        <Brand height={26} />
         <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--sb-red)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, fontFamily: "var(--font-bricolage), sans-serif" }}>
           A
         </div>

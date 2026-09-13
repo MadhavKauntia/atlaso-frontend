@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Footer from "./Footer";
+import Brand from "@/components/Brand";
 import s from "./legal.module.css";
 
 export default function PolicyPage({
@@ -14,9 +15,7 @@ export default function PolicyPage({
   return (
     <div className={s.page}>
       <div className={s.topbar}>
-        <Link href="/" className={s.topbarLogo} aria-label="Atlaso home">
-          atlaso<span className={s.topbarLogoDot}>.</span>
-        </Link>
+        <Brand height={26} />
         <Link href="/" className={s.topbarBack}>← back to home</Link>
       </div>
 

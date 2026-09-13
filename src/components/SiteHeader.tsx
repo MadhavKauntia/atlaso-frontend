@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Brand from "@/components/Brand";
 import s from "./site.module.css";
 
 export default function SiteHeader() {
   return (
     <header className={s.header}>
-      <Link href="/" className={s.logo} aria-label="Atlaso home">
-        atlaso<span className={s.logoDot}>.</span>
-      </Link>
+      <Brand height={28} />
       <nav className={s.nav}>
         <Link href="/create" className={s.navLink}>make a book</Link>
         <Link href="/how-it-works" className={s.navLink}>how it works</Link>

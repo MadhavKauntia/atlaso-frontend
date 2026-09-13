@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import AppShell from "@/components/AppShell";
+import Brand from "@/components/Brand";
 import { googleAuth } from "@/lib/api";
 import { getToken, setToken } from "@/lib/auth";
 
@@ -31,16 +32,8 @@ function LoginContent() {
   return (
     <AppShell maxWidth="420px">
       <div style={{ textAlign: "center", paddingTop: 40 }}>
-        <div style={{
-          fontFamily: "var(--font-nunito), sans-serif",
-          fontWeight: 800,
-          fontSize: 30,
-          letterSpacing: "-0.03em",
-          color: "var(--sb-cream)",
-          marginBottom: 36,
-          lineHeight: 1,
-        }}>
-          atlaso<span style={{ color: "var(--sb-gold)" }}>.</span>
+        <div style={{ marginBottom: 36, display: "flex", justifyContent: "center" }}>
+          <Brand dark height={30} href={null} />
         </div>
 
         <h1 style={{

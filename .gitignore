@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local design source (not needed for build)
 design/
+
+# local source assets (not needed for build)
+new/

@@ -6,6 +6,7 @@ import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, type Book, 
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
+import Brand from "@/components/Brand";
 import Link from "next/link";
 
 const BOOK_PRICE = 1999; // ₹ per copy, all-inclusive (shipping + taxes included)
@@ -150,9 +151,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", position: "relative" }}>
       {/* Topbar — white atlaso header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 48px", borderBottom: "1px solid rgba(38,34,32,0.08)", background: "#fff" }}>
-        <Link href="/" style={{ fontFamily: "var(--font-nunito), sans-serif", fontWeight: 800, fontSize: 24, letterSpacing: "-0.02em", color: "var(--sb-ink)", textDecoration: "none" }}>
-          atlaso<span style={{ color: "var(--sb-cyan)" }}>.</span>
-        </Link>
+        <Brand height={26} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6b6459" }}>
           <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(30,138,95,0.14)", color: "var(--sb-green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>🔒</span>
           Secure checkout
