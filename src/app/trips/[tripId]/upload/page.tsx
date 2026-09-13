@@ -311,26 +311,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         </div>
 
         {uploading && batchTotal > 0 && (
-          <div style={{
-            background: "var(--sb-panel)",
-            border: "1px solid #46403a",
-            borderRadius: 16,
-            padding: "16px 20px",
-            marginBottom: 20,
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-                Uploading your photos… {uploadDone} of {batchTotal} done
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: "var(--sb-gold)", fontFamily: "var(--font-bricolage), sans-serif" }}>
-                {uploadPct}%
-              </span>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7, fontSize: 12.5, color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+              <span>Uploading {uploadDone} of {batchTotal}</span>
+              <span style={{ color: "var(--sb-gold)", fontWeight: 700 }}>{uploadPct}%</span>
             </div>
-            <div style={{ height: 8, background: "var(--sb-bg-deep)", borderRadius: 999, overflow: "hidden" }}>
+            <div style={{ height: 3, background: "var(--sb-panel-2)", borderRadius: 999, overflow: "hidden" }}>
               <div style={{ width: `${uploadPct}%`, height: "100%", background: "var(--sb-gold)", borderRadius: 999, transition: "width 0.3s ease" }} />
-            </div>
-            <div style={{ marginTop: 8, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-              You can keep adding more photos while these upload.
             </div>
           </div>
         )}
