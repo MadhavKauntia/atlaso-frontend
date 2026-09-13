@@ -12,10 +12,10 @@ const TICKER = [
 ];
 
 const COVERS = [
-  { art: "bali", spine: "#2c4230", alt: "Bali photobook cover", tf: "rotate(-5deg) translateY(18px)" },
-  { art: "italy", spine: "#f3b53f", alt: "Italy photobook cover", tf: "rotate(3deg) translateY(-14px)" },
-  { art: "thailand", spine: "#2ba3bd", alt: "Thailand photobook cover", tf: "rotate(-2deg) translateY(26px)" },
-  { art: "switzerland", spine: "#41599c", alt: "Switzerland photobook cover", tf: "rotate(6deg) translateY(-6px)" },
+  { src: "/assets/covers/keepsake-bali.jpg", spine: "#2a3f2c", alt: "Bali photobook cover", tf: "rotate(-5deg) translateY(18px)" },
+  { src: "/assets/covers/keepsake-italy.jpg", spine: "#f3b53f", alt: "Italy photobook cover", tf: "rotate(3deg) translateY(-14px)" },
+  { src: "/assets/covers/keepsake-japan.jpg", spine: "#ac4040", alt: "Japan photobook cover", tf: "rotate(-2deg) translateY(26px)" },
+  { src: "/assets/covers/keepsake-thailand.jpg", spine: "#1d4e53", alt: "Thailand photobook cover", tf: "rotate(6deg) translateY(-6px)" },
 ];
 
 export default function LandingPage() {
@@ -97,10 +97,10 @@ export default function LandingPage() {
         </div>
         <div className={s.coversRow}>
           {COVERS.map((c) => (
-            <figure key={c.art} className={s.coverFig} style={{ "--tf": c.tf } as React.CSSProperties}>
+            <figure key={c.src} className={s.coverFig} style={{ "--tf": c.tf } as React.CSSProperties}>
               <div className={s.coverBook}>
                 <div className={s.coverSpine} style={{ background: c.spine }} />
-                <img className={s.coverImg} src={`/assets/covers/${c.art}.jpg`} alt={c.alt} />
+                <img className={s.coverImg} src={c.src} alt={c.alt} />
               </div>
             </figure>
           ))}
