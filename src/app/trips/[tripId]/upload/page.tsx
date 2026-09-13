@@ -484,8 +484,6 @@ const PhotoTile = memo(function PhotoTile({ photo, tripId, index, onDelete }: { 
       style={{
         aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
         background: "var(--sb-panel)",
-        contentVisibility: "auto",
-        containIntrinsicSize: "auto 150px",
         animation: `fadeInScale 0.4s ease-out ${Math.min(index, 7) * 0.05}s backwards`,
       }}
     >
@@ -524,8 +522,6 @@ const PendingTile = memo(function PendingTile({ card, onDismiss }: { card: Pendi
     <div style={{
       aspectRatio: "1", borderRadius: 12, overflow: "hidden", position: "relative",
       background: "var(--sb-panel)",
-      contentVisibility: "auto",
-      containIntrinsicSize: "auto 150px",
     }}>
       {card.previewUrl && (
         // eslint-disable-next-line @next/next/no-img-element
