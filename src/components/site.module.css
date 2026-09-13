@@ -83,6 +83,13 @@
   display: inline-block;
 }
 .footerLogoDot { color: var(--sb-orange); }
+.footerSocial {
+  display: inline-flex;
+  margin-top: 16px;
+  color: var(--sb-muted);
+  transition: color 160ms ease;
+}
+.footerSocial:hover { color: var(--sb-gold); }
 .footerTagline {
   font-size: 14px;
   line-height: 1.6;

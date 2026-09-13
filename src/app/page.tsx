@@ -48,9 +48,6 @@ export default function LandingPage() {
           <div className={s.spread}>
             <div className={s.spreadLeft}>
               <div className={s.slot}>
-                <img className={s.slotImg} src="/assets/hero/hero-1.jpg" alt="A photo from the trip" />
-              </div>
-              <div className={s.slot}>
                 <img className={s.slotImg} src="/assets/hero/hero-3.jpg" alt="A photo from the trip" />
               </div>
             </div>

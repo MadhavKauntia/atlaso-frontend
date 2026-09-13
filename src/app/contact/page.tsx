@@ -18,7 +18,14 @@ export default function ContactPage() {
       <p>
         <a href="mailto:support@myatlaso.com">support@myatlaso.com</a>
         <br />
-        We typically respond within 1–2 business days.
+        We typically respond within 1 to 2 business days.
+      </p>
+
+      <h2>Instagram</h2>
+      <p>
+        Follow us at{" "}
+        <a href="https://instagram.com/myatlaso" target="_blank" rel="noopener noreferrer">@myatlaso</a>{" "}
+        for new covers and travel photobooks.
       </p>
 
       <h2>Order support</h2>
@@ -26,13 +33,6 @@ export default function ContactPage() {
         When contacting us about an existing order, please include your <strong>order number</strong> and, for
         any damage or print issue, clear photos showing the problem. See our
         {" "}<a href="/refund">Refund &amp; Cancellation Policy</a> for details.
-      </p>
-
-      <h2>Business details</h2>
-      <p>
-        Atlaso
-        <br />
-        [Registered business name and address]
       </p>
     </PolicyPage>
   );
