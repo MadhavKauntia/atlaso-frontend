@@ -157,7 +157,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <div className="flow-preview-grid">
 
         {/* Left rail: spread thumbnails */}
-        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
+        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 210px)", overflowY: "auto", padding: 4 }}>
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
             const firstInterior = idx === 1;
@@ -335,7 +335,6 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             </div>
             <div>
               <div style={{ fontWeight: 700 }}>Regenerate layout</div>
-              <div style={{ fontSize: 11, color: "var(--sb-muted)", marginTop: 2 }}>AI picks a new arrangement</div>
             </div>
           </button>
 
