@@ -65,42 +65,46 @@ export default function CountryCover({
         <div
           style={{
             position: "absolute",
-            top: "16%",
+            top: "17%",
             left: 0,
             right: 0,
-            fontFamily: TITLE_FONT,
-            fontWeight: 700,
-            fontSize: `${titleCqw}cqw`,
-            lineHeight: 1,
-            letterSpacing: "0.01em",
-            color: ink,
-            textAlign: "center",
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "2cqw",
             padding: "0 6%",
           }}
         >
-          {displayTitle}
-        </div>
-        {displayDesc && (
           <div
             style={{
-              position: "absolute",
-              top: "31%",
-              left: 0,
-              right: 0,
-              fontFamily: DESC_FONT,
-              fontSize: "4.5cqw",
-              lineHeight: 1.2,
+              fontFamily: TITLE_FONT,
+              fontWeight: 400,
+              fontSize: `${titleCqw}cqw`,
+              lineHeight: 1,
+              letterSpacing: "0.01em",
               color: ink,
-              opacity: 0.95,
               textAlign: "center",
-              padding: "0 6%",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
             }}
           >
-            {displayDesc}
+            {displayTitle}
           </div>
-        )}
+          {displayDesc && (
+            <div
+              style={{
+                fontFamily: DESC_FONT,
+                fontSize: "4.5cqw",
+                lineHeight: 1.2,
+                color: ink,
+                opacity: 0.95,
+                textAlign: "center",
+              }}
+            >
+              {displayDesc}
+            </div>
+          )}
+        </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={stamp}
@@ -149,7 +153,7 @@ export default function CountryCover({
         <div
           style={{
             fontFamily: TITLE_FONT,
-            fontWeight: 700,
+            fontWeight: 400,
             fontSize: "15cqw",
             lineHeight: 1.02,
             color: ink,

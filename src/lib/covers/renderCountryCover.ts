@@ -24,8 +24,8 @@ export async function renderCountryCoverPng(
 
   // Ensure the cover fonts are loaded before drawing to canvas.
   await Promise.allSettled([
-    document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
-    document.fonts.load(`700 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
     document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
   ]);
 
@@ -51,14 +51,14 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `700 ${Math.round(COVER_H * titleH)}px ${TITLE_FONT}`;
+    ctx.font = `400 ${Math.round(COVER_H * titleH)}px ${TITLE_FONT}`;
     ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.26, COVER_W * 0.82);
 
     // description (below title)
     if (displayDesc) {
       ctx.globalAlpha = 0.95;
       ctx.font = `400 ${Math.round(COVER_H * 0.03)}px ${DESC_FONT}`;
-      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.35, COVER_W * 0.82);
+      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.315, COVER_W * 0.82);
       ctx.globalAlpha = 1;
     }
 
@@ -86,7 +86,7 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = `700 ${Math.round(COVER_H * 0.1)}px ${TITLE_FONT}`;
+    ctx.font = `400 ${Math.round(COVER_H * 0.1)}px ${TITLE_FONT}`;
     ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.7, COVER_W * 0.82);
     if (displayDesc) {
       ctx.globalAlpha = 0.95;

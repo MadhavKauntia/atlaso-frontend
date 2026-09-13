@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import CountryCover from "@/components/covers/CountryCover";
-import { COUNTRIES, getCountry } from "@/lib/covers/countries";
+import { COUNTRIES, getCountry, stampUrl } from "@/lib/covers/countries";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { getToken, setToken } from "@/lib/auth";
 import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib/api";
@@ -88,6 +88,18 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId, bookId]);
+
+  // Preload every stamp once so switching covers is instant (no flash/delay
+  // while the newly-selected stamp downloads).
+  useEffect(() => {
+    COUNTRIES.forEach((c) => {
+      const url = stampUrl(c);
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, []);
 
   const selectCountry = (slug: string) => {
     setCountry(slug);
