@@ -277,6 +277,7 @@ export interface ConfirmUploadRequest {
   takenAt: number | null;
   latitude: number | null;
   longitude: number | null;
+  sharpness?: number | null;
 }
 
 export async function initiateUploads(tripId: string, files: { filename: string; contentType: string; fileSize: number }[]): Promise<InitiateUploadResponse[]> {

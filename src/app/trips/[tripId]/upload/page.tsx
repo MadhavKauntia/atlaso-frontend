@@ -53,7 +53,7 @@ const THUMB_QUALITY = 0.72;
 
 // Upload caps (mirrored server-side). Per-file guards against browser OOM on a
 // huge decode; per-book guards vision-analysis cost.
-const MAX_PHOTOS = 500;
+const MAX_PHOTOS = 1000;
 const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: number): Promise<Blob> {
@@ -72,12 +72,58 @@ async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: nu
 }
 
 /**
- * Downscale an image to MAX_EDGE (re-encoding to JPEG) before upload, and
- * return its final dimensions. Images already within the cap pass through
- * untouched (no needless re-encode). Also serves as the single decode we need
- * for dimensions, so there's no separate decode step.
+ * A cheap sharpness proxy (variance of the Laplacian on a 128px grayscale).
+ * Higher = sharper. Used server-side to keep the sharpest frame of a burst
+ * before spending a vision-analysis call. Reuses the already-decoded bitmap.
  */
-async function prepareForUpload(file: File, maxEdge: number, quality: number): Promise<{ file: File; width: number; height: number; thumbUrl?: string }> {
+function computeSharpness(bitmap: ImageBitmap): number | undefined {
+  const w = Math.min(128, bitmap.width || 1);
+  const h = Math.min(128, bitmap.height || 1);
+  let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+  if (typeof OffscreenCanvas !== "undefined") {
+    ctx = new OffscreenCanvas(w, h).getContext("2d");
+  } else {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    ctx = c.getContext("2d");
+  }
+  if (!ctx) return undefined;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  let data: Uint8ClampedArray;
+  try {
+    data = ctx.getImageData(0, 0, w, h).data;
+  } catch {
+    return undefined;
+  }
+  const gray = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+  }
+  let sum = 0;
+  let sum2 = 0;
+  let count = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const lap = 4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - w] - gray[i + w];
+      sum += lap;
+      sum2 += lap * lap;
+      count++;
+    }
+  }
+  if (count === 0) return undefined;
+  const mean = sum / count;
+  return sum2 / count - mean * mean;
+}
+
+/**
+ * Downscale an image to MAX_EDGE (re-encoding to JPEG) before upload, and
+ * return its final dimensions, a display thumbnail, and a sharpness score.
+ * Images already within the cap pass through untouched (no needless re-encode).
+ * The single decode here serves dimensions + thumbnail + sharpness.
+ */
+async function prepareForUpload(file: File, maxEdge: number, quality: number): Promise<{ file: File; width: number; height: number; thumbUrl?: string; sharpness?: number }> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -86,6 +132,8 @@ async function prepareForUpload(file: File, maxEdge: number, quality: number): P
   }
   const { width, height } = bitmap;
   const longest = Math.max(width, height) || 1;
+
+  const sharpness = computeSharpness(bitmap);
 
   // Tiny display thumbnail from the same decode (near-free) for instant tiles.
   let thumbUrl: string | undefined;
@@ -97,7 +145,7 @@ async function prepareForUpload(file: File, maxEdge: number, quality: number): P
 
   if (longest <= maxEdge) {
     bitmap.close();
-    return { file, width, height, thumbUrl };
+    return { file, width, height, thumbUrl, sharpness };
   }
   const scale = maxEdge / longest;
   const w = Math.round(width * scale);
@@ -106,10 +154,10 @@ async function prepareForUpload(file: File, maxEdge: number, quality: number): P
     const blob = await encodeJpeg(bitmap, w, h, quality);
     bitmap.close();
     const name = file.name.replace(/\.(png|webp|jpeg|jpg)$/i, ".jpg");
-    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h, thumbUrl };
+    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h, thumbUrl, sharpness };
   } catch {
     bitmap.close();
-    return { file, width, height, thumbUrl };
+    return { file, width, height, thumbUrl, sharpness };
   }
 }
 
@@ -347,6 +395,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             takenAt,
             latitude: gps?.latitude ?? null,
             longitude: gps?.longitude ?? null,
+            sharpness: prepared.sharpness ?? null,
           } as ConfirmUploadRequest]);
 
           // Keep the thumbnail URL alive — the confirmed tile now renders from it.
@@ -453,7 +502,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            The moment they're in, they're automatically arranged into a photo book. You need at least 50 photos to get started, and adding more, up to 500, lets us curate the best ones.
+            The moment they're in, they're automatically arranged into a photo book. You need at least 50 photos to get started, and adding more, up to 1000, lets us curate the best ones.
           </p>
         </div>
 
