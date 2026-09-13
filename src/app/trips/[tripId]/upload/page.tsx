@@ -90,7 +90,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (initialFetch.current) return;
     initialFetch.current = true;
     getPhotos(tripId).then(setPhotos).catch(() => {});
-    const raw = sessionStorage.getItem("atlaso_inferred");
+    // Keyed per-trip so one trip's inferred location never leaks into another.
+    const raw = sessionStorage.getItem(`atlaso_inferred_${tripId}`);
     if (raw) {
       try { setInferred(JSON.parse(raw)); } catch { /* ignore */ }
     }
@@ -256,8 +257,10 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const canContinue = photos.length >= 50 && !uploading;
 
   const handleContinue = () => {
-    if (inferred) {
-      sessionStorage.setItem("atlaso_inferred", JSON.stringify(inferred));
+    if (inferred && photos.length > 0) {
+      sessionStorage.setItem(`atlaso_inferred_${tripId}`, JSON.stringify(inferred));
+    } else {
+      sessionStorage.removeItem(`atlaso_inferred_${tripId}`);
     }
     router.push(`/trips/${tripId}/cover`);
   };
@@ -378,7 +381,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         leftContent={
           pendingCards.some((c) => c.converting) ? (
             <span>Converting your iPhone photos to JPEG before uploading. This only takes a moment.</span>
-          ) : inferred ? (
+          ) : inferred && photos.length > 0 ? (
             <span>
               From what we can tell, your photos were taken around{" "}
               <strong style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, color: "var(--sb-cream)" }}>{inferred.place}</strong>

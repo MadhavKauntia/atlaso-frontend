@@ -45,7 +45,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   useEffect(() => {
     const run = async () => {
       try {
-        const raw = sessionStorage.getItem("atlaso_inferred");
+        const raw = sessionStorage.getItem(`atlaso_inferred_${tripId}`);
         let inf: { place: string; country?: string; coordStr: string } | null = null;
         if (raw) {
           inf = JSON.parse(raw);
