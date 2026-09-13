@@ -7,6 +7,7 @@ import {
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getPreviewCache, setPreviewBook, setPreviewPhotos } from "@/lib/previewCache";
 import FullPageLoader from "@/components/FullPageLoader";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
@@ -18,6 +19,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const bookId = searchParams.get("bookId") ?? "";
   const router = useRouter();
 
+  const cacheKey = bookId || tripId;
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
@@ -25,6 +27,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [photos, setPhotos] = useState<Photo[]>([]);
   // Which slot the photo picker is currently open for (null = closed).
   const [picker, setPicker] = useState<{ pageId: string; slotIndex: number; currentPhotoId: string } | null>(null);
+
+  // Paint instantly from the cached state (client-only, so no hydration
+  // mismatch), then the fetches below refresh it in the background.
+  useEffect(() => {
+    const cached = getPreviewCache(cacheKey);
+    if (cached?.book) { setBook(cached.book); setLoading(false); }
+    if (cached?.photos?.length) setPhotos(cached.photos);
+  }, [cacheKey]);
 
   useEffect(() => {
     const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
@@ -37,6 +47,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   useEffect(() => {
     getPhotos(tripId).then(setPhotos).catch(() => {});
   }, [tripId]);
+
+  // Keep the cache warm with the latest book (incl. local crop/replace edits) and photos.
+  useEffect(() => { if (book) setPreviewBook(cacheKey, book); }, [book, cacheKey]);
+  useEffect(() => { if (photos.length) setPreviewPhotos(cacheKey, photos); }, [photos, cacheKey]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
