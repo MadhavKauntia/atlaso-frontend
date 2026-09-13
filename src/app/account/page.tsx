@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getToken, removeToken } from "@/lib/auth";
-import { getTrips, deleteTripById, type Trip } from "@/lib/api";
+import { getToken, removeToken, getCachedUser } from "@/lib/auth";
+import { getTrips, getMe, deleteTripById, type Trip, type User } from "@/lib/api";
 import Footer from "@/components/Footer";
 import Brand from "@/components/Brand";
 
@@ -31,6 +31,7 @@ function fmt(iso: string) {
 export default function AccountPage() {
   const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [user, setUser] = useState<User | null>(getCachedUser());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function AccountPage() {
       router.replace("/login?next=/account");
       return;
     }
+    getMe().then(setUser).catch(() => {});
     getTrips()
       .then(setTrips)
       .catch(() => {})
@@ -143,7 +145,7 @@ export default function AccountPage() {
               fontSize: 24,
             }}
           >
-            {avatarInitials(trips)}
+            {userInitials(user)}
           </div>
           <div>
             <h1
@@ -156,7 +158,7 @@ export default function AccountPage() {
                 color: "var(--sb-cream)",
               }}
             >
-              your travels
+              {user?.name ? `${firstName(user.name)}'s travels` : "your travels"}
             </h1>
             <div style={{ fontSize: 14, color: "var(--sb-muted-2)", marginTop: 4 }}>
               {hasAny
@@ -283,12 +285,14 @@ const goldBtn: React.CSSProperties = {
   textDecoration: "none",
 };
 
-function avatarInitials(trips: Trip[]): string {
-  // No user profile in the data model — derive a friendly mark.
-  const first = trips[0]?.name?.trim();
-  if (first) {
-    const parts = first.split(/\s+/).filter(Boolean);
-    const letters = parts.slice(0, 2).map((p) => p[0]).join("");
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+function userInitials(user: User | null): string {
+  const name = user?.name?.trim();
+  if (name) {
+    const letters = name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("");
     if (letters) return letters.toUpperCase();
   }
   return "AT";

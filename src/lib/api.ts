@@ -1,4 +1,4 @@
-import { getToken, removeToken } from "@/lib/auth";
+import { getToken, removeToken, setCachedUser } from "@/lib/auth";
 import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
 import { renderCountryCoverPng } from "@/lib/covers/renderCountryCover";
 
@@ -90,13 +90,17 @@ export async function googleAuth(idToken: string): Promise<{ token: string; user
     body: JSON.stringify({ idToken }),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const data: { token: string; user: User } = await res.json();
+  setCachedUser(data.user);
+  return data;
 }
 
 export async function getMe(): Promise<User> {
   const res = await apiFetch(`${BASE}/auth/me`);
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const user: User = await res.json();
+  setCachedUser(user);
+  return user;
 }
 
 export async function getTrips(): Promise<Trip[]> {
