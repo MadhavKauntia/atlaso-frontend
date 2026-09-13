@@ -173,6 +173,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 onClick={() => setCurrentSpread(idx)}
                 style={{
                   aspectRatio: "8/5",
+                  flexShrink: 0,
                   borderRadius: 6,
                   overflow: "hidden",
                   cursor: "pointer",
