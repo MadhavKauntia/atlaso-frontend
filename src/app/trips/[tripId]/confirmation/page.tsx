@@ -208,7 +208,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
       {/* Footer */}
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "0 32px 48px", textAlign: "center", fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.7, fontFamily: "var(--font-dm-sans), sans-serif" }}>
         Questions about your order? Reach us at{" "}
-        <a href="mailto:hello@atlaso.com" style={{ color: "var(--sb-gold)", textDecoration: "none" }}>hello@atlaso.com</a>
+        <a href="mailto:support@myatlaso.com" style={{ color: "var(--sb-gold)", textDecoration: "none" }}>support@myatlaso.com</a>
         <br />
         <span style={{ opacity: 0.7 }}>Every book is printed in Bengaluru and shipped from our studio.</span>
       </div>

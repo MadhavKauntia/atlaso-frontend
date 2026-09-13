@@ -49,7 +49,7 @@ async function inferLocationFromPhotos(
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
-      { headers: { "User-Agent": "Atlaso/1.0 (hello@atlaso.com)" } }
+      { headers: { "User-Agent": "Atlaso/1.0 (support@myatlaso.com)" } }
     );
     const data = await res.json();
     const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state;
