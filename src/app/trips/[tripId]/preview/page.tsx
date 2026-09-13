@@ -157,9 +157,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <div className="flow-preview-grid">
 
         {/* Left rail: spread thumbnails */}
-        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
+        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: "calc(100vh - 120px)", overflowY: "auto", padding: 4 }}>
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
+            const firstInterior = idx === 1;
             const leftPage = sp[0];
             const rightPage = sp[1];
             const label = isCover ? "CV" : sp.length === 2
@@ -189,6 +190,12 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
                     <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "88%", aspectRatio: "0.707" }} />
                   </div>
+                ) : firstInterior ? (
+                  // First interior page opens on the right, blank on the left.
+                  <>
+                    <ThumbHalf page={undefined} tripId={tripId} photoUrls={photoUrls} />
+                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={photoUrls} />
+                  </>
                 ) : (
                   <>
                     <ThumbHalf page={leftPage} tripId={tripId} photoUrls={photoUrls} />
@@ -224,6 +231,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
               {spreads.map((sp, idx) => {
                 const visible = idx === currentSpread;
                 const isCoverSpread = idx === 0;
+                const isFirstInterior = idx === 1;
                 const isDoubleSp = sp.length === 2;
                 return (
                   <div key={idx} style={{
@@ -244,6 +252,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
                           <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                        </div>
+                      </>
+                    ) : isFirstInterior ? (
+                      // Opening the book: blank left page, first photo starts on the right.
+                      <>
+                        <div style={{ flex: 1, background: "var(--sb-cream)" }} />
+                        <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                       </>
                     ) : (
