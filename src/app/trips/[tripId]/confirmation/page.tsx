@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getBook, getBookByTripId, downloadReceipt, type Book } from "@/lib/api";
+import { getBook, getBookByTripId, downloadReceipt, getOrderForTrip, type Book, type OrderSummary } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
@@ -44,12 +44,14 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
   const bookId = searchParams.get("bookId") ?? "";
 
   const [book, setBook] = useState<Book | null>(null);
+  const [order, setOrder] = useState<OrderSummary | null>(null);
   const [copied, setCopied] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
 
   useEffect(() => {
     const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
     fetch.then(setBook).catch(() => {});
+    getOrderForTrip(tripId).then(setOrder).catch(() => {});
   }, [bookId, tripId]);
 
   if (!ready) return null;
@@ -90,36 +92,50 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
         </div>
 
         <h1 style={{ fontFamily: "var(--font-bricolage), sans-serif", fontSize: 52, fontWeight: 800, lineHeight: 1.02, letterSpacing: "-0.03em", marginBottom: 16, color: "var(--sb-cream)" }}>
-          Your <span style={{ color: "var(--sb-gold)" }}>{title}</span> is on its way.
+          Your <span style={{ color: "var(--sb-gold)" }}>Atlaso</span> is on its way.
         </h1>
 
         <p style={{ fontSize: 17, color: "var(--sb-muted)", lineHeight: 1.55, maxWidth: 520, margin: "0 auto", fontFamily: "var(--font-dm-sans), sans-serif" }}>
           We'll send you a shipping confirmation when your book leaves our studio. You'll get another email the moment it ships.
         </p>
 
-        {/* Cover showcase */}
-        <div style={{ margin: "48px auto 0", display: "flex", justifyContent: "center", perspective: 1000 }}>
-          <div style={{ filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.45))", animation: "drift 5s ease-in-out infinite" }}>
-            <CountryCover country={book?.coverCountry} title={title} description={book?.subtitle ?? ""} style={{ width: 240 }} />
+        {/* Cover showcase — only render once the book is loaded so we never
+            flash an ugly placeholder cover. */}
+        {book && (
+          <div style={{ margin: "48px auto 0", display: "flex", justifyContent: "center", perspective: 1000 }}>
+            <div style={{ filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.45))", animation: "drift 5s ease-in-out infinite" }}>
+              <CountryCover country={book.coverCountry} title={title} description={book.subtitle ?? ""} style={{ width: 240 }} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Info cards */}
       <div style={{ maxWidth: 780, margin: "48px auto 40px", padding: "0 32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={{ background: "var(--sb-panel)", border: "1px solid #46403a", borderRadius: 20, padding: 24 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 700, color: "var(--sb-muted-2)", marginBottom: 10 }}>Order number</div>
-          <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontSize: 22, fontWeight: 800, lineHeight: 1.1, marginBottom: 6, color: "var(--sb-cream)" }}>{ORDER_NUM}</div>
+          <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontSize: 22, fontWeight: 800, lineHeight: 1.1, marginBottom: 6, color: "var(--sb-cream)" }}>{order?.orderNumber ?? ORDER_NUM}</div>
           <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5, fontFamily: "var(--font-dm-sans), sans-serif" }}>
             Placed on {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </div>
         </div>
         <div style={{ background: "var(--sb-panel)", border: "1px solid #46403a", borderRadius: 20, padding: 24 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 700, color: "var(--sb-muted-2)", marginBottom: 10 }}>Shipping to</div>
-          <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontSize: 22, fontWeight: 800, lineHeight: 1.1, marginBottom: 6, color: "var(--sb-cream)" }}>Your Address</div>
-          <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5, fontFamily: "var(--font-dm-sans), sans-serif" }}>
-            We'll confirm your shipping address via email.
-          </div>
+          {order ? (
+            <>
+              <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontSize: 22, fontWeight: 800, lineHeight: 1.1, marginBottom: 6, color: "var(--sb-cream)" }}>{order.customerName ?? "Your Address"}</div>
+              <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5, fontFamily: "var(--font-dm-sans), sans-serif" }}>
+                {order.addressLine1}{order.addressLine2 ? `, ${order.addressLine2}` : ""}<br />
+                {[order.city, order.state, order.pincode].filter(Boolean).join(", ")}
+                {order.country ? <><br />{order.country}</> : null}
+                {order.phone ? <><br />{order.phone}</> : null}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5, fontFamily: "var(--font-dm-sans), sans-serif" }}>
+              Loading your shipping details…
+            </div>
+          )}
         </div>
 
         {/* Timeline card — full width */}

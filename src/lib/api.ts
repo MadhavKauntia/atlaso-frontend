@@ -388,6 +388,25 @@ export function getBookPdfUrl(bookId: string): string {
   return `${BASE}/books/${bookId}/pdf`;
 }
 
+export interface OrderSummary {
+  orderNumber: string;
+  customerName: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  country: string | null;
+  phone: string | null;
+}
+
+/** The paid order + shipping address for a trip's confirmation page. */
+export async function getOrderForTrip(tripId: string): Promise<OrderSummary> {
+  const res = await apiFetch(`${BASE}/trips/${tripId}/order`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 /** Downloads the payment receipt PDF for a trip's order (auth-protected). */
 export async function downloadReceipt(tripId: string): Promise<void> {
   const res = await apiFetch(`${BASE}/trips/${tripId}/receipt`);
