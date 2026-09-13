@@ -3,7 +3,7 @@ import Link from "next/link";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Shipping & Delivery Policy — Atlaso",
+  title: "Shipping & Delivery Policy | Atlaso",
   description: "How and when Atlaso photobooks are printed and delivered.",
 };
 
@@ -32,7 +32,7 @@ export default function ShippingPolicyPage() {
 
       <h2>Shipping charges</h2>
       <p>
-        Shipping is <strong>free</strong> — it is already included in the ₹1,999 all-inclusive price of your
+        Shipping is <strong>free</strong>. It is already included in the ₹1,999 all-inclusive price of your
         photobook.
       </p>
 

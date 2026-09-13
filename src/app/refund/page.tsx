@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy — Atlaso",
+  title: "Refund & Cancellation Policy | Atlaso",
   description: "When Atlaso orders can be cancelled or refunded.",
 };
 

@@ -16,7 +16,7 @@ export default function HowItWorksPage() {
           to shelf, in four steps
         </h1>
         <p className={s.heroSubtitle}>
-          Upload your photos and the whole book builds itself — automatically, in minutes. You
+          Upload your photos and the whole book builds itself, automatically, in minutes. You
           review and order; we print and ship. Nothing is charged until you order.
         </p>
       </section>
@@ -39,7 +39,7 @@ export default function HowItWorksPage() {
             <h2 className={s.stepTitle}>upload the roll</h2>
             <p className={s.stepDesc}>
               Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside
-              automatically — pull any back in.
+              automatically. Pull any back in.
             </p>
           </div>
         </div>
@@ -66,8 +66,8 @@ export default function HowItWorksPage() {
             <h2 className={s.stepTitle}>the album builds itself</h2>
             <p className={s.stepDesc}>
               In under a minute your photos are grouped by day and paired by shape and colour. Flip
-              through every spread, swap any photo, or regenerate the layout — instantly, no waiting
-              on anyone.
+              through every spread, swap any photo, or regenerate the layout instantly, with no
+              waiting on anyone.
             </p>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function HowItWorksPage() {
           <div className={s.stepBody}>
             <h2 className={s.stepTitle}>review, order, we ship</h2>
             <p className={s.stepDesc}>
-              Your finished book is ready to see the moment it's built — no proof to wait on. Order
+              Your finished book is ready to see the moment it's built, with no proof to wait on. Order
               when you love it, and we print and ship it in about 3 days.
             </p>
           </div>

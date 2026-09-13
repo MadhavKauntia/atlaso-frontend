@@ -31,7 +31,7 @@ export default function LandingPage() {
             waiting to happen
           </h1>
           <p className={s.lede}>
-            Dump in your photos and pick a country — your photobook designs itself in minutes.
+            Dump in your photos and pick a country. Your photobook designs itself in minutes.
             You review and order; we print and ship.
           </p>
           <div className={s.ctaRow}>

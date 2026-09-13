@@ -263,7 +263,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               One last step
             </h2>
             <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.65 }}>
-              Your photos and cover are ready. Sign in to generate your photobook — it takes one click.
+              Your photos and cover are ready. Sign in to generate your photobook. It takes one click.
             </p>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
               <GoogleLogin
@@ -354,7 +354,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
             {/* 1. Country picker */}
             <div style={{ marginBottom: 28 }}>
-              <div style={fieldLabel}>cover — pick a design</div>
+              <div style={fieldLabel}>pick a cover design</div>
               <input
                 type="search"
                 value={query}
@@ -391,7 +391,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                 value={title}
                 onChange={(e) => onTitleChange(e.target.value)}
                 maxLength={40}
-                placeholder="Defaults to the cover — edit to rename"
+                placeholder="Defaults to the cover, edit to rename"
                 style={inputStyle}
               />
             </div>
@@ -465,8 +465,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
         leftContent={
           !bookId ? (
             <span>
-              Next: our AI generates your photobook —{" "}
-              <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>sign in takes one click</strong>
+              Next: our AI generates your photobook.{" "}
+              <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Sign in takes one click.</strong>
             </span>
           ) : null
         }

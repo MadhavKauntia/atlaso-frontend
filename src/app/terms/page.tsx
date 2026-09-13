@@ -3,7 +3,7 @@ import Link from "next/link";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions — Atlaso",
+  title: "Terms & Conditions | Atlaso",
   description: "The terms that govern your use of Atlaso.",
 };
 

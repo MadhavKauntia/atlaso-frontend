@@ -49,7 +49,7 @@ function LoginContent() {
         </h1>
 
         <p style={{ color: "var(--sb-muted)", fontSize: 15, marginBottom: 40, lineHeight: 1.6 }}>
-          Sign in to build your travel photo book — free until you order.
+          Sign in to build your travel photo book, free until you order.
         </p>
 
         <div style={{ display: "flex", justifyContent: "center" }}>

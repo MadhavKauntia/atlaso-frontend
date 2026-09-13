@@ -122,7 +122,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               country,
               phone: phone.trim(),
             });
-            if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice — please contact support.");
+            if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice. Please contact support.");
             router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
           } catch (error) {
             setPayError(error instanceof Error ? error.message : "Payment verification failed.");
@@ -186,7 +186,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               </div>
             </div>
             <div style={{ fontSize: 12, color: "var(--sb-muted-2)", marginTop: 10 }}>
-              From your Google account — order updates and your receipt go here.
+              From your Google account. Order updates and your receipt go here.
             </div>
           </FormSection>
 
@@ -242,7 +242,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: "var(--sb-bg)", border: "1px solid var(--sb-panel-2)", borderRadius: 12 }}>
               <div style={{ fontSize: 18, lineHeight: 1 }}>🔒</div>
               <div style={{ fontSize: 13, color: "var(--sb-muted)", lineHeight: 1.5 }}>
-                You&apos;ll complete payment securely via <strong style={{ color: "var(--sb-cream)" }}>Razorpay</strong> — card, UPI, netbanking, and wallets — after you press <strong style={{ color: "var(--sb-cream)" }}>Pay</strong>. Your card details never touch our servers.
+                You&apos;ll complete payment securely via <strong style={{ color: "var(--sb-cream)" }}>Razorpay</strong> (card, UPI, netbanking, and wallets) after you press <strong style={{ color: "var(--sb-cream)" }}>Pay</strong>. Your card details never touch our servers.
               </div>
             </div>
           </FormSection>

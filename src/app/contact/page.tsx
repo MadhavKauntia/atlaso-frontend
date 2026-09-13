@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Contact Us — Atlaso",
+  title: "Contact Us | Atlaso",
   description: "Get in touch with the Atlaso team.",
 };
 

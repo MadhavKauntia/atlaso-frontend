@@ -18,13 +18,12 @@ export default function Brand({
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/assets/logo.png"
+      src={dark ? "/assets/logo-white.png" : "/assets/logo-black.png"}
       alt="Atlaso"
       style={{
         height,
         width: "auto",
         display: "block",
-        filter: dark ? "brightness(0) invert(1)" : undefined,
         ...style,
       }}
     />

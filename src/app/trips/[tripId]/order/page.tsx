@@ -12,7 +12,7 @@ const BOOK_PRICE = 1999; // ₹ per copy
 
 const INCLUDED_FEATURES = [
   "6.9 × 9.8 inch hardbound, cloth spine, rigid boards",
-  "Archival matte paper — 100+ year lifespan",
+  "Archival matte paper, 100+ year lifespan",
   "50 lay-flat pages so spreads never lose the middle",
   "Free shipping across India, taxes included",
 ];
@@ -63,7 +63,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
             Make it <span style={{ color: "var(--sb-red)" }}>yours</span>.
           </h1>
           <p style={{ fontSize: 15, color: "var(--sb-muted)", marginBottom: 36, lineHeight: 1.5, maxWidth: 520 }}>
-            One beautifully made photobook, printed and delivered across India. Choose how many copies you&apos;d like — that&apos;s it.
+            One beautifully made photobook, printed and delivered across India. Choose how many copies you&apos;d like, and that&apos;s it.
           </p>
 
           {/* Single variant — what's included */}

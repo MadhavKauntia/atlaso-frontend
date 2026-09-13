@@ -43,3 +43,6 @@ next-env.d.ts
 # local design source (not needed for build)
 design/
 
+
+# local source logos (svg)
+logos/

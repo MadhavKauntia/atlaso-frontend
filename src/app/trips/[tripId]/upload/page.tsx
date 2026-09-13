@@ -282,7 +282,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            Upload the shots from your trip. The moment they're in, they're automatically arranged into a 50-page book you can review in minutes. You need at least 50 photos to get started — more gives you richer, fuller pages.
+            Upload the shots from your trip. The moment they're in, they're automatically arranged into a 50-page book you can review in minutes. You need at least 50 photos to get started, and more gives you richer, fuller pages.
           </p>
         </div>
 
@@ -391,7 +391,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               )}
             </span>
           ) : photos.length >= 50 ? (
-            <span>Looking good — ready to design your cover.</span>
+            <span>Looking good. Ready to design your cover.</span>
           ) : null
         }
         rightButton={

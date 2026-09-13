@@ -12,7 +12,7 @@ export default function Footer() {
           <Brand dark height={24} />
           <p className={s.footerTagline}>
             Travel photobooks that build themselves. Drop in your photos, pick a country, and your
-            book is ready in minutes — we print and ship it across India.
+            book is ready in minutes, and we print and ship it across India.
           </p>
         </div>
 

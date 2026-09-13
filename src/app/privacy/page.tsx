@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Atlaso",
+  title: "Privacy Policy | Atlaso",
   description: "How Atlaso collects, uses, and protects your information.",
 };
 
@@ -17,11 +17,11 @@ export default function PrivacyPolicyPage() {
 
       <h2>Information we collect</h2>
       <ul>
-        <li><strong>Account information</strong> — when you sign in with Google, we receive your name, email address, and profile picture.</li>
-        <li><strong>Photos and content</strong> — the images you upload and any titles, captions, or edits you make to your book.</li>
-        <li><strong>Order and delivery details</strong> — recipient name, shipping address, phone number, and email you provide at checkout.</li>
-        <li><strong>Payment information</strong> — payments are processed by our payment gateway, Razorpay. We do not collect or store your card, UPI, or bank details.</li>
-        <li><strong>Technical data</strong> — basic device, browser, and usage information needed to operate and secure the service.</li>
+        <li><strong>Account information</strong>: when you sign in with Google, we receive your name, email address, and profile picture.</li>
+        <li><strong>Photos and content</strong>: the images you upload and any titles, captions, or edits you make to your book.</li>
+        <li><strong>Order and delivery details</strong>: recipient name, shipping address, phone number, and email you provide at checkout.</li>
+        <li><strong>Payment information</strong>: payments are processed by our payment gateway, Razorpay. We do not collect or store your card, UPI, or bank details.</li>
+        <li><strong>Technical data</strong>: basic device, browser, and usage information needed to operate and secure the service.</li>
       </ul>
 
       <h2>How we use your information</h2>
@@ -36,11 +36,11 @@ export default function PrivacyPolicyPage() {
       <h2>How your information is shared</h2>
       <p>We do not sell your personal information. We share it only with service providers who help us run Atlaso:</p>
       <ul>
-        <li><strong>OpenAI</strong> — to analyse uploaded photos for curation and layout.</li>
-        <li><strong>Razorpay</strong> — to process payments securely.</li>
-        <li><strong>Amazon Web Services (AWS)</strong> — to store photos and files and host the service.</li>
-        <li><strong>Google</strong> — to authenticate your sign-in.</li>
-        <li><strong>Printing and courier partners</strong> — to produce and deliver your photobook.</li>
+        <li><strong>OpenAI</strong>: to analyse uploaded photos for curation and layout.</li>
+        <li><strong>Razorpay</strong>: to process payments securely.</li>
+        <li><strong>Amazon Web Services (AWS)</strong>: to store photos and files and host the service.</li>
+        <li><strong>Google</strong>: to authenticate your sign-in.</li>
+        <li><strong>Printing and courier partners</strong>: to produce and deliver your photobook.</li>
       </ul>
       <p>We may also disclose information where required by law or to protect our rights and users.</p>
 
