@@ -71,7 +71,18 @@ export default function AccountPage() {
   const hasAny = trips.length > 0;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans), sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{
+      minHeight: "100vh",
+      backgroundColor: "var(--sb-bg)",
+      // Same very light graph-paper grid as the landing hero.
+      backgroundImage:
+        "linear-gradient(rgba(243, 234, 216, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(243, 234, 216, 0.035) 1px, transparent 1px)",
+      backgroundSize: "46px 46px",
+      color: "var(--sb-cream)",
+      fontFamily: "var(--font-dm-sans), sans-serif",
+      display: "flex",
+      flexDirection: "column",
+    }}>
       {/* Top bar — white atlaso header with sign-out */}
       <header
         style={{
