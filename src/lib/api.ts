@@ -43,6 +43,8 @@ export interface Photo {
   metadata: { width: number; height: number };
   rotation: number;
   uploadedAt: string;
+  /** Direct (presigned) URL to the image, so the browser skips the backend redirect. */
+  imageUrl?: string | null;
 }
 
 export interface PhotoSlot {

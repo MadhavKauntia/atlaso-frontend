@@ -441,7 +441,7 @@ function PhotoTile({ photo, tripId, index, onDelete }: { photo: Photo; tripId: s
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getPhotoImageUrl(tripId, photo.id)}
+        src={photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
         alt=""
         onLoad={() => setLoaded(true)}
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}

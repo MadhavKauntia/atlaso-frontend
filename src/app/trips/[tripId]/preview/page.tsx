@@ -69,6 +69,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
   const pages = book.pages ?? [];
 
+  // Direct image URLs by photo id, so slots load straight from storage (no backend redirect).
+  const photoUrls: Record<string, string> = {};
+  for (const p of photos) if (p.imageUrl) photoUrls[p.id] = p.imageUrl;
+
   // Build spreads: cover alone, then interior pages (first alone, middle pairs, last alone)
   const spreads: PageData[][] = [[]]; // index 0 = cover (no pages)
   if (pages.length === 1) {
@@ -186,8 +190,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   </div>
                 ) : (
                   <>
-                    <ThumbHalf page={leftPage} tripId={tripId} />
-                    <ThumbHalf page={rightPage} tripId={tripId} />
+                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={photoUrls} />
+                    <ThumbHalf page={rightPage} tripId={tripId} photoUrls={photoUrls} />
                   </>
                 )}
               </div>
@@ -235,16 +239,16 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
                         <div style={{ flex: 1, background: "var(--sb-cream)" }} />
                       </>
@@ -447,7 +451,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={getPhotoImageUrl(tripId, photo.id)}
+                  src={photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
                   alt={photo.originalFilename ?? ""}
                   loading="lazy"
                   style={{ width: "100%", aspectRatio, height: "auto", display: "block", objectFit: "contain", opacity: isCurrent ? 0.55 : 1 }}
@@ -476,7 +480,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
   );
 }
 
-function ThumbHalf({ page, tripId }: { page: PageData | undefined; tripId: string }) {
+function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tripId: string; photoUrls: Record<string, string> }) {
   if (!page) return <div style={{ flex: 1, background: "var(--sb-panel-2)" }} />;
   const firstSlot = page.slots?.[0];
   if (!firstSlot) return <div style={{ flex: 1, background: "var(--sb-panel-2)" }} />;
@@ -484,7 +488,7 @@ function ThumbHalf({ page, tripId }: { page: PageData | undefined; tripId: strin
     <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getPhotoImageUrl(tripId, firstSlot.photoId)}
+        src={photoUrls[firstSlot.photoId] ?? getPhotoImageUrl(tripId, firstSlot.photoId)}
         alt=""
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
@@ -492,23 +496,24 @@ function ThumbHalf({ page, tripId }: { page: PageData | undefined; tripId: strin
   );
 }
 
-function PageRenderer({ page, tripId, onOffsetSaved, onReplace }: {
+function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace }: {
   page: PageData;
   tripId: string;
+  photoUrls: Record<string, string>;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
 }) {
   return (
     <div style={{ position: "relative", background: "var(--sb-cream)", width: "100%", height: "100%" }}>
       {page.slots.map((slot: PhotoSlot, i: number) => (
-        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} onReplace={onReplace} />
+        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} photoUrls={photoUrls} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} onReplace={onReplace} />
       ))}
     </div>
   );
 }
 
-function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved, onReplace }: {
-  slot: PhotoSlot; tripId: string; pageId: string; index: number;
+function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, onReplace }: {
+  slot: PhotoSlot; tripId: string; photoUrls: Record<string, string>; pageId: string; index: number;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
 }) {
@@ -583,7 +588,7 @@ function SlotRenderer({ slot, tripId, pageId, index, onOffsetSaved, onReplace }:
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
-        src={getPhotoImageUrl(tripId, slot.photoId)}
+        src={photoUrls[slot.photoId] ?? getPhotoImageUrl(tripId, slot.photoId)}
         alt={slot.caption ?? `Photo ${index + 1}`}
         draggable={false}
         onLoad={() => setLoaded(true)}
