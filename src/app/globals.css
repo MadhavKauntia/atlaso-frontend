@@ -21,8 +21,8 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/aloja.woff2") format("woff2"),
-       url("/fonts/aloja.ttf") format("truetype");
+  src: url("/fonts/aloja-v2.woff2") format("woff2"),
+       url("/fonts/aloja-v2.ttf") format("truetype");
 }
 
 /* ─── Responsive layout helpers ─── */
