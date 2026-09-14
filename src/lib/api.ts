@@ -152,18 +152,44 @@ export interface RazorpayOrder {
   currency: string;
 }
 
-/** Creates a Razorpay order server-side. `amount` is in the smallest unit (paise). */
+export interface CouponPreview {
+  valid: boolean;
+  code: string;
+  discountMinor: number; // paise saved (preview)
+  finalMinor: number; // paise payable (preview)
+  message?: string; // reason when !valid
+}
+
+/** Validates a coupon code and previews the discount for the given quantity. */
+export async function validateCoupon(code: string, quantity = 1): Promise<CouponPreview> {
+  const res = await apiFetch(`${BASE}/coupons/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, quantity }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/**
+ * Creates a Razorpay order server-side. `amount` is in the smallest unit (paise) and must
+ * be the FULL list amount — Razorpay applies any coupon offer's discount at payment time.
+ */
 export async function createRazorpayOrder(
   amount: number,
   currency = "INR",
-  receipt?: string
+  receipt?: string,
+  couponCode?: string
 ): Promise<RazorpayOrder> {
   const res = await apiFetch(`${BASE}/payments/create-order`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount, currency, receipt }),
+    body: JSON.stringify({ amount, currency, receipt, couponCode }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? (await res.text().catch(() => "Failed to create order")));
+  }
   return res.json();
 }
 
@@ -174,6 +200,7 @@ export async function verifyRazorpayPayment(payload: {
   razorpaySignature: string;
   tripId?: string;
   quantity?: number;
+  couponCode?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;

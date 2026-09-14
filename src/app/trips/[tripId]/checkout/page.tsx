@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, type Book, type User } from "@/lib/api";
+import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, type Book, type User, type CouponPreview } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -50,6 +50,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
 
   useEffect(() => {
     if (bookId) getBook(bookId).then(setBook).catch(() => {});
@@ -59,7 +63,34 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   if (!ready) return <FullPageLoader />;
 
   const pageCount = book?.pages?.length ?? 50;
-  const total = BOOK_PRICE * qty;
+  const listTotal = BOOK_PRICE * qty; // rupees, full amount sent to Razorpay
+  const discount = coupon ? Math.round(coupon.discountMinor / 100) : 0; // preview only
+  const payable = coupon ? Math.round(coupon.finalMinor / 100) : listTotal;
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCheckingCoupon(true);
+    setCouponError(null);
+    try {
+      const preview = await validateCoupon(code, qty);
+      if (preview.valid) {
+        setCoupon(preview);
+      } else {
+        setCoupon(null);
+        setCouponError(preview.message ?? "Invalid coupon");
+      }
+    } catch {
+      setCouponError("Couldn't check that coupon. Please try again.");
+    } finally {
+      setCheckingCoupon(false);
+    }
+  };
+  const removeCoupon = () => {
+    setCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
+  };
 
   const errors: Record<string, string | null> = {
     address1: address1.trim() ? null : "Required",
@@ -91,8 +122,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
       if (!keyId) throw new Error("Payments are not configured. Please contact support.");
 
-      const amountPaise = Math.round(total * 100);
-      const order = await createRazorpayOrder(amountPaise, "INR", `trip_${tripId}`);
+      // Full list amount — Razorpay subtracts the linked coupon offer's discount itself.
+      const amountPaise = Math.round(listTotal * 100);
+      const order = await createRazorpayOrder(amountPaise, "INR", `trip_${tripId}`, coupon?.code);
 
       const rzp = new window.Razorpay({
         key: keyId,
@@ -115,6 +147,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               razorpaySignature: response.razorpay_signature,
               tripId,
               quantity: qty,
+              couponCode: coupon?.code,
               addressLine1: address1.trim(),
               addressLine2: address2.trim() || undefined,
               city: city.trim(),
@@ -274,7 +307,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           <div style={{ marginTop: 12 }}>
             {[
-              ...(qty > 1 ? [{ label: `₹${BOOK_PRICE.toLocaleString("en-IN")} × ${qty}`, value: `₹${total.toLocaleString("en-IN")}` }] : []),
+              ...(qty > 1 ? [{ label: `₹${BOOK_PRICE.toLocaleString("en-IN")} × ${qty}`, value: `₹${listTotal.toLocaleString("en-IN")}` }] : []),
               { label: "Shipping & taxes", value: "Included" },
             ].map((row) => (
               <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
@@ -282,11 +315,47 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 <div style={{ fontWeight: 700, color: "var(--sb-cream)" }}>{row.value}</div>
               </div>
             ))}
+            {coupon && discount > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
+                <div style={{ color: "var(--sb-green)" }}>Coupon {coupon.code}</div>
+                <div style={{ fontWeight: 700, color: "var(--sb-green)" }}>−₹{discount.toLocaleString("en-IN")}</div>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 16, borderTop: DASH }}>
+          {/* Coupon */}
+          <div style={{ padding: "14px 0", marginTop: 4, borderTop: DASH }}>
+            {coupon ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 }}>
+                <div style={{ color: "var(--sb-green)", fontWeight: 700 }}>✓ {coupon.code} applied</div>
+                <button onClick={removeCoupon} style={{ background: "none", border: "none", color: "var(--sb-muted)", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}>
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
+                  placeholder="Coupon code"
+                  style={{ ...fieldStyle(!!couponError), flex: 1, textTransform: "uppercase" }}
+                />
+                <button
+                  onClick={applyCoupon}
+                  disabled={checkingCoupon || !couponInput.trim()}
+                  style={{ padding: "0 18px", borderRadius: 12, border: "1px solid var(--sb-panel-2)", background: "var(--sb-bg)", color: "var(--sb-cream)", fontWeight: 700, cursor: checkingCoupon || !couponInput.trim() ? "default" : "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
+                >
+                  {checkingCoupon ? "…" : "Apply"}
+                </button>
+              </div>
+            )}
+            {couponError && <FieldError>{couponError}</FieldError>}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 4, paddingTop: 16, borderTop: DASH }}>
             <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 15, fontWeight: 800, color: "var(--sb-cream)" }}>Total</div>
-            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{total.toLocaleString("en-IN")}</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{payable.toLocaleString("en-IN")}</div>
           </div>
 
           {payError && (
@@ -305,7 +374,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               cursor: paying ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >
-            {paying ? "Processing…" : `🔒 Pay ₹${total.toLocaleString("en-IN")} securely`}
+            {paying ? "Processing…" : `🔒 Pay ₹${payable.toLocaleString("en-IN")} securely`}
           </button>
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
