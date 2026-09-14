@@ -16,7 +16,7 @@ import {
   type ConfirmUploadRequest,
 } from "@/lib/api";
 import { convertHeicBlob } from "@/lib/heic/heicPool";
-import { setTabText, flashTabDone, ensureNotifyPermission, notify } from "@/lib/notify";
+import { setTabText, flashTabDone, ensureNotifyPermission, notify, canNotify } from "@/lib/notify";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
@@ -239,8 +239,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   // Current accepted count (confirmed + in-flight), read synchronously in the
   // drop handler to enforce the per-book cap without a stale closure.
   const acceptedCount = useRef(0);
-  const askedNotify = useRef(false);
   const wasUploading = useRef(false);
+  const [notifyPerm, setNotifyPerm] = useState<NotificationPermission | "unsupported">("default");
 
   useEffect(() => {
     if (initialFetch.current) return;
@@ -283,11 +283,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (!files.length) return;
     // Reserve the slots immediately so back-to-back drops respect the cap.
     acceptedCount.current += files.length;
-    // Ask once (this drop is a user gesture) so we can notify when uploads finish.
-    if (!askedNotify.current) {
-      askedNotify.current = true;
-      ensureNotifyPermission();
-    }
 
     activeBatches.current += 1;
     setUploading(true);
@@ -468,12 +463,23 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       wasUploading.current = false;
       setTabText(null);
       flashTabDone("Photos uploaded");
+      // OS notification only fires when the tab isn't focused (suppressed otherwise).
       notify("Upload complete", `${photos.length} photo${photos.length === 1 ? "" : "s"} finished uploading.`);
     }
   }, [uploading, uploadPct, photos.length]);
 
   // Reset any tab badge when leaving the page.
   useEffect(() => () => setTabText(null), []);
+
+  // Reflect current notification permission (client-only, no SSR mismatch).
+  useEffect(() => {
+    setNotifyPerm(canNotify() ? Notification.permission : "unsupported");
+  }, []);
+
+  const enableNotifications = async () => {
+    await ensureNotifyPermission();
+    setNotifyPerm(canNotify() ? Notification.permission : "unsupported");
+  };
 
   const handleContinue = () => {
     if (inferred && photos.length > 0) {
@@ -569,6 +575,31 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             We'll read the date and location from each photo to help build your story
           </div>
         </div>
+
+        {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
+        {notifyPerm === "default" && (
+          <button
+            onClick={enableNotifications}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14,
+              padding: "9px 16px", background: "var(--sb-panel-2)", color: "var(--sb-cream)",
+              border: "1px solid #5a5249", borderRadius: 999, cursor: "pointer",
+              fontSize: 13, fontWeight: 600, fontFamily: "var(--font-dm-sans), sans-serif",
+            }}
+          >
+            🔔 Notify me when uploads finish
+          </button>
+        )}
+        {notifyPerm === "granted" && (
+          <div style={{ marginTop: 14, fontSize: 13, color: "var(--sb-muted)", display: "flex", alignItems: "center", gap: 6 }}>
+            🔔 You&apos;ll get a notification when your uploads finish (if this tab isn&apos;t focused).
+          </div>
+        )}
+        {notifyPerm === "denied" && (
+          <div style={{ marginTop: 14, fontSize: 12, color: "var(--sb-muted-2)" }}>
+            Notifications are blocked for this site. Enable them in your browser to be alerted when uploads finish.
+          </div>
+        )}
 
         {error && (
           <p style={{ color: "var(--sb-red)", fontSize: 14, marginTop: 12 }}>{error}</p>
