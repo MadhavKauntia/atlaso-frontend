@@ -1,4 +1,5 @@
 import { getToken, removeToken, setCachedUser } from "@/lib/auth";
+import { guestTokenHeader, removeGuestToken, setGuestToken } from "@/lib/guest";
 import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
 import { renderCountryCoverPng, renderCoverBackPng } from "@/lib/covers/renderCountryCover";
 
@@ -130,19 +131,21 @@ export async function createTrip(name: string, destination: string): Promise<Tri
     body: JSON.stringify({ name, destination }),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  // The create response carries a one-time guest token; keep it for later guest operations.
+  const trip = (await res.json()) as Trip & { guestToken?: string };
+  if (trip.id && trip.guestToken) setGuestToken(trip.id, trip.guestToken);
+  return trip;
 }
 
 export async function claimTrip(tripId: string): Promise<Trip> {
   if (IS_MOCK) return mockTrip(tripId);
-  const res = await apiFetch(`${BASE}/trips/${tripId}/claim`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/trips/${tripId}/claim`, {
+    method: "POST",
+    headers: guestTokenHeader(tripId),
+  });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-export async function markTripOrdered(tripId: string): Promise<Trip> {
-  const res = await apiFetch(`${BASE}/trips/${tripId}/order`, { method: "POST" });
-  if (!res.ok) throw new Error(await res.text());
+  // The trip is now owned via JWT; the guest token was revoked server-side.
+  removeGuestToken(tripId);
   return res.json();
 }
 
@@ -172,19 +175,18 @@ export async function validateCoupon(code: string, quantity = 1): Promise<Coupon
 }
 
 /**
- * Creates a Razorpay order server-side. `amount` is in the smallest unit (paise) and must
- * be the FULL list amount — Razorpay applies any coupon offer's discount at payment time.
+ * Creates a Razorpay order. The price is computed server-side from tripId + quantity (+ coupon)
+ * — the client no longer sends an amount. Returns the order with the server-computed amount.
  */
 export async function createRazorpayOrder(
-  amount: number,
-  currency = "INR",
-  receipt?: string,
+  tripId: string,
+  quantity: number,
   couponCode?: string
 ): Promise<RazorpayOrder> {
   const res = await apiFetch(`${BASE}/payments/create-order`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount, currency, receipt, couponCode }),
+    body: JSON.stringify({ tripId, quantity, couponCode }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -223,7 +225,7 @@ export async function verifyRazorpayPayment(payload: {
 
 export async function getTrip(tripId: string): Promise<Trip> {
   if (IS_MOCK) return mockTrip(tripId);
-  const res = await apiFetch(`${BASE}/trips/${tripId}`);
+  const res = await apiFetch(`${BASE}/trips/${tripId}`, { headers: guestTokenHeader(tripId) });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -323,7 +325,7 @@ export interface ConfirmUploadRequest {
 export async function initiateUploads(tripId: string, files: InitiateUploadRequest[]): Promise<InitiateUploadResponse[]> {
   const res = await apiFetch(`${BASE}/trips/${tripId}/photos/initiate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...guestTokenHeader(tripId) },
     body: JSON.stringify(files),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -365,7 +367,7 @@ export function uploadBlobToS3(uploadUrl: string, blob: Blob): Promise<void> {
 export async function confirmUploads(tripId: string, confirmations: ConfirmUploadRequest[]): Promise<Photo[]> {
   const res = await apiFetch(`${BASE}/trips/${tripId}/photos/confirm`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...guestTokenHeader(tripId) },
     body: JSON.stringify(confirmations),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -373,7 +375,7 @@ export async function confirmUploads(tripId: string, confirmations: ConfirmUploa
 }
 
 export async function getPhotos(tripId: string): Promise<Photo[]> {
-  const res = await apiFetch(`${BASE}/trips/${tripId}/photos`);
+  const res = await apiFetch(`${BASE}/trips/${tripId}/photos`, { headers: guestTokenHeader(tripId) });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

@@ -146,9 +146,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
       if (!keyId) throw new Error("Payments are not configured. Please contact support.");
 
-      // Full list amount — Razorpay subtracts the linked coupon offer's discount itself.
-      const amountPaise = Math.round(listTotal * 100);
-      const order = await createRazorpayOrder(amountPaise, "INR", `trip_${tripId}`, coupon?.code);
+      // Price is computed server-side from trip + quantity (+ coupon); Razorpay applies the
+      // linked coupon offer's discount at payment time.
+      const order = await createRazorpayOrder(tripId, qty, coupon?.code);
 
       const rzp = new window.Razorpay({
         key: keyId,
