@@ -83,6 +83,17 @@ export default function PhoneUploadPanel({ url, newFromPhone, onClose }: { url: 
             <span style={{ fontSize: 13, color: "var(--sb-muted-2)" }}>Waiting for photos from your phone…</span>
           )}
         </div>
+
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: 22, width: "100%", padding: "14px", borderRadius: 999, border: "none",
+            background: "var(--sb-gold)", color: "var(--sb-ink)", cursor: "pointer",
+            fontSize: 14, fontWeight: 800, fontFamily: "var(--font-bricolage), sans-serif",
+          }}
+        >
+          Done
+        </button>
       </div>
     </div>
   );
