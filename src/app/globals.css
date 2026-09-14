@@ -15,6 +15,15 @@
   font-display: swap;
   src: url("/fonts/roboto-serif.woff2") format("woff2");
 }
+/* Cover title display font (Aloja, handwritten). Served as OTF — the browser
+   renders it fine directly (the earlier woff2/ttf conversions were OTS-rejected). */
+@font-face {
+  font-family: "Aloja";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/aloja.otf") format("opentype");
+}
 
 /* ─── Responsive layout helpers ─── */
 
@@ -119,7 +128,7 @@
   --sb-cyan: #1fc0e2;
 
   /* Cover typography */
-  --font-cover-title: var(--font-fraunces), "Roboto Serif", Georgia, serif;
+  --font-cover-title: "Aloja", "Roboto Serif", Georgia, serif;
   --font-gochi: "Gochi Hand", "Comic Sans MS", cursive;
 }
 

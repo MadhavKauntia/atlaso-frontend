@@ -28,10 +28,10 @@ export async function renderCountryCoverPng(
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
 
-  const TITLE_FONT = frauncesFamily();
+  const TITLE_FONT = "'Aloja', 'Roboto Serif', Georgia, serif";
   // Ensure the cover fonts are loaded before drawing to canvas.
   await Promise.allSettled([
-    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px ${TITLE_FONT}`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
     document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
   ]);
 
