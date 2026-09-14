@@ -6,6 +6,7 @@ import {
   deletePhoto as apiDeletePhoto,
   initiateUploads,
   uploadToS3,
+  uploadBlobToS3,
   confirmUploads,
   type Photo,
   type ConfirmUploadRequest,
@@ -130,6 +131,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           file = prepared.file;
           const dims = { width: prepared.width, height: prepared.height };
           const thumbUrl = prepared.thumbUrl;
+          const thumbBlob = prepared.thumbBlob;
 
           // Show the lightweight thumbnail as soon as it exists (also clears the
           // HEIC "converting" state), replacing any instant placeholder preview.
@@ -156,6 +158,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             filename: file.name,
             contentType: file.type,
             fileSize: file.size,
+            thumbnailFileSize: thumbBlob?.size ?? null,
           }]);
 
           // Re-key the placeholder card to the real photo id, keeping its thumbnail.
@@ -173,6 +176,16 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             setPendingCards((prev) => prev.map((c) => c.tempId === init.photoId ? { ...c, progress: pct } : c));
           });
 
+          // Upload the display thumbnail alongside. Non-fatal: if it fails, the
+          // photo still confirms and consumers fall back to the full image.
+          let thumbnailStorageKey: string | null = null;
+          if (thumbBlob && init.thumbnailUploadUrl && init.thumbnailStorageKey) {
+            try {
+              await uploadBlobToS3(init.thumbnailUploadUrl, thumbBlob);
+              thumbnailStorageKey = init.thumbnailStorageKey;
+            } catch { /* skip — full image is the fallback */ }
+          }
+
           const [photo] = await confirmUploads(tripId, [{
             photoId: init.photoId,
             storageKey: init.storageKey,
@@ -185,6 +198,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             latitude: gps?.latitude ?? null,
             longitude: gps?.longitude ?? null,
             sharpness: prepared.sharpness ?? null,
+            thumbnailStorageKey,
           } as ConfirmUploadRequest]);
 
           // Keep the thumbnail URL alive — the confirmed tile now renders from it.

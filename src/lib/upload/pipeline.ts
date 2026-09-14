@@ -110,6 +110,8 @@ export interface PreparedFile {
   width: number;
   height: number;
   thumbUrl?: string;
+  /** The thumbnail JPEG itself, so it can be uploaded to S3 as a display variant. */
+  thumbBlob?: Blob;
   sharpness?: number;
 }
 
@@ -132,16 +134,18 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
   const sharpness = computeSharpness(bitmap);
 
   // Tiny display thumbnail from the same decode (near-free) for instant tiles.
+  // We keep the blob too — it gets uploaded to S3 as a persistent display variant.
   let thumbUrl: string | undefined;
+  let thumbBlob: Blob | undefined;
   try {
     const ts = Math.min(THUMB_EDGE, longest) / longest;
-    const thumbBlob = await encodeJpeg(bitmap, Math.max(1, Math.round(width * ts)), Math.max(1, Math.round(height * ts)), THUMB_QUALITY);
+    thumbBlob = await encodeJpeg(bitmap, Math.max(1, Math.round(width * ts)), Math.max(1, Math.round(height * ts)), THUMB_QUALITY);
     thumbUrl = URL.createObjectURL(thumbBlob);
   } catch { /* no thumb — tile falls back to the S3 image */ }
 
   if (longest <= maxEdge) {
     bitmap.close();
-    return { file, width, height, thumbUrl, sharpness };
+    return { file, width, height, thumbUrl, thumbBlob, sharpness };
   }
   const scale = maxEdge / longest;
   const w = Math.round(width * scale);
@@ -150,10 +154,10 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
     const blob = await encodeJpeg(bitmap, w, h, quality);
     bitmap.close();
     const name = file.name.replace(/\.(png|webp|jpeg|jpg)$/i, ".jpg");
-    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h, thumbUrl, sharpness };
+    return { file: new File([blob], name, { type: "image/jpeg" }), width: w, height: h, thumbUrl, thumbBlob, sharpness };
   } catch {
     bitmap.close();
-    return { file, width, height, thumbUrl, sharpness };
+    return { file, width, height, thumbUrl, thumbBlob, sharpness };
   }
 }
 

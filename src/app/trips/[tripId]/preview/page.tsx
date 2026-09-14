@@ -23,6 +23,11 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
+  // Which spreads have had their images mounted. We only load images for the
+  // current spread + its immediate neighbours (and keep anything already
+  // visited mounted, so back/forward stays cached). This stops all ~26 spreads
+  // fetching full-res S3 images on first paint.
+  const [mounted, setMounted] = useState<Set<number>>(() => new Set([0]));
   const [error, setError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   // Which slot the photo picker is currently open for (null = closed).
@@ -47,6 +52,17 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   useEffect(() => {
     getPhotos(tripId).then(setPhotos).catch(() => {});
   }, [tripId]);
+
+  // Grow the mounted window around the current spread (preload prev + next).
+  useEffect(() => {
+    setMounted((prev) => {
+      const next = new Set(prev);
+      next.add(currentSpread);
+      next.add(currentSpread + 1);
+      if (currentSpread > 0) next.add(currentSpread - 1);
+      return next;
+    });
+  }, [currentSpread]);
 
   // Keep the cache warm with the latest book (incl. local crop/replace edits) and photos.
   useEffect(() => { if (book) setPreviewBook(cacheKey, book); }, [book, cacheKey]);
@@ -85,8 +101,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const pages = book.pages ?? [];
 
   // Direct image URLs by photo id, so slots load straight from storage (no backend redirect).
+  // photoUrls = full-res (main spread); thumbUrls = small display variant (rail + picker).
   const photoUrls: Record<string, string> = {};
-  for (const p of photos) if (p.imageUrl) photoUrls[p.id] = p.imageUrl;
+  const thumbUrls: Record<string, string> = {};
+  for (const p of photos) {
+    if (p.imageUrl) photoUrls[p.id] = p.imageUrl;
+    const t = p.thumbnailUrl ?? p.imageUrl;
+    if (t) thumbUrls[p.id] = t;
+  }
 
   // Build spreads: cover alone, then interior pages (first alone, middle pairs, last alone)
   const spreads: PageData[][] = [[]]; // index 0 = cover (no pages)
@@ -208,13 +230,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 ) : firstInterior ? (
                   // First interior page opens on the right, blank on the left.
                   <>
-                    <ThumbHalf page={undefined} tripId={tripId} photoUrls={photoUrls} />
-                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={photoUrls} />
+                    <ThumbHalf page={undefined} tripId={tripId} photoUrls={thumbUrls} />
+                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={thumbUrls} />
                   </>
                 ) : (
                   <>
-                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={photoUrls} />
-                    <ThumbHalf page={rightPage} tripId={tripId} photoUrls={photoUrls} />
+                    <ThumbHalf page={leftPage} tripId={tripId} photoUrls={thumbUrls} />
+                    <ThumbHalf page={rightPage} tripId={tripId} photoUrls={thumbUrls} />
                   </>
                 )}
               </div>
@@ -248,6 +270,16 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 const isCoverSpread = idx === 0;
                 const isFirstInterior = idx === 1;
                 const isDoubleSp = sp.length === 2;
+                // Outside the mounted window: render an empty shell (no <img>) so
+                // its full-res photos aren't fetched until we navigate near it.
+                if (!mounted.has(idx)) {
+                  return (
+                    <div key={idx} style={{
+                      position: "absolute", inset: 10, background: "var(--sb-cream)",
+                      opacity: visible ? 1 : 0, pointerEvents: "none",
+                    }} />
+                  );
+                }
                 return (
                   <div key={idx} style={{
                     position: "absolute", inset: 10, display: "flex",
@@ -477,7 +509,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
+                  src={photo.thumbnailUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
                   alt={photo.originalFilename ?? ""}
                   loading="lazy"
                   style={{ width: "100%", aspectRatio, height: "auto", display: "block", objectFit: "contain", opacity: isCurrent ? 0.55 : 1 }}
@@ -516,6 +548,8 @@ function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tr
       <img
         src={photoUrls[firstSlot.photoId] ?? getPhotoImageUrl(tripId, firstSlot.photoId)}
         alt=""
+        loading="lazy"
+        decoding="async"
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
     </div>

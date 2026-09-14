@@ -52,6 +52,8 @@ export interface Photo {
   uploadedAt: string;
   /** Direct (presigned) URL to the image, so the browser skips the backend redirect. */
   imageUrl?: string | null;
+  /** Direct (presigned) URL to a small (~360px) thumbnail. Falls back to imageUrl when absent. */
+  thumbnailUrl?: string | null;
 }
 
 export interface PhotoSlot {
@@ -265,12 +267,15 @@ interface InitiateUploadRequest {
   filename: string;
   contentType: string;
   fileSize: number;
+  thumbnailFileSize?: number | null;
 }
 
 export interface InitiateUploadResponse {
   photoId: string;
   storageKey: string;
   uploadUrl: string;
+  thumbnailStorageKey?: string | null;
+  thumbnailUploadUrl?: string | null;
 }
 
 export interface ConfirmUploadRequest {
@@ -285,9 +290,10 @@ export interface ConfirmUploadRequest {
   latitude: number | null;
   longitude: number | null;
   sharpness?: number | null;
+  thumbnailStorageKey?: string | null;
 }
 
-export async function initiateUploads(tripId: string, files: { filename: string; contentType: string; fileSize: number }[]): Promise<InitiateUploadResponse[]> {
+export async function initiateUploads(tripId: string, files: InitiateUploadRequest[]): Promise<InitiateUploadResponse[]> {
   const res = await apiFetch(`${BASE}/trips/${tripId}/photos/initiate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -311,6 +317,21 @@ export function uploadToS3(uploadUrl: string, file: File, onProgress: (pct: numb
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", file.type);
     xhr.send(file);
+  });
+}
+
+/** Fire-and-forget PUT of a thumbnail blob to its presigned URL (no progress). */
+export function uploadBlobToS3(uploadUrl: string, blob: Blob): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Thumbnail upload failed: ${xhr.status}`));
+    });
+    xhr.addEventListener("error", () => reject(new Error("Thumbnail upload failed")));
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", blob.type || "image/jpeg");
+    xhr.send(blob);
   });
 }
 

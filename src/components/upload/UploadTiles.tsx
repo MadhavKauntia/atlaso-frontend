@@ -23,7 +23,7 @@ export const PhotoTile = memo(function PhotoTile({ photo, tripId, index, thumbUr
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={thumbUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
+        src={thumbUrl ?? photo.thumbnailUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
         alt=""
         loading="lazy"
         decoding="async"
