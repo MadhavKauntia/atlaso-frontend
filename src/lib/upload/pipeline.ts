@@ -7,6 +7,25 @@ import { convertHeicBlob } from "@/lib/heic/heicPool";
 
 export const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 export const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
+const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "heic", "heif"]);
+
+/**
+ * Whether we accept a picked file. Prefers the MIME type, but falls back to the
+ * filename extension: mobile pickers (esp. iOS) sometimes hand back a HEIC with
+ * an empty or unrecognised type, which would otherwise be wrongly rejected.
+ */
+export function isAllowedImage(file: File): boolean {
+  if (ALLOWED_TYPES.has(file.type)) return true;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return ALLOWED_EXTENSIONS.has(ext);
+}
+
+/** Whether a file should go through HEIC→JPEG conversion (by type or extension). */
+export function isHeic(file: File): boolean {
+  if (HEIC_TYPES.has(file.type)) return true;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return ext === "heic" || ext === "heif";
+}
 
 // How many files to run through the convert→upload pipeline at once. Firing all
 // of them concurrently (e.g. 1000) floods the CPU (EXIF + decode) and network,
