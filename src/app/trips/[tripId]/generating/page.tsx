@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { generateBook, regenerateBook, saveCoverCountry, updateTrip, getBook } from "@/lib/api";
+import { generateBook, regenerateBook, saveCoverCountry, updateTrip, getBook, pollBookUntilReady } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -122,14 +122,19 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
         /* best-effort */
       }
 
+      // Generation is async: this returns quickly with a book in GENERATING status.
       const book = regenerateFrom ? await regenerateBook(regenerateFrom) : await generateBook(tripId);
+      bookRef.current = book;
 
+      // Wait for the background worker to finish building the pages.
+      await pollBookUntilReady(book.id);
+
+      // Save cover config only after the book is ready, so it can't race the worker.
       if (prefs?.country) {
         await saveCoverCountry(book.id, prefs.country, prefs.description || undefined);
       }
       localStorage.removeItem("atlaso_cover_prefs");
 
-      bookRef.current = book;
       generationDoneAt.current = elapsed;
     };
 

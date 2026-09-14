@@ -4,18 +4,25 @@ import { renderCountryCoverPng } from "@/lib/covers/renderCountryCover";
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
-async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+async function apiFetch(url: string, options: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   const token = getToken();
   const existingHeaders = (options.headers as Record<string, string>) ?? {};
   const headers = token
     ? { ...existingHeaders, Authorization: `Bearer ${token}` }
     : existingHeaders;
-  const res = await fetch(url, { ...options, headers });
-  if (res.status === 401) {
-    removeToken();
-    window.location.href = "/login";
+  // Optional per-request timeout so a hung request fails instead of hanging forever.
+  const controller = timeoutMs ? new AbortController() : undefined;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
+  try {
+    const res = await fetch(url, { ...options, headers, signal: controller?.signal ?? options.signal });
+    if (res.status === 401) {
+      removeToken();
+      window.location.href = "/login";
+    }
+    return res;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  return res;
 }
 
 export interface User {
@@ -343,18 +350,54 @@ export async function deletePhoto(tripId: string, photoId: string): Promise<void
   if (!res.ok) throw new Error(await res.text());
 }
 
+// Generation is asynchronous: these return quickly with a book in GENERATING status.
+// Callers poll pollBookUntilReady() to know when the pages are actually built.
+const GENERATE_REQUEST_TIMEOUT_MS = 60_000;
+
 export async function generateBook(tripId: string): Promise<Book> {
   if (IS_MOCK) return mockBook(tripId);
-  const res = await apiFetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" }, GENERATE_REQUEST_TIMEOUT_MS);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function regenerateBook(bookId: string): Promise<Book> {
   if (IS_MOCK) return mockBook("mock-trip", bookId);
-  const res = await apiFetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" });
+  const res = await apiFetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" }, GENERATE_REQUEST_TIMEOUT_MS);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+/**
+ * Polls a book until generation finishes. Resolves when status is READY_FOR_PREVIEW
+ * (or a later state), throws on FAILED or after the overall deadline. Transient fetch
+ * errors are retried rather than aborting the wait.
+ */
+export async function pollBookUntilReady(
+  bookId: string,
+  opts: { intervalMs?: number; timeoutMs?: number } = {}
+): Promise<Book> {
+  if (IS_MOCK) return mockBook("mock-trip", bookId);
+  const intervalMs = opts.intervalMs ?? 3000;
+  const timeoutMs = opts.timeoutMs ?? 15 * 60 * 1000; // large trips analyze for minutes
+  const readyStates = new Set(["READY_FOR_PREVIEW", "EXPORTING_PDF", "PDF_READY"]);
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const res = await apiFetch(`${BASE}/books/${bookId}`, {}, 20_000);
+      if (res.ok) {
+        const book: Book = await res.json();
+        if (readyStates.has(book.status)) return book;
+        if (book.status === "FAILED") throw new Error("Book generation failed. Please try again.");
+      }
+    } catch (err) {
+      // Re-throw a definitive failure; otherwise treat as transient and keep polling.
+      if (err instanceof Error && err.message.startsWith("Book generation failed")) throw err;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error("Timed out waiting for your book to finish generating.");
 }
 
 export async function getBook(bookId: string): Promise<Book> {
