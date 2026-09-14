@@ -33,7 +33,7 @@ export default function MobileUploadPage({ params }: { params: Promise<{ tripId:
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans), sans-serif", paddingBottom: 40 }}>
       <div style={{ padding: "18px 20px", borderBottom: "1px solid #3a342d", position: "sticky", top: 0, background: "var(--sb-bg)", zIndex: 10 }}>
-        <Brand height={24} />
+        <Brand dark height={24} />
       </div>
 
       <div style={{ padding: "28px 20px", maxWidth: 640, margin: "0 auto" }}>
