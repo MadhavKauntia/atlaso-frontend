@@ -16,6 +16,7 @@ import {
   type ConfirmUploadRequest,
 } from "@/lib/api";
 import { convertHeicBlob } from "@/lib/heic/heicPool";
+import { setTabText, flashTabDone, ensureNotifyPermission, notify } from "@/lib/notify";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
@@ -238,6 +239,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   // Current accepted count (confirmed + in-flight), read synchronously in the
   // drop handler to enforce the per-book cap without a stale closure.
   const acceptedCount = useRef(0);
+  const askedNotify = useRef(false);
+  const wasUploading = useRef(false);
 
   useEffect(() => {
     if (initialFetch.current) return;
@@ -280,6 +283,11 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     if (!files.length) return;
     // Reserve the slots immediately so back-to-back drops respect the cap.
     acceptedCount.current += files.length;
+    // Ask once (this drop is a user gesture) so we can notify when uploads finish.
+    if (!askedNotify.current) {
+      askedNotify.current = true;
+      ensureNotifyPermission();
+    }
 
     activeBatches.current += 1;
     setUploading(true);
@@ -450,6 +458,22 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   useEffect(() => {
     acceptedCount.current = photos.length + pendingCards.filter((c) => !c.error).length;
   }, [photos, pendingCards]);
+
+  // Badge the tab with upload progress, and nudge the user when it finishes.
+  useEffect(() => {
+    if (uploading) {
+      wasUploading.current = true;
+      setTabText(`↑ ${uploadPct}%`);
+    } else if (wasUploading.current) {
+      wasUploading.current = false;
+      setTabText(null);
+      flashTabDone("Photos uploaded");
+      notify("Upload complete", `${photos.length} photo${photos.length === 1 ? "" : "s"} finished uploading.`);
+    }
+  }, [uploading, uploadPct, photos.length]);
+
+  // Reset any tab badge when leaving the page.
+  useEffect(() => () => setTabText(null), []);
 
   const handleContinue = () => {
     if (inferred && photos.length > 0) {

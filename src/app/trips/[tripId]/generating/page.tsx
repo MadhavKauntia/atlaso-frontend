@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { generateBook, regenerateBook, saveCoverCountry, updateTrip } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
 import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
@@ -45,6 +46,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const started = useRef(false);
   const generationDoneAt = useRef<number | null>(null);
   const bookRef = useRef<{ id: string } | null>(null);
+  const notifiedDone = useRef(false);
 
   useEffect(() => {
     try {
@@ -72,6 +74,24 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     if (!book) return;
     router.push(`/trips/${tripId}/preview?bookId=${book.id}`);
   }, [elapsed, tripId, router]);
+
+  // Tab-title badge while building, and a nudge when the book is ready.
+  useEffect(() => {
+    if (!started.current) return;
+    if (generationDoneAt.current !== null) {
+      if (!notifiedDone.current) {
+        notifiedDone.current = true;
+        setTabText(null);
+        flashTabDone("Photobook ready");
+        notify("Your photobook is ready", "Come back to review and order it.");
+      }
+    } else if (!error) {
+      setTabText("Designing your book…");
+    }
+  }, [elapsed, error]);
+
+  // Reset any tab badge when leaving the page.
+  useEffect(() => () => setTabText(null), []);
 
   useEffect(() => {
     if (!ready || started.current) return;
