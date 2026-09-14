@@ -380,7 +380,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                   onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
                   placeholder="Coupon code"
-                  style={{ ...fieldStyle(!!couponError), flex: 1, textTransform: "uppercase" }}
+                  style={{ ...fieldStyle(!!couponError), flex: 1 }}
                 />
                 <button
                   onClick={applyCoupon}
