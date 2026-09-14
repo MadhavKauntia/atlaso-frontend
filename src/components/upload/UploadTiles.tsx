@@ -4,7 +4,7 @@ import { memo, useState } from "react";
 import { getPhotoImageUrl, type Photo } from "@/lib/api";
 import type { PendingCard } from "@/lib/upload/pipeline";
 
-export const PhotoTile = memo(function PhotoTile({ photo, tripId, index, thumbUrl, onDelete }: { photo: Photo; tripId: string; index: number; thumbUrl?: string; onDelete: (id: string) => void }) {
+export const PhotoTile = memo(function PhotoTile({ photo, tripId, index, thumbUrl, onDelete }: { photo: Photo; tripId: string; index: number; thumbUrl?: string; onDelete?: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <div
@@ -30,17 +30,22 @@ export const PhotoTile = memo(function PhotoTile({ photo, tripId, index, thumbUr
         onLoad={() => setLoaded(true)}
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
       />
-      <button
-        onClick={() => onDelete(photo.id)}
-        style={{
-          position: "absolute", top: 6, right: 6,
-          width: 22, height: 22, borderRadius: "50%",
-          background: "rgba(28,25,23,0.78)", color: "var(--sb-cream)",
-          border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-        className="remove-btn"
-      >×</button>
+      {/* Delete is only offered where the user is authenticated (desktop). On
+          the phone (guest, no token) it would 401 → redirect to login, so the
+          button is omitted; curation happens on the computer. */}
+      {onDelete && (
+        <button
+          onClick={() => onDelete(photo.id)}
+          style={{
+            position: "absolute", top: 6, right: 6,
+            width: 22, height: 22, borderRadius: "50%",
+            background: "rgba(28,25,23,0.78)", color: "var(--sb-cream)",
+            border: "none", cursor: "pointer", fontSize: 14, lineHeight: 1,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          className="remove-btn"
+        >×</button>
+      )}
     </div>
   );
 });

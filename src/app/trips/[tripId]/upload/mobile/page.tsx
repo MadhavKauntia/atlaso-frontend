@@ -18,7 +18,7 @@ export default function MobileUploadPage({ params }: { params: Promise<{ tripId:
   const libraryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
 
-  const { photos, pendingCards, uploading, error, uploadPct, totalCount, handleFiles, deletePhoto, dismissPending, thumbUrls } =
+  const { photos, pendingCards, uploading, error, uploadPct, totalCount, handleFiles, dismissPending, thumbUrls } =
     usePhotoUpload({ tripId, concurrency: MOBILE_CONCURRENCY });
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +101,7 @@ export default function MobileUploadPage({ params }: { params: Promise<{ tripId:
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
               {photos.map((photo, i) => (
-                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i} thumbUrl={thumbUrls.current.get(photo.id)} onDelete={deletePhoto} />
+                <PhotoTile key={photo.id} photo={photo} tripId={tripId} index={i} thumbUrl={thumbUrls.current.get(photo.id)} />
               ))}
               {pendingCards.map((card) => (
                 <PendingTile key={card.tempId} card={card} onDismiss={dismissPending} />
