@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { generateBook, regenerateBook, saveCoverCountry, updateTrip } from "@/lib/api";
+import { generateBook, regenerateBook, saveCoverCountry, updateTrip, getBook } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -43,6 +43,8 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const [error, setError] = useState<string | null>(null);
   const [tipIndex, setTipIndex] = useState(0);
   const [coverPrefs, setCoverPrefs] = useState<CoverPrefs | null>(null);
+  // On regenerate, cover prefs aren't in localStorage — show the existing book's cover.
+  const [existingCover, setExistingCover] = useState<{ country: string | null; title: string; subtitle: string } | null>(null);
   const started = useRef(false);
   const generationDoneAt = useRef<number | null>(null);
   const bookRef = useRef<{ id: string } | null>(null);
@@ -56,6 +58,14 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       /* ignore */
     }
   }, []);
+
+  // Regenerating: fetch the existing book so the animation shows its real cover.
+  useEffect(() => {
+    if (!regenerateFrom) return;
+    getBook(regenerateFrom)
+      .then((b) => setExistingCover({ country: b.coverCountry, title: b.title, subtitle: b.subtitle ?? "" }))
+      .catch(() => {});
+  }, [regenerateFrom]);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -128,9 +138,9 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
   if (!ready) return <FullPageLoader />;
 
-  const displayTitle = coverPrefs?.title || "your trip";
-  const displayCountry = coverPrefs?.country || null;
-  const displayDescription = coverPrefs?.description || "";
+  const displayTitle = existingCover?.title || coverPrefs?.title || "your trip";
+  const displayCountry = existingCover?.country ?? coverPrefs?.country ?? null;
+  const displayDescription = existingCover?.subtitle ?? coverPrefs?.description ?? "";
 
   if (error) {
     return (
