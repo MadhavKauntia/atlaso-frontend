@@ -12,10 +12,10 @@ const TICKER = [
 ];
 
 const COVERS = [
-  { src: "/assets/covers/keepsake-bali.jpg", spine: "#2a3f2c", alt: "Bali photobook cover", tf: "rotate(-5deg) translateY(18px)" },
-  { src: "/assets/covers/keepsake-italy.jpg", spine: "#f3b53f", alt: "Italy photobook cover", tf: "rotate(3deg) translateY(-14px)" },
-  { src: "/assets/covers/keepsake-japan.jpg", spine: "#ac4040", alt: "Japan photobook cover", tf: "rotate(-2deg) translateY(26px)" },
-  { src: "/assets/covers/keepsake-thailand.jpg", spine: "#1d4e53", alt: "Thailand photobook cover", tf: "rotate(6deg) translateY(-6px)" },
+  { src: "/assets/covers/keepsake-bali.jpg", spine: "#2a3f2d", alt: "Bali photobook cover", tf: "rotate(-5deg) translateY(18px)" },
+  { src: "/assets/covers/keepsake-japan.jpg", spine: "#ab4040", alt: "Japan photobook cover", tf: "rotate(3deg) translateY(-14px)" },
+  { src: "/assets/covers/keepsake-thailand.jpg", spine: "#1d4e53", alt: "Thailand photobook cover", tf: "rotate(-2deg) translateY(26px)" },
+  { src: "/assets/covers/keepsake-vietnam.jpg", spine: "#7e2420", alt: "Vietnam photobook cover", tf: "rotate(6deg) translateY(-6px)" },
 ];
 
 export default function LandingPage() {
