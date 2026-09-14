@@ -2,8 +2,14 @@ import { getCountry, stampUrl, countryArtUrl } from "@/lib/covers/countries";
 
 const COVER_W = 1414;
 const COVER_H = 2000; // 0.707 portrait, matches the cover art
-const TITLE_FONT = "'Aloja', 'Roboto Serif', Georgia, serif";
 const DESC_FONT = "'Gochi Hand', 'Comic Sans MS', cursive";
+
+/** Resolved Fraunces family (from next/font's CSS variable) for canvas rendering. */
+function frauncesFamily(): string {
+  if (typeof document === "undefined") return "Georgia, serif";
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--font-fraunces").trim();
+  return v ? `${v}, Georgia, serif` : "Georgia, serif";
+}
 
 /**
  * Renders the chosen cover to a print-ready PNG and returns the raw base64 (no
@@ -22,10 +28,10 @@ export async function renderCountryCoverPng(
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
 
+  const TITLE_FONT = frauncesFamily();
   // Ensure the cover fonts are loaded before drawing to canvas.
   await Promise.allSettled([
-    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
-    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Roboto Serif'`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px ${TITLE_FONT}`),
     document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
   ]);
 
@@ -111,8 +117,10 @@ export async function renderCoverBackPng(country: string | null | undefined): Pr
   const bg = def?.bg ?? "#302b28";
   const ink = def?.ink ?? "#f3ead8";
 
+  const font = frauncesFamily();
   await Promise.allSettled([
-    document.fonts.load(`700 ${Math.round(COVER_H * 0.042)}px 'Roboto Serif'`),
+    document.fonts.load(`800 ${Math.round(COVER_H * 0.042)}px ${font}`),
+    document.fonts.load(`400 ${Math.round(COVER_H * 0.02)}px ${font}`),
   ]);
 
   const canvas = document.createElement("canvas");
@@ -128,10 +136,10 @@ export async function renderCoverBackPng(country: string | null | undefined): Pr
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
-  ctx.font = `700 ${Math.round(COVER_H * 0.042)}px 'Roboto Serif', Georgia, serif`;
+  ctx.font = `800 ${Math.round(COVER_H * 0.042)}px ${font}`;
   ctx.fillText("atlaso", COVER_W / 2, COVER_H * 0.79);
 
-  ctx.font = `400 ${Math.round(COVER_H * 0.02)}px Georgia, serif`;
+  ctx.font = `400 ${Math.round(COVER_H * 0.02)}px ${font}`;
   ctx.fillText("www.myatlaso.com", COVER_W / 2, COVER_H * 0.83);
 
   return canvas.toDataURL("image/png").split(",")[1];
