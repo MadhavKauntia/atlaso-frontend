@@ -53,7 +53,17 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", paddingBottom: 120, position: "relative" }}>
-      <FlowTopbar currentStep={4} />
+      <FlowTopbar
+        currentStep={4}
+        rightSlot={
+          <button
+            onClick={() => router.push(`/trips/${tripId}/preview?bookId=${book?.id ?? bookId}`)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#6b6459", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            ← Back to preview
+          </button>
+        }
+      />
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 32px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 48, alignItems: "start" }}>
 
