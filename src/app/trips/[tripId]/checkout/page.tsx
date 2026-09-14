@@ -30,6 +30,15 @@ function fieldStyle(error: boolean): React.CSSProperties {
 
 const digits = (s: string) => s.replace(/\D/g, "");
 
+/** Formats an amount in paise as rupees, showing decimals only when non-whole (₹999.50, ₹1,999). */
+const money = (minor: number) => {
+  const rupees = minor / 100;
+  return rupees.toLocaleString("en-IN", {
+    minimumFractionDigits: Number.isInteger(rupees) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 export default function CheckoutPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
   const { tripId } = use(params);
@@ -64,8 +73,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
   const pageCount = book?.pages?.length ?? 50;
   const listTotal = BOOK_PRICE * qty; // rupees, full amount sent to Razorpay
-  const discount = coupon ? Math.round(coupon.discountMinor / 100) : 0; // preview only
-  const payable = coupon ? Math.round(coupon.finalMinor / 100) : listTotal;
+  const discountMinor = coupon ? coupon.discountMinor : 0; // preview only
+  const payableMinor = coupon ? coupon.finalMinor : listTotal * 100;
 
   const applyCoupon = async () => {
     const code = couponInput.trim();
@@ -315,10 +324,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 <div style={{ fontWeight: 700, color: "var(--sb-cream)" }}>{row.value}</div>
               </div>
             ))}
-            {coupon && discount > 0 && (
+            {coupon && discountMinor > 0 && (
               <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
                 <div style={{ color: "var(--sb-green)" }}>Coupon {coupon.code}</div>
-                <div style={{ fontWeight: 700, color: "var(--sb-green)" }}>−₹{discount.toLocaleString("en-IN")}</div>
+                <div style={{ fontWeight: 700, color: "var(--sb-green)" }}>−₹{money(discountMinor)}</div>
               </div>
             )}
           </div>
@@ -355,7 +364,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 4, paddingTop: 16, borderTop: DASH }}>
             <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 15, fontWeight: 800, color: "var(--sb-cream)" }}>Total</div>
-            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{payable.toLocaleString("en-IN")}</div>
+            <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{money(payableMinor)}</div>
           </div>
 
           {payError && (
@@ -374,7 +383,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               cursor: paying ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >
-            {paying ? "Processing…" : `🔒 Pay ₹${payable.toLocaleString("en-IN")} securely`}
+            {paying ? "Processing…" : `🔒 Pay ₹${money(payableMinor)} securely`}
           </button>
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
