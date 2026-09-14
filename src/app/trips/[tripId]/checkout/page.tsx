@@ -30,6 +30,15 @@ function fieldStyle(error: boolean): React.CSSProperties {
 
 const digits = (s: string) => s.replace(/\D/g, "");
 
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
+  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi",
+  "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
+
 /** Formats an amount in paise as rupees, showing decimals only when non-whole (₹999.50, ₹1,999). */
 const money = (minor: number) => {
   const rupees = minor / 100;
@@ -107,10 +116,14 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
     state: state.trim() ? null : "Required",
     pincode: !pincode.trim()
       ? "Required"
-      : country === "India" && !/^\d{6}$/.test(pincode.trim())
+      : !/^\d{6}$/.test(pincode.trim())
       ? "Enter a 6-digit pincode"
       : null,
-    phone: !phone.trim() ? "Required" : digits(phone).length < 8 ? "Enter a valid phone number" : null,
+    phone: !phone
+      ? "Required"
+      : !/^[6-9]\d{9}$/.test(phone)
+      ? "Enter a valid 10-digit mobile number"
+      : null,
   };
   const isValid = Object.values(errors).every((e) => !e);
   const err = (f: string) => (touched[f] ? errors[f] : null);
@@ -145,7 +158,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
         prefill: {
           name: user?.name ?? "",
           email: user?.email ?? "",
-          contact: phone,
+          contact: `+91${phone}`,
         },
         theme: { color: "#c9352c" },
         handler: async (response) => {
@@ -163,7 +176,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               state: state.trim(),
               pincode: pincode.trim(),
               country,
-              phone: phone.trim(),
+              phone: `+91${phone}`,
             });
             if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice. Please contact support.");
             router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
@@ -252,12 +265,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               </div>
               <div>
                 <label style={LABEL_STYLE}>State</label>
-                <input value={state} onChange={(e) => setState(e.target.value)} onBlur={blur("state")} style={fieldStyle(!!err("state"))} />
+                <select value={state} onChange={(e) => setState(e.target.value)} onBlur={blur("state")} style={fieldStyle(!!err("state"))}>
+                  <option value="">Select…</option>
+                  {INDIAN_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
                 {err("state") && <FieldError>{err("state")}</FieldError>}
               </div>
               <div>
                 <label style={LABEL_STYLE}>Pincode</label>
-                <input value={pincode} onChange={(e) => setPincode(e.target.value)} onBlur={blur("pincode")} inputMode="numeric" style={fieldStyle(!!err("pincode"))} />
+                <input value={pincode} onChange={(e) => setPincode(digits(e.target.value).slice(0, 6))} onBlur={blur("pincode")} inputMode="numeric" placeholder="560001" style={fieldStyle(!!err("pincode"))} />
                 {err("pincode") && <FieldError>{err("pincode")}</FieldError>}
               </div>
             </div>
@@ -266,15 +284,29 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 <label style={LABEL_STYLE}>Country</label>
                 <select value={country} onChange={(e) => setCountry(e.target.value)} style={fieldStyle(false)}>
                   <option>India</option>
-                  <option>United States</option>
-                  <option>United Kingdom</option>
-                  <option>Singapore</option>
-                  <option>Australia</option>
                 </select>
               </div>
               <div>
                 <label style={LABEL_STYLE}>Phone</label>
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={blur("phone")} placeholder="+91 98765 43210" inputMode="tel" style={fieldStyle(!!err("phone"))} />
+                <div style={{ display: "flex" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "0 14px",
+                    fontSize: 15, color: "var(--sb-cream)", background: "var(--sb-bg)",
+                    border: `1px solid ${err("phone") ? "var(--sb-red)" : "var(--sb-panel-2)"}`,
+                    borderRight: "none", borderRadius: "12px 0 0 12px", whiteSpace: "nowrap",
+                  }}>
+                    <span style={{ fontSize: 16 }}>🇮🇳</span> +91
+                  </div>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(digits(e.target.value).slice(0, 10))}
+                    onBlur={blur("phone")}
+                    placeholder="98765 43210"
+                    inputMode="numeric"
+                    maxLength={10}
+                    style={{ ...fieldStyle(!!err("phone")), borderRadius: "0 12px 12px 0", borderLeft: "none" }}
+                  />
+                </div>
                 {err("phone") && <FieldError>{err("phone")}</FieldError>}
               </div>
             </div>
