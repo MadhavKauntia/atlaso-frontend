@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, type Book, type User, type CouponPreview } from "@/lib/api";
+import { getBook, getBookByTripId, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, type Book, type User, type CouponPreview } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -74,9 +74,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
   const [checkingCoupon, setCheckingCoupon] = useState(false);
 
   useEffect(() => {
-    if (bookId) getBook(bookId).then(setBook).catch(() => {});
+    // Re-entering from the account page carries no ?bookId; fall back to the
+    // trip's latest book so the cover renders instead of the empty fallback.
+    (bookId ? getBook(bookId) : getBookByTripId(tripId)).then(setBook).catch(() => {});
     getMe().then(setUser).catch(() => {});
-  }, [bookId]);
+  }, [bookId, tripId]);
 
   if (!ready) return <FullPageLoader />;
 
@@ -179,7 +181,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               phone: `+91${phone}`,
             });
             if (!result.verified) throw new Error("We couldn't verify your payment. You have not been charged twice. Please contact support.");
-            router.push(`/trips/${tripId}/confirmation?bookId=${bookId}`);
+            router.push(`/trips/${tripId}/confirmation?bookId=${book?.id ?? bookId}`);
           } catch (error) {
             setPayError(error instanceof Error ? error.message : "Payment verification failed.");
             setPaying(false);
@@ -212,7 +214,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
           <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(30,138,95,0.14)", color: "var(--sb-green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>🔒</span>
           Secure checkout
         </div>
-        <Link href={`/trips/${tripId}/order?bookId=${bookId}`} style={{ fontSize: 13, color: "#6b6459", textDecoration: "none" }}>
+        <Link href={`/trips/${tripId}/order?bookId=${book?.id ?? bookId}`} style={{ fontSize: 13, color: "#6b6459", textDecoration: "none" }}>
           ← Back to order
         </Link>
       </div>

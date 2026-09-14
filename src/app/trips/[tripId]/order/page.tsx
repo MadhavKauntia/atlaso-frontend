@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, exportBook, type Book } from "@/lib/api";
+import { getBook, getBookByTripId, exportBook, type Book } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FullPageLoader from "@/components/FullPageLoader";
 import FlowTopbar from "@/components/layout/FlowTopbar";
@@ -37,12 +37,14 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
-    if (!bookId) return;
-    getBook(bookId).then((b) => {
+    // Re-entering from the account page carries no ?bookId, so fall back to the
+    // trip's latest book (same as the preview page) — otherwise the cover and
+    // details render as an empty fallback.
+    (bookId ? getBook(bookId) : getBookByTripId(tripId)).then((b) => {
       setBook(b);
       if (b.status !== "PDF_READY") exportBook(b).then(setBook).catch(() => {});
     }).catch(() => {});
-  }, [bookId]);
+  }, [bookId, tripId]);
 
   if (!ready) return <FullPageLoader />;
 
@@ -181,7 +183,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           {" · "}{qty} × {book?.title ?? "book"}, hardbound · free shipping
         </div>
         <button
-          onClick={() => router.push(`/trips/${tripId}/checkout?bookId=${bookId}&qty=${qty}`)}
+          onClick={() => router.push(`/trips/${tripId}/checkout?bookId=${book?.id ?? bookId}&qty=${qty}`)}
           style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             padding: "14px 26px", background: "var(--sb-red)", color: "var(--sb-cream)",

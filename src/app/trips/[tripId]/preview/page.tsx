@@ -364,7 +364,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         {/* Right: panel — hidden on mobile */}
         <div className="flow-preview-panel" style={{ position: "sticky", top: 100, background: "var(--sb-panel)", borderRadius: 18, border: "1px solid #46403a", padding: 20 }}>
           <button
-            onClick={() => router.push(`/trips/${tripId}/generating?regenerateFrom=${bookId}`)}
+            onClick={() => router.push(`/trips/${tripId}/generating?regenerateFrom=${book.id}`)}
             style={{
               display: "flex", alignItems: "center", gap: 10,
               width: "100%", padding: "12px 14px", marginBottom: 16,
@@ -388,7 +388,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
           {/* Cover mini */}
           <div
-            onClick={() => router.push(`/trips/${tripId}/cover?bookId=${bookId}`)}
+            onClick={() => router.push(`/trips/${tripId}/cover?bookId=${book.id}`)}
             style={{ display: "flex", gap: 10, alignItems: "center", padding: 8, borderRadius: 10, cursor: "pointer" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sb-panel-2)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -406,7 +406,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
       {/* Sticky continue button (no bar) */}
       <button
-        onClick={() => router.push(`/trips/${tripId}/order?bookId=${bookId}`)}
+        onClick={() => router.push(`/trips/${tripId}/order?bookId=${book.id}`)}
         style={{
           position: "fixed", bottom: 18, right: 48, zIndex: 10,
           display: "inline-flex", alignItems: "center", gap: 10,
