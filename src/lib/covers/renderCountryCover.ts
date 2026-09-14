@@ -100,6 +100,43 @@ export async function renderCountryCoverPng(
   return dataUrl.split(",")[1];
 }
 
+/**
+ * Renders the hardcover BACK page — the cover's background colour with the atlaso
+ * wordmark and URL centred in the lower third — as a print-ready PNG (base64, no
+ * data-URL prefix). This becomes page 2 of the cover PDF.
+ */
+export async function renderCoverBackPng(country: string | null | undefined): Promise<string | undefined> {
+  if (typeof document === "undefined") return undefined;
+  const def = getCountry(country);
+  const bg = def?.bg ?? "#302b28";
+  const ink = def?.ink ?? "#f3ead8";
+
+  await Promise.allSettled([
+    document.fonts.load(`700 ${Math.round(COVER_H * 0.042)}px 'Roboto Serif'`),
+  ]);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = COVER_W;
+  canvas.height = COVER_H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return undefined;
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, COVER_W, COVER_H);
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  ctx.font = `700 ${Math.round(COVER_H * 0.042)}px 'Roboto Serif', Georgia, serif`;
+  ctx.fillText("atlaso", COVER_W / 2, COVER_H * 0.79);
+
+  ctx.font = `400 ${Math.round(COVER_H * 0.02)}px Georgia, serif`;
+  ctx.fillText("www.myatlaso.com", COVER_W / 2, COVER_H * 0.83);
+
+  return canvas.toDataURL("image/png").split(",")[1];
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

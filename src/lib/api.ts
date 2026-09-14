@@ -1,6 +1,6 @@
 import { getToken, removeToken, setCachedUser } from "@/lib/auth";
 import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
-import { renderCountryCoverPng } from "@/lib/covers/renderCountryCover";
+import { renderCountryCoverPng, renderCoverBackPng } from "@/lib/covers/renderCountryCover";
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
@@ -416,9 +416,11 @@ export async function getBookByTripId(tripId: string): Promise<Book> {
 
 export async function exportBook(book: Book): Promise<Book> {
   let coverImageBase64: string | undefined;
+  let backImageBase64: string | undefined;
 
   try {
     coverImageBase64 = await renderCountryCoverPng(book.coverCountry, book.title, book.subtitle ?? "");
+    backImageBase64 = await renderCoverBackPng(book.coverCountry);
   } catch {
     // Fall through — backend will use plain text cover
   }
@@ -426,7 +428,7 @@ export async function exportBook(book: Book): Promise<Book> {
   const res = await apiFetch(`${BASE}/books/${book.id}/export`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ coverImageBase64: coverImageBase64 ?? null }),
+    body: JSON.stringify({ coverImageBase64: coverImageBase64 ?? null, backImageBase64: backImageBase64 ?? null }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
