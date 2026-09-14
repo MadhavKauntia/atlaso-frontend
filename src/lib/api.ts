@@ -393,6 +393,22 @@ export function getBookPdfUrl(bookId: string): string {
   return `${BASE}/books/${bookId}/pdf`;
 }
 
+/** Exports the book PDF (rendering the styled cover) and downloads it. Auth-protected. */
+export async function downloadBookPdf(book: Book): Promise<void> {
+  await exportBook(book);
+  const res = await apiFetch(`${BASE}/books/${book.id}/pdf`);
+  if (!res.ok) throw new Error(await res.text());
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(book.title || "atlaso-photobook").replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "atlaso-photobook"}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export interface OrderSummary {
   orderNumber: string;
   customerName: string | null;

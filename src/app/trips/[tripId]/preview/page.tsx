@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updateSlotOffset, updateSlotPhoto,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updateSlotOffset, updateSlotPhoto, downloadBookPdf,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -27,6 +27,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [photos, setPhotos] = useState<Photo[]>([]);
   // Which slot the photo picker is currently open for (null = closed).
   const [picker, setPicker] = useState<{ pageId: string; slotIndex: number; currentPhotoId: string } | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false); // temporary: download PDF without checkout
 
   // Paint instantly from the cached state (client-only, so no hydration
   // mismatch), then the fetches below refresh it in the background.
@@ -369,6 +370,29 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
               <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, color: "var(--sb-gold)" }}>Edit →</div>
             </div>
           </div>
+
+          {/* TEMP: download the PDF without going through checkout. */}
+          <div style={{ height: 1, background: "#46403a", margin: "16px 0" }} />
+          <button
+            onClick={() => {
+              if (!book) return;
+              setPdfBusy(true);
+              downloadBookPdf(book)
+                .catch(() => alert("Couldn't generate the PDF. Please try again in a moment."))
+                .finally(() => setPdfBusy(false));
+            }}
+            disabled={pdfBusy}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "11px 14px",
+              background: "transparent", color: "var(--sb-gold)",
+              border: "1px solid #5a5249", borderRadius: 12,
+              cursor: pdfBusy ? "not-allowed" : "pointer", opacity: pdfBusy ? 0.6 : 1,
+              fontSize: 13, fontWeight: 700, fontFamily: "var(--font-dm-sans)",
+            }}
+          >
+            {pdfBusy ? "Preparing PDF…" : "⬇ Download PDF (temp)"}
+          </button>
         </div>
       </div>
 
