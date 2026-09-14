@@ -319,7 +319,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isFirstInterior ? (
                       // Opening the book: blank left page, first photo starts on the right.
                       <>
-                        <div style={{ flex: 1, background: "var(--sb-cream)" }} />
+                        <BlankPage />
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
                           <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
@@ -329,7 +329,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
                           <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
                         </div>
-                        <div style={{ flex: 1, background: "var(--sb-cream)" }} />
+                        <BlankPage />
                       </>
                     )}
                   </div>
@@ -548,6 +548,18 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** The intentionally-empty opening/closing page — labelled so it doesn't read as a bug. */
+function BlankPage() {
+  return (
+    <div style={{ flex: 1, background: "var(--sb-cream)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ textAlign: "center", color: "rgba(38,34,32,0.34)", fontFamily: "var(--font-dm-sans)" }}>
+        <div style={{ fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase", fontWeight: 700 }}>Blank page</div>
+        <div style={{ fontSize: 10.5, marginTop: 6, letterSpacing: "0.02em", lineHeight: 1.4 }}>Left empty by design so<br />your spreads sit evenly</div>
       </div>
     </div>
   );
