@@ -36,6 +36,16 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   // scrolls within the same height rather than running the full viewport.
   const boxRef = useRef<HTMLDivElement>(null);
   const [railHeight, setRailHeight] = useState<number>();
+  // Soft-fade the rail's scrolling edges so clipped thumbnails don't cut off hard.
+  const railRef = useRef<HTMLDivElement>(null);
+  const [railFade, setRailFade] = useState({ top: false, bottom: false });
+  const updateRailFade = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const top = el.scrollTop > 2;
+    const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+    setRailFade((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+  }, []);
 
   // Paint instantly from the cached state (client-only, so no hydration
   // mismatch), then the fetches below refresh it in the background.
@@ -83,6 +93,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     return () => ro.disconnect();
   }, [loading, book?.id]);
 
+  // Recompute the rail fade when its height or the number of thumbnails changes.
+  useEffect(() => { updateRailFade(); }, [railHeight, book?.pages?.length, updateRailFade]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!book) return;
@@ -114,6 +127,11 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   }
 
   const pages = book.pages ?? [];
+
+  // Fade only the edge(s) that have more content to scroll toward.
+  const railTopStop = railFade.top ? "transparent 0, black 16px" : "black 0";
+  const railBottomStop = railFade.bottom ? "black calc(100% - 16px), transparent 100%" : "black 100%";
+  const railMask = `linear-gradient(to bottom, ${railTopStop}, ${railBottomStop})`;
 
   // Direct image URLs by photo id, so slots load straight from storage (no backend redirect).
   // photoUrls = full-res (main spread); thumbUrls = small display variant (rail + picker).
@@ -208,7 +226,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <div className="flow-preview-grid">
 
         {/* Left rail: spread thumbnails */}
-        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: railHeight, maxHeight: railHeight ?? "calc(100vh - 210px)", overflowY: "auto", padding: 4 }}>
+        <div ref={railRef} onScroll={updateRailFade} className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: railHeight, maxHeight: railHeight ?? "calc(100vh - 210px)", overflowY: "auto", padding: 4, maskImage: railMask, WebkitMaskImage: railMask }}>
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
             const firstInterior = idx === 1;
