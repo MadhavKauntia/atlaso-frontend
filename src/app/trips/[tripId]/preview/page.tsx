@@ -32,6 +32,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [photos, setPhotos] = useState<Photo[]>([]);
   // Which slot the photo picker is currently open for (null = closed).
   const [picker, setPicker] = useState<{ pageId: string; slotIndex: number; currentPhotoId: string } | null>(null);
+  // The left thumbnail rail is sized to match the preview box exactly, so it
+  // scrolls within the same height rather than running the full viewport.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [railHeight, setRailHeight] = useState<number>();
 
   // Paint instantly from the cached state (client-only, so no hydration
   // mismatch), then the fetches below refresh it in the background.
@@ -67,6 +71,17 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   // Keep the cache warm with the latest book (incl. local crop/replace edits) and photos.
   useEffect(() => { if (book) setPreviewBook(cacheKey, book); }, [book, cacheKey]);
   useEffect(() => { if (photos.length) setPreviewPhotos(cacheKey, photos); }, [photos, cacheKey]);
+
+  // Track the preview box's rendered height and mirror it onto the left rail.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => setRailHeight(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, book?.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -193,7 +208,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <div className="flow-preview-grid">
 
         {/* Left rail: spread thumbnails */}
-        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 210px)", overflowY: "auto", padding: 4 }}>
+        <div className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: railHeight, maxHeight: railHeight ?? "calc(100vh - 210px)", overflowY: "auto", padding: 4 }}>
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
             const firstInterior = idx === 1;
@@ -247,7 +262,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         {/* Center: book spread — all spreads rendered, CSS-toggled to preserve image cache */}
         <div>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <div style={{
+            <div ref={boxRef} style={{
               position: "relative",
               aspectRatio: "16/10",
               boxShadow: "0 24px 60px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3)",
