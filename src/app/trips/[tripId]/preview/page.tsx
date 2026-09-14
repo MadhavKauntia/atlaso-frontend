@@ -209,7 +209,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <FlowTopbar currentStep={3} />
 
       {/* Hero strip */}
-      <div style={{ padding: "24px 48px 32px", textAlign: "center" }}>
+      <div style={{ padding: "52px 48px 32px", textAlign: "center" }}>
         <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 700, color: "var(--sb-gold)", marginBottom: 12, fontFamily: "var(--font-dm-sans)" }}>
           Your photobook is ready
         </div>
