@@ -47,8 +47,11 @@ export default function MobileUploadPage({ params }: { params: Promise<{ tripId:
           Pick photos from your camera roll and they&apos;ll upload straight into your book. Keep this page open while they finish, then head back to your computer to design it.
         </p>
 
-        {/* Hidden inputs driven by the two buttons below. */}
-        <input ref={libraryInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple onChange={onPick} style={{ display: "none" }} />
+        {/* Hidden inputs driven by the two buttons below. `image/*` (not an
+            explicit MIME list) is important on iOS: a narrow list greys out
+            camera-roll HEIC photos in the picker. The pipeline still validates
+            types and converts HEIC after selection. */}
+        <input ref={libraryInput} type="file" accept="image/*" multiple onChange={onPick} style={{ display: "none" }} />
         <input ref={cameraInput} type="file" accept="image/*" capture="environment" onChange={onPick} style={{ display: "none" }} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

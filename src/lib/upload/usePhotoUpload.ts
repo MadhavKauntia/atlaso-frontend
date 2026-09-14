@@ -12,8 +12,8 @@ import {
   type ConfirmUploadRequest,
 } from "@/lib/api";
 import {
-  ALLOWED_TYPES,
-  HEIC_TYPES,
+  isAllowedImage,
+  isHeic,
   UPLOAD_CONCURRENCY,
   MAX_EDGE,
   JPEG_QUALITY,
@@ -74,7 +74,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
 
     // Filter out anything we can't accept, keeping the rest, and summarise what
     // was skipped rather than rejecting the whole drop.
-    let files = dropped.filter((f) => ALLOWED_TYPES.has(f.type));
+    let files = dropped.filter(isAllowedImage);
     const wrongType = dropped.length - files.length;
 
     const beforeSize = files.length;
@@ -102,11 +102,11 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
     const initialCards: PendingCard[] = files.map((f, i) => ({
       tempId: tempIds[i],
-      previewUrl: HEIC_TYPES.has(f.type) ? "" : URL.createObjectURL(f),
+      previewUrl: isHeic(f) ? "" : URL.createObjectURL(f),
       name: f.name,
       progress: 0,
       error: null,
-      converting: HEIC_TYPES.has(f.type),
+      converting: isHeic(f),
     }));
     setPendingCards((prev) => [...prev, ...initialCards]);
 
@@ -120,7 +120,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
         try {
           let file = f;
 
-          if (HEIC_TYPES.has(f.type)) {
+          if (isHeic(f)) {
             file = await convertHeic(f);
           }
 
