@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ShippingPolicyPage() {
   return (
-    <PolicyPage title="Shipping & Delivery Policy" updated="12 September 2026">
+    <PolicyPage title="Shipping & Delivery Policy" updated="15 September 2026">
       <p>
         This policy explains how your Atlaso photobook is produced and delivered once your order is confirmed.
       </p>
@@ -32,8 +32,8 @@ export default function ShippingPolicyPage() {
 
       <h2>Shipping charges</h2>
       <p>
-        Shipping is <strong>free</strong>. It is already included in the ₹1,999 all-inclusive price of your
-        photobook.
+        Shipping is <strong>free</strong>. It is already included in the all-inclusive price of your
+        photobook shown at checkout.
       </p>
 
       <h2>Tracking</h2>

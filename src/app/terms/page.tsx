@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <PolicyPage title="Terms & Conditions" updated="12 September 2026">
+    <PolicyPage title="Terms & Conditions" updated="15 September 2026">
       <p>
         These Terms &amp; Conditions (&ldquo;Terms&rdquo;) govern your access to and use of Atlaso
         (&ldquo;Atlaso&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;), including creating and ordering printed
@@ -48,11 +48,10 @@ export default function TermsPage() {
 
       <h2>6. Orders and pricing</h2>
       <p>
-        Each photobook is priced at <strong>₹1,999 per copy</strong>, inclusive of shipping and applicable
-        taxes. Prices may change, but the price shown at checkout applies to your order. Payments are
-        processed securely through Razorpay. Your order is confirmed once payment is successfully verified.
-        We may refuse or cancel an order in cases of suspected fraud, errors, or content that violates these
-        Terms.
+        Each photobook is priced inclusive of shipping and applicable taxes, and the price shown at
+        checkout applies to your order. Payments are processed securely through Razorpay, and your order
+        is confirmed once payment is successfully verified. We may refuse or cancel an order in cases of
+        suspected fraud, errors, or content that violates these Terms.
       </p>
 
       <h2>7. Made-to-order product</h2>
