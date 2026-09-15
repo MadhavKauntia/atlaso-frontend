@@ -41,6 +41,8 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const router = useRouter();
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by "Try again" to re-run the generation effect (resuming the existing book).
+  const [retryKey, setRetryKey] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
   const [coverPrefs, setCoverPrefs] = useState<CoverPrefs | null>(null);
   // On regenerate, cover prefs aren't in localStorage — show the existing book's cover.
@@ -123,7 +125,11 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       }
 
       // Generation is async: this returns quickly with a book in GENERATING status.
-      const book = regenerateFrom ? await regenerateBook(regenerateFrom) : await generateBook(tripId);
+      // On a retry the book already exists and is still being built on the backend, so
+      // resume polling it instead of kicking off a fresh generation from scratch.
+      const book =
+        bookRef.current ??
+        (regenerateFrom ? await regenerateBook(regenerateFrom) : await generateBook(tripId));
       bookRef.current = book;
 
       // Wait for the background worker to finish building the pages.
@@ -139,7 +145,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     };
 
     run().catch((err) => setError(err instanceof Error ? err.message : "Generation failed"));
-  }, [ready, tripId, regenerateFrom]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, tripId, regenerateFrom, retryKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready) return <FullPageLoader />;
 
@@ -164,17 +170,24 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
           fontFamily: "var(--font-dm-sans), sans-serif",
         }}
       >
-        <div style={{ fontSize: 32, color: "var(--sb-muted)" }}>✕</div>
+        <div style={{ fontSize: 32, color: "var(--sb-muted)" }}>⏳</div>
         <h2 style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 24, fontWeight: 700, color: "var(--sb-cream)" }}>
-          Something went wrong
+          This is taking a little longer
         </h2>
         <p style={{ color: "var(--sb-muted)", fontSize: 15, maxWidth: 400 }}>{error}</p>
+        <p style={{ color: "var(--sb-cream)", fontSize: 15, maxWidth: 420, lineHeight: 1.6 }}>
+          Don&apos;t worry, your photos are safe and your book is still being put together in the
+          background. Tap <strong>Resume</strong> and we&apos;ll pick up right where we left off,
+          never starting over.
+        </p>
         <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={() => {
               setError(null);
+              // Keep bookRef so run() resumes the existing book instead of regenerating.
               started.current = false;
               setElapsed(0);
+              setRetryKey((k) => k + 1);
             }}
             style={{
               padding: "13px 24px",
@@ -188,7 +201,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
               cursor: "pointer",
             }}
           >
-            Try again
+            Resume
           </button>
           <Link
             href={`/trips/${tripId}/upload`}

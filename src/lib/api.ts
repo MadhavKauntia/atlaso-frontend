@@ -404,7 +404,9 @@ export async function pollBookUntilReady(
 ): Promise<Book> {
   if (IS_MOCK) return mockBook("mock-trip", bookId);
   const intervalMs = opts.intervalMs ?? 3000;
-  const timeoutMs = opts.timeoutMs ?? 15 * 60 * 1000; // large trips analyze for minutes
+  // A full 1000-photo trip analyses for ~24 min (one vision call per photo), so give a
+  // generous window before giving up. Generation continues on the backend regardless.
+  const timeoutMs = opts.timeoutMs ?? 30 * 60 * 1000;
   const readyStates = new Set(["READY_FOR_PREVIEW", "EXPORTING_PDF", "PDF_READY"]);
   const deadline = Date.now() + timeoutMs;
 

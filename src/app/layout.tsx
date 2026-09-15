@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter_Tight, DM_Sans, Bricolage_Grotesque, Nunito } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import GoogleAuthProvider from "@/components/GoogleAuthProvider";
 import "./globals.css";
 
@@ -56,6 +57,7 @@ export default function RootLayout({
         <GoogleAuthProvider>
           {children}
         </GoogleAuthProvider>
+        <Analytics />
       </body>
     </html>
   );
