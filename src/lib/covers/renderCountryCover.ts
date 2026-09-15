@@ -51,28 +51,43 @@ export async function renderCountryCoverPng(
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, COVER_W, COVER_H);
 
-    // title (top) — shrink for longer names
-    const tl = displayTitle.length;
-    const titleH = tl <= 6 ? 0.1 : tl <= 9 ? 0.078 : tl <= 12 ? 0.064 : 0.053;
-    ctx.fillStyle = ink;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `400 ${Math.round(COVER_H * titleH)}px ${TITLE_FONT}`;
-    ctx.fillText(displayTitle, COVER_W / 2, COVER_H * 0.26, COVER_W * 0.82);
-
-    // description (below title)
-    if (displayDesc) {
-      ctx.globalAlpha = 0.95;
-      ctx.font = `400 ${Math.round(COVER_H * 0.03)}px ${DESC_FONT}`;
-      ctx.fillText(displayDesc, COVER_W / 2, COVER_H * 0.315, COVER_W * 0.82);
-      ctx.globalAlpha = 1;
-    }
-
-    // stamp illustration (bottom) — ~38% wide, top at 40%
+    // Load the stamp first so the whole title + description + stamp group can be
+    // vertically centred on the face (was previously anchored toward the top).
     const img = await loadImage(stamp);
     const sw = COVER_W * 0.38;
     const sh = img.naturalHeight ? (sw / img.naturalWidth) * img.naturalHeight : sw / 0.809;
-    ctx.drawImage(img, (COVER_W - sw) / 2, COVER_H * 0.4, sw, sh);
+
+    // title size — shrink for longer names
+    const tl = displayTitle.length;
+    const titleH = tl <= 6 ? 0.1 : tl <= 9 ? 0.078 : tl <= 12 ? 0.064 : 0.053;
+    const titlePx = Math.round(COVER_H * titleH);
+    const descPx = Math.round(COVER_H * 0.03);
+    const gapTitleDesc = COVER_H * 0.014; // ~2cqw, matches the preview
+    const gapTextStamp = COVER_H * 0.042; // ~6cqw, matches the preview
+
+    const textH = titlePx + (displayDesc ? gapTitleDesc + descPx : 0);
+    const totalH = textH + gapTextStamp + sh;
+    let y = (COVER_H - totalH) / 2; // top of the centred group
+
+    ctx.fillStyle = ink;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    ctx.font = `400 ${titlePx}px ${TITLE_FONT}`;
+    ctx.fillText(displayTitle, COVER_W / 2, y, COVER_W * 0.82);
+    y += titlePx;
+
+    if (displayDesc) {
+      y += gapTitleDesc;
+      ctx.globalAlpha = 0.95;
+      ctx.font = `400 ${descPx}px ${DESC_FONT}`;
+      ctx.fillText(displayDesc, COVER_W / 2, y, COVER_W * 0.82);
+      ctx.globalAlpha = 1;
+      y += descPx;
+    }
+
+    y += gapTextStamp;
+    ctx.drawImage(img, (COVER_W - sw) / 2, y, sw, sh);
   } else if (art) {
     const img = await loadImage(art);
     canvas.width = img.naturalWidth || COVER_W;

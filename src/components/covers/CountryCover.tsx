@@ -62,63 +62,57 @@ export default function CountryCover({
           overflow: "hidden",
         }}
       >
+        {/* Title + description + stamp as one group, vertically centred on the face. */}
         <div
           style={{
             position: "absolute",
-            top: "17%",
-            left: 0,
-            right: 0,
+            inset: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "2cqw",
+            justifyContent: "center",
+            gap: "6cqw",
             padding: "0 6%",
           }}
         >
-          <div
-            style={{
-              fontFamily: TITLE_FONT,
-              fontWeight: 400,
-              fontSize: `${titleCqw}cqw`,
-              lineHeight: 1,
-              letterSpacing: "0.01em",
-              color: ink,
-              textAlign: "center",
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayTitle}
-          </div>
-          {displayDesc && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2cqw" }}>
             <div
               style={{
-                fontFamily: DESC_FONT,
-                fontSize: "4.5cqw",
-                lineHeight: 1.2,
+                fontFamily: TITLE_FONT,
+                fontWeight: 400,
+                fontSize: `${titleCqw}cqw`,
+                lineHeight: 1,
+                letterSpacing: "0.01em",
                 color: ink,
-                opacity: 0.95,
                 textAlign: "center",
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
               }}
             >
-              {displayDesc}
+              {displayTitle}
             </div>
-          )}
+            {displayDesc && (
+              <div
+                style={{
+                  fontFamily: DESC_FONT,
+                  fontSize: "4.5cqw",
+                  lineHeight: 1.2,
+                  color: ink,
+                  opacity: 0.95,
+                  textAlign: "center",
+                }}
+              >
+                {displayDesc}
+              </div>
+            )}
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={stamp}
+            alt={def ? `${def.name} stamp` : "stamp"}
+            style={{ width: "38%", height: "auto", display: "block" }}
+          />
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={stamp}
-          alt={def ? `${def.name} stamp` : "stamp"}
-          style={{
-            position: "absolute",
-            top: "40%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "38%",
-            height: "auto",
-            display: "block",
-          }}
-        />
       </div>
     );
   } else if (art) {
