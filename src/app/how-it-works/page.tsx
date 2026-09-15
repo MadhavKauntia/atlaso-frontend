@@ -44,10 +44,34 @@ export default function HowItWorksPage() {
           </div>
         </div>
 
-        {/* Step 2 — the album builds itself */}
+        {/* Step 2 — name it, and the cover draws itself */}
+        <div className={s.step}>
+          <div className={s.stepNumber} style={{ background: "#e8a0b4", color: "var(--sb-ink)" }}>
+            2
+          </div>
+          <div className={s.tile} style={{ padding: 16 }}>
+            <div className={s.tileBook}>
+              <div className={s.tileBookSpine} />
+              <img
+                src="/assets/covers/bali.jpg"
+                alt="Illustrated Bali stamp cover"
+                className={s.tileBookImg}
+              />
+            </div>
+          </div>
+          <div className={s.stepBody}>
+            <h2 className={s.stepTitle}>name it, and the cover draws itself</h2>
+            <p className={s.stepDesc}>
+              The country you pick gets a matching illustrated stamp cover, foil-stamped on the
+              spine. Or type your own title.
+            </p>
+          </div>
+        </div>
+
+        {/* Step 3 — the album builds itself */}
         <div className={s.step}>
           <div className={s.stepNumber} style={{ background: "var(--sb-green)" }}>
-            2
+            3
           </div>
           <div className={s.tile}>
             <div className={s.tileSpread}>
@@ -68,30 +92,6 @@ export default function HowItWorksPage() {
               In under a minute your photos are grouped by day and paired by shape and colour. Flip
               through every spread, swap any photo, or regenerate the layout instantly, with no
               waiting on anyone.
-            </p>
-          </div>
-        </div>
-
-        {/* Step 3 — name it, and the cover draws itself */}
-        <div className={s.step}>
-          <div className={s.stepNumber} style={{ background: "#e8a0b4", color: "var(--sb-ink)" }}>
-            3
-          </div>
-          <div className={s.tile} style={{ padding: 16 }}>
-            <div className={s.tileBook}>
-              <div className={s.tileBookSpine} />
-              <img
-                src="/assets/covers/bali.jpg"
-                alt="Illustrated Bali stamp cover"
-                className={s.tileBookImg}
-              />
-            </div>
-          </div>
-          <div className={s.stepBody}>
-            <h2 className={s.stepTitle}>name it, and the cover draws itself</h2>
-            <p className={s.stepDesc}>
-              The country you pick gets a matching illustrated stamp cover, foil-stamped on the
-              spine. Or type your own title.
             </p>
           </div>
         </div>
