@@ -1,10 +1,18 @@
 "use client";
 
-import { use, useRef } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Brand from "@/components/Brand";
+import { setGuestToken } from "@/lib/guest";
 import { MAX_PHOTOS } from "@/lib/upload/pipeline";
 import { usePhotoUpload } from "@/lib/upload/usePhotoUpload";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
+
+/** Reads the guest capability token from the URL fragment (#t=...), if present. */
+function tokenFromHash(): string | null {
+  if (typeof window === "undefined") return null;
+  const m = window.location.hash.match(/[#&]t=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 
 // The phone is an input device, not the place the book gets finished — so this
 // screen has no 50-photo gate and no "continue" step. It just pushes photos
@@ -14,6 +22,21 @@ const MOBILE_CONCURRENCY = 3;
 
 export default function MobileUploadPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
+
+  // Adopt the guest token handed off in the QR link BEFORE anything reads it (the
+  // lazy initializer runs during first render, ahead of usePhotoUpload's effects),
+  // so this device can authorize guest reads/uploads for the trip.
+  useState(() => {
+    const token = tokenFromHash();
+    if (token) setGuestToken(tripId, token);
+    return null;
+  });
+  // Strip the token from the visible URL once mounted (keep it out of history/shares).
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash.includes("t=")) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
 
   const libraryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);

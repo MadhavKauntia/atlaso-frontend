@@ -6,6 +6,7 @@ import { useDropzone } from "react-dropzone";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import { getPhotos } from "@/lib/api";
+import { getGuestToken } from "@/lib/guest";
 import { MAX_PHOTOS } from "@/lib/upload/pipeline";
 import { usePhotoUpload } from "@/lib/upload/usePhotoUpload";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
@@ -121,7 +122,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   }, []);
 
   const openPhonePanel = () => {
-    setPhoneUrl(`${window.location.origin}/trips/${tripId}/upload/mobile`);
+    // Hand the guest capability token to the phone via the URL fragment (never sent
+    // to the server or logged), so the phone — a different device with empty local
+    // storage — can authorize its guest uploads. Without this the backend now
+    // rejects the phone's uploads with "Invalid or missing guest token".
+    const base = `${window.location.origin}/trips/${tripId}/upload/mobile`;
+    const token = getGuestToken(tripId);
+    setPhoneUrl(token ? `${base}#t=${encodeURIComponent(token)}` : base);
     setNewFromPhone(0);
     setPhonePanelOpen(true);
   };
