@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <PolicyPage title="Privacy Policy" updated="12 September 2026">
+    <PolicyPage title="Privacy Policy" updated="15 September 2026">
       <p>
         This Privacy Policy explains how Atlaso (&ldquo;Atlaso&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) collects, uses,
         and protects your information when you use our website and services to create and order printed
@@ -38,8 +38,11 @@ export default function PrivacyPolicyPage() {
       <ul>
         <li><strong>OpenAI</strong>: to analyse uploaded photos for curation and layout.</li>
         <li><strong>Razorpay</strong>: to process payments securely.</li>
-        <li><strong>Amazon Web Services (AWS)</strong>: to store photos and files and host the service.</li>
+        <li><strong>Amazon Web Services (AWS)</strong>: to store your photos and files.</li>
+        <li><strong>Railway</strong>: to host our application and database.</li>
+        <li><strong>Vercel</strong>: to host our website.</li>
         <li><strong>Google</strong>: to authenticate your sign-in.</li>
+        <li><strong>Brevo</strong>: to send transactional emails, such as order confirmations and book-ready notifications.</li>
         <li><strong>Printing and courier partners</strong>: to produce and deliver your photobook.</li>
       </ul>
       <p>We may also disclose information where required by law or to protect our rights and users.</p>
