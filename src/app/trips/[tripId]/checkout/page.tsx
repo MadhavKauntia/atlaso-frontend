@@ -262,17 +262,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
           <FormSection num={2} title="Shipping address">
             <div style={{ marginBottom: 12 }}>
               <label style={LABEL_STYLE}>Address line 1</label>
-              <input value={address1} onChange={(e) => setAddress1(e.target.value)} onBlur={blur("address1")} style={fieldStyle(!!err("address1"))} />
+              <input value={address1} onChange={(e) => setAddress1(e.target.value)} onBlur={blur("address1")} maxLength={255} style={fieldStyle(!!err("address1"))} />
               {err("address1") && <FieldError>{err("address1")}</FieldError>}
             </div>
             <div style={{ marginBottom: 12 }}>
               <label style={LABEL_STYLE}>Address line 2 <span style={{ color: "var(--sb-muted-2)", textTransform: "none", letterSpacing: "normal" }}>(optional)</span></label>
-              <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." style={fieldStyle(false)} />
+              <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." maxLength={255} style={fieldStyle(false)} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={LABEL_STYLE}>City</label>
-                <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={blur("city")} style={fieldStyle(!!err("city"))} />
+                <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={blur("city")} maxLength={128} style={fieldStyle(!!err("city"))} />
                 {err("city") && <FieldError>{err("city")}</FieldError>}
               </div>
               <div>
