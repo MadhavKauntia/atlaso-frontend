@@ -88,11 +88,6 @@ export interface Book {
   pages: PageData[];
 }
 
-export interface BulkUploadResponse {
-  uploaded: Photo[];
-  failed: { filename: string; error: string }[];
-}
-
 export async function googleAuth(idToken: string): Promise<{ token: string; user: User }> {
   const res = await fetch(`${BASE}/auth/google`, {
     method: "POST",
@@ -268,29 +263,9 @@ export async function saveCoverCountry(bookId: string, country: string, subtitle
   return res.json();
 }
 
-export async function uploadPhoto(tripId: string, file: File): Promise<Photo> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await apiFetch(`${BASE}/trips/${tripId}/photos`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-export async function uploadPhotos(tripId: string, files: File[]): Promise<BulkUploadResponse> {
-  const formData = new FormData();
-  for (const file of files) {
-    formData.append("files", file);
-  }
-  const res = await apiFetch(`${BASE}/trips/${tripId}/photos/bulk`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
+// Photo upload is exclusively via the presigned initiate → S3 PUT → confirm flow
+// below (see usePhotoUpload). The legacy direct-multipart routes were removed from
+// the backend because they bypassed the quota lock and real-image validation.
 
 interface InitiateUploadRequest {
   filename: string;
