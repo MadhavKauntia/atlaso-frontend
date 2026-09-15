@@ -48,7 +48,6 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
 
   const [book, setBook] = useState<Book | null>(null);
   const [order, setOrder] = useState<OrderSummary | null>(null);
-  const [copied, setCopied] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
 
   useEffect(() => {
@@ -60,13 +59,6 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
   if (!ready) return <FullPageLoader />;
 
   const title = book?.title ?? "Your Trip";
-
-  const handleCopyReferral = () => {
-    navigator.clipboard.writeText("https://atlaso.com/ref/you").then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", position: "relative" }}>
@@ -99,7 +91,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
         </h1>
 
         <p style={{ fontSize: 17, color: "var(--sb-muted)", lineHeight: 1.55, maxWidth: 520, margin: "0 auto", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-          We'll send you a shipping confirmation when your book leaves our studio. You'll get another email the moment it ships.
+          We'll email you the moment your book ships from our studio.
         </p>
 
         {/* Cover showcase — only render once the book is loaded so we never
@@ -182,12 +174,12 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
 
       {/* CTA row */}
       <div style={{ maxWidth: 780, margin: "0 auto 60px", padding: "0 32px", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        <button
-          onClick={() => {}}
-          style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999, fontWeight: 800, fontSize: 14, background: "var(--sb-red)", color: "var(--sb-cream)", border: "none", cursor: "pointer", fontFamily: "var(--font-bricolage), sans-serif" }}
+        <Link
+          href="/create"
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999, fontWeight: 800, fontSize: 14, background: "var(--sb-red)", color: "var(--sb-cream)", border: "none", cursor: "pointer", fontFamily: "var(--font-bricolage), sans-serif", textDecoration: "none" }}
         >
-          View order details →
-        </button>
+          Make another one →
+        </Link>
         <button
           onClick={() => {
             setReceiptBusy(true);
@@ -199,28 +191,6 @@ export default function ConfirmationPage({ params }: { params: Promise<{ tripId:
           style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 26px", borderRadius: 999, fontWeight: 800, fontSize: 14, background: "transparent", color: "var(--sb-gold)", border: "1px solid #5a5249", cursor: receiptBusy ? "not-allowed" : "pointer", opacity: receiptBusy ? 0.6 : 1, fontFamily: "var(--font-bricolage), sans-serif" }}
         >
           {receiptBusy ? "Preparing…" : "Download receipt"}
-        </button>
-      </div>
-
-      {/* Referral band */}
-      <div style={{ maxWidth: 780, margin: "0 auto 60px", padding: "28px 32px", borderTop: "1px solid #46403a", borderBottom: "1px solid #46403a", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-        <div style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1.3, maxWidth: 380, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>
-          Know someone who'd love Atlaso? Give them{" "}
-          <span style={{ color: "var(--sb-gold)", fontWeight: 800 }}>₹400 off</span>{" "}
-          their first book.
-        </div>
-        <button
-          onClick={handleCopyReferral}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 10,
-            padding: "12px 22px", background: copied ? "rgba(30,138,95,0.15)" : "var(--sb-panel-2)",
-            color: copied ? "var(--sb-green)" : "var(--sb-gold)", borderRadius: 999,
-            fontWeight: 800, fontSize: 14,
-            border: `1px solid ${copied ? "rgba(30,138,95,0.4)" : "#5a5249"}`,
-            cursor: "pointer", fontFamily: "var(--font-bricolage), sans-serif", transition: "all 0.2s",
-          }}
-        >
-          {copied ? "Copied! ✓" : "Copy your referral link ↗"}
         </button>
       </div>
 
