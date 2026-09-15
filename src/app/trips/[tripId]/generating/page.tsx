@@ -37,7 +37,7 @@ const TIPS = [
   "Every Atlaso book is printed on high-quality photo paper and hard-bound like a proper coffee-table book.",
   "Your cover prints at high resolution with a clean bleed to guarantee perfect edges.",
   "We colour-calibrate every book individually before it leaves our studio.",
-  "Books are 6.9 × 9.8 inches with 50 pages, hardbound with a cloth spine and rigid boards.",
+  "Books are 6.9 × 9.8 inches with 50 pages, bound as a photo-wrap hardcover.",
   "Printed in Bengaluru and delivered across India in about a week.",
 ];
 
