@@ -163,8 +163,22 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
   } catch { /* no thumb — tile falls back to the S3 image */ }
 
   if (longest <= maxEdge) {
-    bitmap.close();
-    return { file, width, height, thumbUrl, thumbBlob, sharpness };
+    // Within the size cap: JPEG/PNG pass through untouched, but re-encode anything
+    // else (e.g. a small WebP) to JPEG at native size — the backend only accepts
+    // JPEG/PNG, so the pipeline must always emit one of those regardless of size.
+    if (file.type === "image/jpeg" || file.type === "image/png") {
+      bitmap.close();
+      return { file, width, height, thumbUrl, thumbBlob, sharpness };
+    }
+    try {
+      const blob = await encodeJpeg(bitmap, width, height, quality);
+      bitmap.close();
+      const name = file.name.replace(/\.(png|webp|jpeg|jpg)$/i, ".jpg");
+      return { file: new File([blob], name, { type: "image/jpeg" }), width, height, thumbUrl, thumbBlob, sharpness };
+    } catch {
+      bitmap.close();
+      return { file, width, height, thumbUrl, thumbBlob, sharpness };
+    }
   }
   const scale = maxEdge / longest;
   const w = Math.round(width * scale);
