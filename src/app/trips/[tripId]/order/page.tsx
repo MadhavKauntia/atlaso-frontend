@@ -13,7 +13,7 @@ const BOOK_PRICE = 1999; // ₹ per copy
 
 const INCLUDED_FEATURES = [
   "6.9 × 9.8 inch photo-wrap hardcover",
-  "Archival matte paper, 100+ year lifespan",
+  "Premium matte photo paper",
   "50 pages of full-bleed photo spreads",
   "Free shipping across India, taxes included",
 ];
