@@ -197,19 +197,34 @@ export async function validateCoupon(code: string, quantity = 1): Promise<Coupon
   return res.json();
 }
 
+export interface ShippingDetails {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  phone?: string;
+}
+
 /**
  * Creates a Razorpay order. The price is computed server-side from tripId + quantity (+ coupon)
  * — the client no longer sends an amount. Returns the order with the server-computed amount.
+ *
+ * Shipping is sent here (not just at /verify) so it's persisted on the server-side checkout,
+ * letting the Razorpay webhook record a complete, shippable order even if this browser never
+ * reaches the /verify call.
  */
 export async function createRazorpayOrder(
   tripId: string,
   quantity: number,
-  couponCode?: string
+  couponCode?: string,
+  shipping?: ShippingDetails
 ): Promise<RazorpayOrder> {
   const res = await apiFetch(`${BASE}/payments/create-order`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tripId, quantity, couponCode }),
+    body: JSON.stringify({ tripId, quantity, couponCode, ...shipping }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

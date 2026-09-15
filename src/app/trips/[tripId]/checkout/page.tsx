@@ -147,8 +147,18 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       if (!keyId) throw new Error("Payments are not configured. Please contact support.");
 
       // Price is computed server-side from trip + quantity (+ coupon); Razorpay applies the
-      // linked coupon offer's discount at payment time.
-      const order = await createRazorpayOrder(tripId, qty, coupon?.code);
+      // linked coupon offer's discount at payment time. Shipping is sent now (already validated
+      // above) so it's persisted on the checkout — the webhook can then record a shippable order
+      // even if this browser never reaches the verify step below.
+      const order = await createRazorpayOrder(tripId, qty, coupon?.code, {
+        addressLine1: address1.trim(),
+        addressLine2: address2.trim() || undefined,
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
+        country,
+        phone: `+91${phone}`,
+      });
 
       const rzp = new window.Razorpay({
         key: keyId,
