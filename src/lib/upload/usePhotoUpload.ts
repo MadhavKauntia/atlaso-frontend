@@ -176,14 +176,19 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             setPendingCards((prev) => prev.map((c) => c.tempId === init.photoId ? { ...c, progress: pct } : c));
           });
 
-          // Upload the display thumbnail alongside. Non-fatal: if it fails, the
-          // photo still confirms and consumers fall back to the full image.
+          // Upload the display thumbnail alongside. Initiation already reserved and
+          // bound this thumbnail key, so confirmation must send the same key with the
+          // object present — a null/mismatched key (or a missing object) is rejected
+          // server-side. So if we reserved a thumbnail we must deliver it: retry once,
+          // then let the failure fail this file rather than confirming an unusable upload.
           let thumbnailStorageKey: string | null = null;
           if (thumbBlob && init.thumbnailUploadUrl && init.thumbnailStorageKey) {
             try {
               await uploadBlobToS3(init.thumbnailUploadUrl, thumbBlob);
-              thumbnailStorageKey = init.thumbnailStorageKey;
-            } catch { /* skip — full image is the fallback */ }
+            } catch {
+              await uploadBlobToS3(init.thumbnailUploadUrl, thumbBlob); // one retry; throws on repeat failure
+            }
+            thumbnailStorageKey = init.thumbnailStorageKey;
           }
 
           const [photo] = await confirmUploads(tripId, [{
