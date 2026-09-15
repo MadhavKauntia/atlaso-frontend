@@ -44,6 +44,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(getCachedUser());
   const [covers, setCovers] = useState<Record<string, Cover>>({});
   const [loading, setLoading] = useState(true);
+  const [showPreviewTip, setShowPreviewTip] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -209,7 +210,11 @@ export default function AccountPage() {
             </div>
             {typeof user?.freePreviewsRemaining === "number" && (
               <div
+                onMouseEnter={() => setShowPreviewTip(true)}
+                onMouseLeave={() => setShowPreviewTip(false)}
+                onClick={() => setShowPreviewTip((v) => !v)}
                 style={{
+                  position: "relative",
                   marginTop: 10,
                   display: "inline-flex",
                   alignItems: "center",
@@ -223,11 +228,37 @@ export default function AccountPage() {
                   border: `1px solid ${user.freePreviewsRemaining > 0 ? "rgba(255,255,255,0.10)" : "rgba(200,80,60,0.35)"}`,
                   cursor: "help",
                 }}
-                title="Each preview costs us a little in AI processing, so free ones are limited. Need more? Email support@myatlaso.com and we'll sort you out."
               >
                 📖 {user.freePreviewsRemaining > 0
                   ? `${user.freePreviewsRemaining} free preview${user.freePreviewsRemaining === 1 ? "" : "s"} left`
                   : "No free previews left · order a book to unlock 3 more"}
+                {showPreviewTip && (
+                  <div
+                    role="tooltip"
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      left: 0,
+                      zIndex: 20,
+                      width: "max-content",
+                      maxWidth: 300,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      background: "var(--sb-panel, #2a2620)",
+                      color: "var(--sb-cream)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                      textAlign: "left",
+                      whiteSpace: "normal",
+                    }}
+                  >
+                    Each preview costs us a little in AI processing, so free ones are limited. Need more?
+                    Email <span style={{ color: "var(--sb-red)", fontWeight: 700 }}>support@myatlaso.com</span> and we&apos;ll sort you out.
+                  </div>
+                )}
               </div>
             )}
           </div>
