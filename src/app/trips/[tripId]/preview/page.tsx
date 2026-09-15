@@ -56,16 +56,21 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   }, [cacheKey]);
 
   useEffect(() => {
+    // Wait for the auth check — firing these authenticated calls while logged out returns 401,
+    // which hard-redirects to /login and loses the intended return URL (sending the user to a
+    // fresh trip + upload instead of back here).
+    if (!ready) return;
     const fetch = bookId ? getBook(bookId) : getBookByTripId(tripId);
     fetch
       .then(setBook)
       .catch(() => setError("Could not load book"))
       .finally(() => setLoading(false));
-  }, [bookId, tripId]);
+  }, [ready, bookId, tripId]);
 
   useEffect(() => {
+    if (!ready) return;
     getPhotos(tripId).then(setPhotos).catch(() => {});
-  }, [tripId]);
+  }, [ready, tripId]);
 
   // Grow the mounted window around the current spread (preload prev + next).
   useEffect(() => {

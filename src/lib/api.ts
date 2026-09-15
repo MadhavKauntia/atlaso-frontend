@@ -18,7 +18,12 @@ async function apiFetch(url: string, options: RequestInit = {}, timeoutMs?: numb
     const res = await fetch(url, { ...options, headers, signal: controller?.signal ?? options.signal });
     if (res.status === 401) {
       removeToken();
-      window.location.href = "/login";
+      // Preserve where the user was so login returns them here — a bare "/login" defaults `next`
+      // to /create, which spins up a new trip and dumps them on the upload page.
+      if (typeof window !== "undefined") {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?next=${next}`;
+      }
     }
     return res;
   } finally {
