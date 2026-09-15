@@ -458,7 +458,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             >
               {[
                 ["Size", "6.9 × 9.8 in"],
-                ["Pages", "50 lay-flat"],
+                ["Pages", "50"],
                 ["Binding", "Hardbound"],
               ].map(([lbl, val]) => (
                 <div key={lbl} style={{ fontSize: 12, textAlign: "center" }}>

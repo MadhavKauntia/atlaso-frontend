@@ -14,7 +14,7 @@ const BOOK_PRICE = 1999; // ₹ per copy
 const INCLUDED_FEATURES = [
   "6.9 × 9.8 inch hardbound, cloth spine, rigid boards",
   "Archival matte paper, 100+ year lifespan",
-  "50 lay-flat pages so spreads never lose the middle",
+  "50 pages of full-bleed photo spreads",
   "Free shipping across India, taxes included",
 ];
 
