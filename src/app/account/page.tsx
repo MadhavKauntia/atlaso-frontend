@@ -255,7 +255,8 @@ export default function AccountPage() {
                       whiteSpace: "normal",
                     }}
                   >
-                    Each preview costs us a little in AI processing, so free ones are limited. Need more?
+                    Each preview costs us a little in AI processing, so free ones are limited.
+                    Ordering a book resets them to 3. Need more before then?
                     Email <span style={{ color: "var(--sb-red)", fontWeight: 700 }}>support@myatlaso.com</span> and we&apos;ll sort you out.
                   </div>
                 )}
