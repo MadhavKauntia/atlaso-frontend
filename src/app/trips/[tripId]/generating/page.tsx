@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { generateBook, regenerateBook, saveCoverCountry, updateTrip, getBook, getPhotos, pollBookUntilReady } from "@/lib/api";
+import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -153,18 +153,18 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       // Generation is async: this returns quickly with a book in GENERATING status.
       // On a retry the book already exists and is still being built on the backend, so
       // resume polling it instead of kicking off a fresh generation from scratch.
+      // Pass the cover country at creation so it's persisted server-side immediately — before the
+      // worker finishes and the ready-email is sent. This makes the cover survive a cold load from
+      // the email link even if the user leaves this tab.
       const book =
         bookRef.current ??
-        (regenerateFrom ? await regenerateBook(regenerateFrom) : await generateBook(tripId));
+        (regenerateFrom
+          ? await regenerateBook(regenerateFrom)
+          : await generateBook(tripId, { country: prefs?.country, subtitle: prefs?.description || undefined }));
       bookRef.current = book;
 
       // Wait for the background worker to finish building the pages.
       await pollBookUntilReady(book.id);
-
-      // Save cover config only after the book is ready, so it can't race the worker.
-      if (prefs?.country) {
-        await saveCoverCountry(book.id, prefs.country, prefs.description || undefined);
-      }
       localStorage.removeItem("atlaso_cover_prefs");
 
       generationDoneAt.current = elapsed;

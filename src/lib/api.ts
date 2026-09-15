@@ -379,9 +379,23 @@ export async function deletePhoto(tripId: string, photoId: string): Promise<void
 // Callers poll pollBookUntilReady() to know when the pages are actually built.
 const GENERATE_REQUEST_TIMEOUT_MS = 60_000;
 
-export async function generateBook(tripId: string): Promise<Book> {
-  if (IS_MOCK) return mockBook(tripId);
-  const res = await apiFetch(`${BASE}/trips/${tripId}/book/generate`, { method: "POST" }, GENERATE_REQUEST_TIMEOUT_MS);
+export async function generateBook(
+  tripId: string,
+  cover?: { country?: string; subtitle?: string }
+): Promise<Book> {
+  if (IS_MOCK) return { ...mockBook(tripId), coverCountry: cover?.country ?? null };
+  // Send the chosen cover country at creation so it's persisted server-side before generation
+  // finishes and the ready-email is sent — otherwise a cold load from the email link (after the
+  // user left the generating tab) has no cover country and renders a blank cover.
+  const res = await apiFetch(
+    `${BASE}/trips/${tripId}/book/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ country: cover?.country, subtitle: cover?.subtitle }),
+    },
+    GENERATE_REQUEST_TIMEOUT_MS
+  );
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
