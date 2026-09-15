@@ -221,7 +221,9 @@ export default function AccountPage() {
                   background: user.freePreviewsRemaining > 0 ? "rgba(255,255,255,0.06)" : "rgba(200,80,60,0.15)",
                   color: user.freePreviewsRemaining > 0 ? "var(--sb-muted-2)" : "var(--sb-red)",
                   border: `1px solid ${user.freePreviewsRemaining > 0 ? "rgba(255,255,255,0.10)" : "rgba(200,80,60,0.35)"}`,
+                  cursor: "help",
                 }}
+                title="Each preview costs us a little in AI processing, so free ones are limited. Need more? Email support@myatlaso.com and we'll sort you out."
               >
                 📖 {user.freePreviewsRemaining > 0
                   ? `${user.freePreviewsRemaining} free preview${user.freePreviewsRemaining === 1 ? "" : "s"} left`
