@@ -5,6 +5,28 @@ import { renderCountryCoverPng, renderCoverBackPng } from "@/lib/covers/renderCo
 
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api`;
 
+/** An error that preserves the HTTP status so callers can branch on it (e.g. 402 → out of previews). */
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+/** Throws an ApiError carrying the status, preferring a JSON { message | error } body over raw text. */
+async function throwApiError(res: Response): Promise<never> {
+  let message = "";
+  try {
+    const body = await res.clone().json();
+    message = body?.message ?? body?.error ?? "";
+  } catch {
+    message = await res.text().catch(() => "");
+  }
+  throw new ApiError(res.status, message || `Request failed (${res.status})`);
+}
+
 async function apiFetch(url: string, options: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   const token = getToken();
   const existingHeaders = (options.headers as Record<string, string>) ?? {};
@@ -401,14 +423,14 @@ export async function generateBook(
     },
     GENERATE_REQUEST_TIMEOUT_MS
   );
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res); // 402 = free-preview quota exhausted
   return res.json();
 }
 
 export async function regenerateBook(bookId: string): Promise<Book> {
   if (IS_MOCK) return mockBook("mock-trip", bookId);
   const res = await apiFetch(`${BASE}/books/${bookId}/regenerate`, { method: "POST" }, GENERATE_REQUEST_TIMEOUT_MS);
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
   return res.json();
 }
 

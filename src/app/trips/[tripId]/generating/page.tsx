@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady } from "@/lib/api";
+import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -56,6 +56,9 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const router = useRouter();
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Set when generation is blocked by the free-preview quota (HTTP 402) — a distinct state
+  // from a transient failure, since there's nothing to "resume"; the user must place an order.
+  const [quotaBlocked, setQuotaBlocked] = useState(false);
   // Bumped by "Try again" to re-run the generation effect (resuming the existing book).
   const [retryKey, setRetryKey] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
@@ -170,7 +173,11 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
       generationDoneAt.current = elapsed;
     };
 
-    run().catch((err) => setError(err instanceof Error ? err.message : "Generation failed"));
+    run().catch((err) => {
+      // 402 = out of free previews: show the dedicated block screen, not the "retry" one.
+      if (err instanceof ApiError && err.status === 402) setQuotaBlocked(true);
+      else setError(err instanceof Error ? err.message : "Generation failed");
+    });
   }, [ready, tripId, regenerateFrom, retryKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready) return <FullPageLoader />;
@@ -193,6 +200,69 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   // Total used to spread the progress checkpoints across the real duration.
   const totalSec = estimateSec ?? (regenerateFrom ? 60 : 90);
   const stepDoneAt = (i: number) => (STEPS[i].at === Infinity ? Infinity : STEPS[i].at * totalSec);
+
+  if (quotaBlocked) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--sb-bg)",
+          color: "var(--sb-cream)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 20,
+          padding: 40,
+          textAlign: "center",
+          fontFamily: "var(--font-dm-sans), sans-serif",
+        }}
+      >
+        <div style={{ fontSize: 40 }}>📖</div>
+        <h2 style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 24, fontWeight: 700, color: "var(--sb-cream)" }}>
+          You&apos;ve used your free previews
+        </h2>
+        <p style={{ color: "var(--sb-muted)", fontSize: 15, maxWidth: 420, lineHeight: 1.6 }}>
+          You&apos;ve created 3 free book previews. Order any of your books to unlock 3 more.
+        </p>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link
+            href="/account"
+            style={{
+              padding: "13px 24px",
+              background: "var(--sb-red)",
+              color: "var(--sb-cream)",
+              border: "none",
+              borderRadius: 999,
+              fontSize: 15,
+              fontFamily: "var(--font-bricolage), sans-serif",
+              fontWeight: 800,
+              cursor: "pointer",
+              textDecoration: "none",
+            }}
+          >
+            View my trips
+          </Link>
+          <Link
+            href={`/trips/${tripId}/upload`}
+            style={{
+              padding: "13px 24px",
+              background: "transparent",
+              color: "var(--sb-cream)",
+              border: "1px solid #5a5249",
+              borderRadius: 999,
+              fontSize: 14,
+              cursor: "pointer",
+              fontFamily: "var(--font-dm-sans), sans-serif",
+              textDecoration: "none",
+            }}
+          >
+            ← back to photos
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
