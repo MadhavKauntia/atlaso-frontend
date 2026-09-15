@@ -207,6 +207,27 @@ export default function AccountPage() {
                 ? `${trips.length} book${trips.length === 1 ? "" : "s"} in the works · keep the memories in print`
                 : "start your first travel photobook"}
             </div>
+            {typeof user?.freePreviewsRemaining === "number" && (
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 12px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: user.freePreviewsRemaining > 0 ? "rgba(255,255,255,0.06)" : "rgba(200,80,60,0.15)",
+                  color: user.freePreviewsRemaining > 0 ? "var(--sb-muted-2)" : "var(--sb-red)",
+                  border: `1px solid ${user.freePreviewsRemaining > 0 ? "rgba(255,255,255,0.10)" : "rgba(200,80,60,0.35)"}`,
+                }}
+              >
+                📖 {user.freePreviewsRemaining > 0
+                  ? `${user.freePreviewsRemaining} free preview${user.freePreviewsRemaining === 1 ? "" : "s"} left`
+                  : "No free previews left · order a book to unlock 3 more"}
+              </div>
+            )}
           </div>
         </div>
       </section>

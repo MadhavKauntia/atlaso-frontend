@@ -58,6 +58,7 @@ export interface User {
   email: string;
   name: string;
   pictureUrl: string | null;
+  freePreviewsRemaining: number;
 }
 
 export interface Trip {
