@@ -10,10 +10,12 @@ import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 import Link from "next/link";
 
-// Each photo gets its own vision call; measured throughput is ~1.5s/photo across the
-// backend's worker pool. Plus a little fixed overhead for selection + layout.
-const SECONDS_PER_PHOTO = 1.5;
-const FIXED_OVERHEAD_SEC = 15;
+// Each photo gets its own vision call, fanned out across the backend's worker pool (32-wide
+// on the upgraded OpenAI tier). Measured ~0.19s/photo for a 64-photo batch; we use 0.25 to
+// under-promise. Selection + layout are sub-second now, so the fixed overhead is small and
+// mostly covers request round-trip + the client's poll granularity.
+const SECONDS_PER_PHOTO = 0.25;
+const FIXED_OVERHEAD_SEC = 8;
 
 /** Human-friendly estimate string, rounded to a comfortable number. */
 function formatEstimate(sec: number): string {
@@ -104,13 +106,15 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 15000);
+    const interval = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 6000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (generationDoneAt.current === null) return;
-    if (elapsed < 8) return;
+    // Small floor so a fast generation doesn't flash this screen; lowered from 8s now that
+    // generation typically finishes in ~10-15s on the upgraded OpenAI tier.
+    if (elapsed < 5) return;
     const book = bookRef.current;
     if (!book) return;
     router.push(`/trips/${tripId}/preview?bookId=${book.id}`);
