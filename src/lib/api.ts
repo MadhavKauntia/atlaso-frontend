@@ -585,3 +585,20 @@ export async function updateSlotPhoto(
   });
   if (!res.ok) throw new Error(await res.text());
 }
+
+/**
+ * Switches a page to a different layout. Returns the updated book — the backend recomputes the
+ * page's slots (and, when growing to a larger layout, fills the new slots from the trip's unused
+ * photos), so the caller replaces its book state with the response rather than guessing locally.
+ * Throws ApiError (409) when there aren't enough spare photos to grow into the chosen layout.
+ */
+export async function updatePageLayout(pageId: string, layout: string): Promise<Book> {
+  if (IS_MOCK) return mockBook("mock-trip");
+  const res = await apiFetch(`${BASE}/pages/${pageId}/layout`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ layout }),
+  });
+  if (!res.ok) await throwApiError(res);
+  return res.json();
+}

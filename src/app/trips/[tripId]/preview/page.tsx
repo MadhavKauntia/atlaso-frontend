@@ -3,9 +3,10 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updateSlotOffset, updateSlotPhoto,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updatePageLayout, updateSlotOffset, updateSlotPhoto,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
+import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { getPreviewCache, setPreviewBook, setPreviewPhotos } from "@/lib/previewCache";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -32,6 +33,11 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [photos, setPhotos] = useState<Photo[]>([]);
   // Which slot the photo picker is currently open for (null = closed).
   const [picker, setPicker] = useState<{ pageId: string; slotIndex: number; currentPhotoId: string } | null>(null);
+  // The page whose layout is currently being switched (awaiting the server), so we can dim it and
+  // block a second click. Null when idle.
+  const [layoutBusy, setLayoutBusy] = useState<string | null>(null);
+  // Transient error toast (e.g. layout switch rejected). Auto-clears.
+  const [notice, setNotice] = useState<string | null>(null);
   // The left thumbnail rail is sized to match the preview box exactly, so it
   // scrolls within the same height rather than running the full viewport.
   const boxRef = useRef<HTMLDivElement>(null);
@@ -208,6 +214,24 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
   // Photos already placed somewhere in the book — surfaced as a hint in the picker.
   const usedPhotoIds = new Set((book.pages ?? []).flatMap((p) => p.slots.map((sl) => sl.photoId)));
+  // Spare photos not placed anywhere in the book — how many a page can grow into a bigger layout.
+  const unusedCount = Math.max(0, photos.length - usedPhotoIds.size);
+
+  const handleChangeLayout = async (pageId: string, layout: string) => {
+    if (layoutBusy) return;
+    setLayoutBusy(pageId);
+    try {
+      // The server recomputes slots (and fills new ones from the pool), so we replace with its
+      // authoritative book rather than guessing the geometry locally.
+      const updated = await updatePageLayout(pageId, layout);
+      setBook(updated);
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Couldn't change the layout.");
+      window.setTimeout(() => setNotice(null), 4000);
+    } finally {
+      setLayoutBusy(null);
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", paddingBottom: 60, position: "relative" }}>
@@ -223,7 +247,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           {pages.length > 0 && <span style={{ color: "var(--sb-muted)", fontWeight: 700 }}>, {pages.length} pages.</span>}
         </h1>
         <p style={{ fontSize: 14, color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans)" }}>
-          Drag any photo to reframe the crop, or hover and hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Replace</strong> to swap it. Regenerate for a fresh layout.
+          Drag any photo to reframe the crop, hover and hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Replace</strong> to swap it, or hover a page and hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Layout</strong> to rearrange it.
         </p>
       </div>
 
@@ -333,10 +357,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} />
                         </div>
                       </>
                     ) : isFirstInterior ? (
@@ -344,13 +368,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                       <>
                         <BlankPage />
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
                         </div>
                         <BlankPage />
                       </>
@@ -472,9 +496,21 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         />
       )}
 
+      {notice && (
+        <div style={{
+          position: "fixed", bottom: 84, left: "50%", transform: "translateX(-50%)", zIndex: 300,
+          background: "var(--sb-panel)", color: "var(--sb-cream)", border: "1px solid #46403a",
+          borderRadius: 12, padding: "12px 18px", maxWidth: 420, textAlign: "center",
+          fontFamily: "var(--font-dm-sans)", fontSize: 13, boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+        }}>
+          {notice}
+        </div>
+      )}
+
       <style>{`
         @keyframes shimmer { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
@@ -606,18 +642,135 @@ function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tr
   );
 }
 
-function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace }: {
+function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onChangeLayout, unusedCount, busy }: {
   page: PageData;
   tripId: string;
   photoUrls: Record<string, string>;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
+  onChangeLayout: (pageId: string, layout: string) => void;
+  unusedCount: number;
+  busy: boolean;
 }) {
+  const [hover, setHover] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   return (
-    <div style={{ position: "relative", background: "var(--sb-cream)", width: "100%", height: "100%" }}>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => { setHover(false); setPickerOpen(false); }}
+      style={{ position: "relative", background: "var(--sb-cream)", width: "100%", height: "100%" }}
+    >
       {page.slots.map((slot: PhotoSlot, i: number) => (
         <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} photoUrls={photoUrls} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} onReplace={onReplace} />
       ))}
+      <LayoutControl
+        visible={hover || pickerOpen}
+        open={pickerOpen}
+        busy={busy}
+        currentLayout={page.layout}
+        currentCount={page.slots.length}
+        unusedCount={unusedCount}
+        onToggle={() => setPickerOpen((o) => !o)}
+        onPick={(layout) => { setPickerOpen(false); onChangeLayout(page.id, layout); }}
+      />
+      {busy && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 6, background: "rgba(243,234,216,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 26, height: 26, border: "2px solid rgba(38,34,32,0.2)", borderTopColor: "var(--sb-red)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Small mini-diagram of a layout's slot arrangement, drawn from normalised rects. */
+function LayoutDiagram({ rects, active }: { rects: LayoutRect[]; active: boolean }) {
+  return (
+    <div style={{ position: "relative", width: 34, height: 22, background: "#e7ddca", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
+      {rects.map((r, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: `${r.x * 100}%`, top: `${r.y * 100}%`,
+            width: `${r.w * 100}%`, height: `${r.h * 100}%`,
+            background: active ? "var(--sb-red)" : "#9a8f7d",
+            border: "0.5px solid #e7ddca",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Hover-revealed "Layout" button + popover of layout options, anchored to a page's top-left. */
+function LayoutControl({ visible, open, busy, currentLayout, currentCount, unusedCount, onToggle, onPick }: {
+  visible: boolean;
+  open: boolean;
+  busy: boolean;
+  currentLayout: string;
+  currentCount: number;
+  unusedCount: number;
+  onToggle: () => void;
+  onPick: (layout: string) => void;
+}) {
+  const activeId = activeLayoutId(currentLayout);
+  return (
+    // Stop mousedown from reaching the slot drag layer underneath.
+    <div onMouseDown={(e) => e.stopPropagation()} style={{ position: "absolute", top: 6, left: 6, zIndex: 5 }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        title="Change this page's layout"
+        style={{
+          display: "flex", alignItems: "center", gap: 4,
+          padding: "4px 10px", fontSize: 11, fontWeight: 800,
+          background: open ? "var(--sb-gold)" : "rgba(20,17,15,0.72)",
+          color: open ? "var(--sb-bg-deep)" : "var(--sb-cream)",
+          border: "none", borderRadius: 999, cursor: "pointer",
+          fontFamily: "var(--font-bricolage)",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+          opacity: visible ? 1 : 0, transition: "opacity 0.15s",
+          pointerEvents: visible ? "auto" : "none",
+        }}
+      >
+        ▦ Layout
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 7,
+          width: 188, padding: 8,
+          background: "var(--sb-panel)", border: "1px solid #46403a", borderRadius: 12,
+          boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
+        }}>
+          {LAYOUT_OPTIONS.map((opt) => {
+            const isActive = opt.id === activeId;
+            // Growing needs (opt.photos - currentCount) spare photos; shrinking/same never blocks.
+            const disabled = opt.photos - currentCount > unusedCount;
+            return (
+              <button
+                key={opt.id}
+                disabled={disabled || busy}
+                onClick={(e) => { e.stopPropagation(); if (!disabled && !busy) onPick(opt.id); }}
+                title={disabled ? "Not enough spare photos for this layout" : opt.label}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                  padding: "8px 4px",
+                  background: isActive ? "var(--sb-panel-2)" : "transparent",
+                  border: `1px solid ${isActive ? "var(--sb-gold)" : "#46403a"}`,
+                  borderRadius: 8,
+                  cursor: disabled || busy ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.4 : 1,
+                }}
+              >
+                <LayoutDiagram rects={opt.rects} active={isActive} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--sb-cream)", fontFamily: "var(--font-dm-sans)", lineHeight: 1.1, textAlign: "center" }}>
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
