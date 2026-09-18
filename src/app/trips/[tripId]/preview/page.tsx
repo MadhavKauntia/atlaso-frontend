@@ -12,6 +12,9 @@ import { getPreviewCache, setPreviewBook, setPreviewPhotos } from "@/lib/preview
 import FullPageLoader from "@/components/FullPageLoader";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
+import PreviewOnboarding from "./PreviewOnboarding";
+
+const ONBOARDING_KEY = "atlaso_preview_onboarded";
 
 export default function PreviewPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
@@ -52,6 +55,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   // Soft-fade the rail's scrolling edges so clipped thumbnails don't cut off hard.
   const railRef = useRef<HTMLDivElement>(null);
   const [railFade, setRailFade] = useState({ top: false, bottom: false });
+  // First-visit spotlight tour highlighting the editing controls (Layout, Replace, reframe, swap).
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const updateRailFade = useCallback(() => {
     const el = railRef.current;
     if (!el) return;
@@ -96,6 +101,27 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     });
   }, [currentSpread]);
 
+  // On first visit (and only once), run the spotlight tour. It needs an editable
+  // interior page on screen, so jump off the cover to the first interior spread.
+  useEffect(() => {
+    if (loading || !book) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(ONBOARDING_KEY)) return;
+    if ((book.pages?.length ?? 0) < 1) return;
+    setCurrentSpread(1);
+    setShowOnboarding(true);
+  }, [loading, book]);
+
+  const closeOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch {}
+  }, []);
+
+  const startOnboarding = useCallback(() => {
+    setCurrentSpread(1);
+    setShowOnboarding(true);
+  }, []);
+
   // Keep the cache warm with the latest book (incl. local crop/replace edits) and photos.
   useEffect(() => { if (book) setPreviewBook(cacheKey, book); }, [book, cacheKey]);
   useEffect(() => { if (photos.length) setPreviewPhotos(cacheKey, photos); }, [photos, cacheKey]);
@@ -116,7 +142,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!book) return;
+      if (!book || showOnboarding) return; // the tour owns the arrow keys while it's open
       if (e.key === "ArrowLeft") setCurrentSpread((s) => Math.max(0, s - 1));
       if (e.key === "ArrowRight") setCurrentSpread((s) => Math.min(spreads.length - 1, s + 1));
     };
@@ -333,6 +359,20 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         <p style={{ fontSize: 14, color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans)" }}>
           Drag a photo to reframe it, grab <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>⠿ Move</strong> to swap two photos, hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Replace</strong> to pick another, or <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Layout</strong> to rearrange the page.
         </p>
+        <button
+          onClick={startOnboarding}
+          style={{
+            marginTop: 14, display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", background: "transparent", border: "1px solid #5a5249",
+            borderRadius: 999, cursor: "pointer", fontSize: 12, fontWeight: 700,
+            color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans)",
+            transition: "color 0.15s, border-color 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--sb-cream)"; e.currentTarget.style.borderColor = "var(--sb-gold)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--sb-muted)"; e.currentTarget.style.borderColor = "#5a5249"; }}
+        >
+          Show me how it works
+        </button>
       </div>
 
       {/* 3-column layout */}
@@ -427,7 +467,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   );
                 }
                 return (
-                  <div key={idx} style={{
+                  <div key={idx} data-spread-visible={visible ? "true" : undefined} style={{
                     position: "absolute", inset: 10, display: "flex",
                     borderRadius: 3, overflow: "hidden",
                     opacity: visible ? 1 : 0,
@@ -609,6 +649,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           {notice}
         </div>
       )}
+
+      {showOnboarding && <PreviewOnboarding onClose={closeOnboarding} />}
 
       <style>{`
         @keyframes shimmer { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -858,6 +900,7 @@ function LayoutControl({ visible, open, busy, currentLayout, currentCount, unuse
     // Stop mousedown from reaching the slot drag layer underneath.
     <div onMouseDown={(e) => e.stopPropagation()} style={{ position: "absolute", top: 6, left: 6, zIndex: 5 }}>
       <button
+        data-onboard="layout"
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
         title="Change this page's layout"
         style={{
@@ -978,6 +1021,7 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
     <div
       ref={containerRef}
       data-slot={`${pageId}:${index}`}
+      data-onboard={index === 0 ? "reposition" : undefined}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -1018,6 +1062,7 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       )}
       {/* Replace button — appears on hover, sits above the drag layer */}
       <button
+        data-onboard={index === 0 ? "replace" : undefined}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onReplace(pageId, index, slot.photoId); }}
         title="Replace this photo"
@@ -1037,6 +1082,7 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       </button>
       {/* Drag handle — grab it to move this photo onto another slot to swap them. */}
       <button
+        data-onboard={index === 0 ? "swap" : undefined}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation(); // don't start a crop-reframe drag
