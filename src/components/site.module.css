@@ -83,9 +83,14 @@
   display: inline-block;
 }
 .footerLogoDot { color: var(--sb-orange); }
+.footerSocials {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
 .footerSocial {
   display: inline-flex;
-  margin-top: 16px;
   color: var(--sb-muted);
   transition: color 160ms ease;
 }
