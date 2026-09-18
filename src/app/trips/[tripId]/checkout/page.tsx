@@ -139,7 +139,25 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       return;
     }
     setPaying(true);
+    const shippingPayload = {
+      addressLine1: address1.trim(),
+      addressLine2: address2.trim() || undefined,
+      city: city.trim(),
+      state: state.trim(),
+      pincode: pincode.trim(),
+      country,
+      phone: `+91${phone}`,
+    };
     try {
+      // 100%-off coupon: no payment. create-order records the order server-side and returns
+      // { free: true }; skip Razorpay entirely and go straight to the confirmation page.
+      if (coupon?.free) {
+        const freeOrder = await createRazorpayOrder(tripId, qty, coupon.code, shippingPayload);
+        if (!freeOrder.free) throw new Error("We couldn't place your free order. Please try again.");
+        router.push(`/trips/${tripId}/confirmation?bookId=${book?.id ?? bookId}`);
+        return;
+      }
+
       const loaded = await loadRazorpayScript();
       if (!loaded) throw new Error("Couldn't load the payment gateway. Check your connection and try again.");
 
@@ -150,15 +168,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       // linked coupon offer's discount at payment time. Shipping is sent now (already validated
       // above) so it's persisted on the checkout — the webhook can then record a shippable order
       // even if this browser never reaches the verify step below.
-      const order = await createRazorpayOrder(tripId, qty, coupon?.code, {
-        addressLine1: address1.trim(),
-        addressLine2: address2.trim() || undefined,
-        city: city.trim(),
-        state: state.trim(),
-        pincode: pincode.trim(),
-        country,
-        phone: `+91${phone}`,
-      });
+      const order = await createRazorpayOrder(tripId, qty, coupon?.code, shippingPayload);
+      if (!order.orderId) throw new Error("Couldn't start the payment. Please try again.");
 
       const rzp = new window.Razorpay({
         key: keyId,
@@ -427,7 +438,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               cursor: paying ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >
-            {paying ? "Processing…" : `🔒 Pay ₹${money(payableMinor)} securely`}
+            {paying
+              ? "Processing…"
+              : coupon?.free
+                ? "Place order"
+                : `🔒 Pay ₹${money(payableMinor)} securely`}
           </button>
 
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
