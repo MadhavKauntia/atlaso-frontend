@@ -85,10 +85,22 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
+  // Measure the current step's target. Retries across a few frames because on
+  // first load the target spread may not have mounted its DOM yet (the page
+  // grows its mounted-spread window in a passive effect after the tour opens).
   const remeasure = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
-    // Wait a frame so the spread switch + force-visible class have applied.
-    rafRef.current = requestAnimationFrame(() => setSpot(measureTarget(STEPS[step].key)));
+    let attempts = 0;
+    const tick = () => {
+      const r = measureTarget(STEPS[step].key);
+      if (r || attempts >= 12) {
+        setSpot(r);
+        return;
+      }
+      attempts += 1;
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
   }, [step]);
 
   // Keep the tour flagged on the body so the hover-only controls stay visible.
@@ -101,6 +113,10 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
     remeasure();
   }, [remeasure]);
 
+  // Track viewport changes. This effect re-subscribes whenever `remeasure`
+  // changes (i.e. per step); its cleanup must NOT touch `rafRef`, or it would
+  // cancel the measurement the layout effect just scheduled and freeze the
+  // spotlight on the previous step's target.
   useEffect(() => {
     const onChange = () => remeasure();
     window.addEventListener("resize", onChange);
@@ -108,9 +124,11 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
     return () => {
       window.removeEventListener("resize", onChange);
       window.removeEventListener("scroll", onChange, true);
-      cancelAnimationFrame(rafRef.current);
     };
   }, [remeasure]);
+
+  // Cancel any pending measurement only when the tour actually closes.
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
