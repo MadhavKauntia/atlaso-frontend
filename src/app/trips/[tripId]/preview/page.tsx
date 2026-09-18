@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, updatePageLayout, updateSlotOffset, updateSlotPhoto,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
@@ -38,6 +38,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [layoutBusy, setLayoutBusy] = useState<string | null>(null);
   // Transient error toast (e.g. layout switch rejected). Auto-clears.
   const [notice, setNotice] = useState<string | null>(null);
+  // Drag-to-swap: the slot being dragged (null = idle) and the slot currently under the cursor.
+  // Cursor position drives the ghost via a ref (no re-render per pixel); only target changes hit state.
+  const [swapFrom, setSwapFrom] = useState<{ pageId: string; index: number; photoId: string } | null>(null);
+  const [swapTarget, setSwapTarget] = useState<{ pageId: string; index: number } | null>(null);
+  const swapTargetRef = useRef<{ pageId: string; index: number } | null>(null);
+  const swapStartPos = useRef({ x: 0, y: 0 });
+  const ghostRef = useRef<HTMLDivElement>(null);
   // The left thumbnail rail is sized to match the preview box exactly, so it
   // scrolls within the same height rather than running the full viewport.
   const boxRef = useRef<HTMLDivElement>(null);
@@ -117,6 +124,76 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     return () => document.removeEventListener("keydown", onKey);
   });
 
+  // Optimistically exchange two slots' photo content (photoId + rotation + caption, recentred),
+  // then persist. Works within one page or across the two pages of the visible spread.
+  const performSwap = useCallback((from: { pageId: string; index: number }, to: { pageId: string; index: number }) => {
+    setBook((prev) => {
+      if (!prev) return prev;
+      const a = prev.pages.find((p) => p.id === from.pageId)?.slots[from.index];
+      const b = prev.pages.find((p) => p.id === to.pageId)?.slots[to.index];
+      if (!a || !b) return prev;
+      const withPhotoOf = (sl: PhotoSlot, src: PhotoSlot): PhotoSlot =>
+        ({ ...sl, photoId: src.photoId, rotation: src.rotation, caption: src.caption, offsetX: 0.5, offsetY: 0.5 });
+      return {
+        ...prev,
+        pages: prev.pages.map((p) => {
+          if (p.id !== from.pageId && p.id !== to.pageId) return p;
+          return {
+            ...p,
+            slots: p.slots.map((sl, i) => {
+              if (p.id === from.pageId && i === from.index) return withPhotoOf(sl, b);
+              if (p.id === to.pageId && i === to.index) return withPhotoOf(sl, a);
+              return sl;
+            }),
+          };
+        }),
+      };
+    });
+    swapSlots(from.pageId, from.index, to.pageId, to.index).catch(() => {});
+  }, []);
+
+  // While a swap drag is active, move the ghost with the cursor (via ref, no re-render) and resolve
+  // the drop target under the pointer. Only the visible spread's slots are hit-testable, so the
+  // swap is naturally scoped to the two pages on screen.
+  useEffect(() => {
+    if (!swapFrom) return;
+    const moveGhost = (x: number, y: number) => {
+      if (ghostRef.current) ghostRef.current.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(-4deg)`;
+    };
+    moveGhost(swapStartPos.current.x, swapStartPos.current.y);
+    const onMove = (e: MouseEvent) => {
+      moveGhost(e.clientX, e.clientY);
+      const slotEl = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest("[data-slot]") as HTMLElement | null;
+      let t: { pageId: string; index: number } | null = null;
+      const raw = slotEl?.dataset.slot;
+      if (raw) {
+        const [pid, idx] = raw.split(":");
+        const cand = { pageId: pid, index: Number(idx) };
+        if (!(cand.pageId === swapFrom.pageId && cand.index === swapFrom.index)) t = cand;
+      }
+      const prev = swapTargetRef.current;
+      if (prev?.pageId !== t?.pageId || prev?.index !== t?.index) {
+        swapTargetRef.current = t;
+        setSwapTarget(t);
+      }
+    };
+    const onUp = () => {
+      const t = swapTargetRef.current;
+      if (t) performSwap(swapFrom, t);
+      swapTargetRef.current = null;
+      setSwapTarget(null);
+      setSwapFrom(null);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "grabbing";
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+  }, [swapFrom, performSwap]);
+
   if (!ready) return <FullPageLoader />;
 
   if (loading) {
@@ -192,6 +269,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const openPicker = (pageId: string, slotIndex: number, currentPhotoId: string) =>
     setPicker({ pageId, slotIndex, currentPhotoId });
 
+  const handleSwapStart = (from: { pageId: string; index: number; photoId: string }, x: number, y: number) => {
+    swapStartPos.current = { x, y };
+    swapTargetRef.current = null;
+    setSwapTarget(null);
+    setSwapFrom(from);
+  };
+
   const handlePhotoReplaced = (pageId: string, slotIndex: number, photoId: string) => {
     // Optimistic: swap the photo and reset framing to match the backend.
     setBook((prev) => {
@@ -247,7 +331,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           {pages.length > 0 && <span style={{ color: "var(--sb-muted)", fontWeight: 700 }}>, {pages.length} pages.</span>}
         </h1>
         <p style={{ fontSize: 14, color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans)" }}>
-          Drag any photo to reframe the crop, hover and hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Replace</strong> to swap it, or hover a page and hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Layout</strong> to rearrange it.
+          Drag a photo to reframe it, grab <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>⠿ Move</strong> to swap two photos, hit <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Replace</strong> to pick another, or <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Layout</strong> to rearrange the page.
         </p>
       </div>
 
@@ -357,10 +441,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} />
+                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                       </>
                     ) : isFirstInterior ? (
@@ -368,13 +452,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                       <>
                         <BlankPage />
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                         <BlankPage />
                       </>
@@ -494,6 +578,25 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           onClose={() => setPicker(null)}
           onSelect={(photoId) => handlePhotoReplaced(picker.pageId, picker.slotIndex, photoId)}
         />
+      )}
+
+      {/* Floating ghost that follows the cursor during a swap drag (positioned via ref). */}
+      {swapFrom && (
+        <div
+          ref={ghostRef}
+          style={{
+            position: "fixed", left: 0, top: 0, zIndex: 400, pointerEvents: "none",
+            width: 132, height: 92, borderRadius: 8, overflow: "hidden",
+            border: "2px solid var(--sb-cream)", boxShadow: "0 14px 34px rgba(0,0,0,0.5)", opacity: 0.92,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={thumbUrls[swapFrom.photoId] ?? photoUrls[swapFrom.photoId] ?? getPhotoImageUrl(tripId, swapFrom.photoId)}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        </div>
       )}
 
       {notice && (
@@ -642,7 +745,7 @@ function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tr
   );
 }
 
-function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onChangeLayout, unusedCount, busy }: {
+function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onChangeLayout, unusedCount, busy, onSwapStart, swapFrom, swapTarget }: {
   page: PageData;
   tripId: string;
   photoUrls: Record<string, string>;
@@ -651,6 +754,9 @@ function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onCha
   onChangeLayout: (pageId: string, layout: string) => void;
   unusedCount: number;
   busy: boolean;
+  onSwapStart: (from: { pageId: string; index: number; photoId: string }, x: number, y: number) => void;
+  swapFrom: { pageId: string; index: number; photoId: string } | null;
+  swapTarget: { pageId: string; index: number } | null;
 }) {
   const [hover, setHover] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -661,7 +767,15 @@ function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onCha
       style={{ position: "relative", background: "var(--sb-cream)", width: "100%", height: "100%" }}
     >
       {page.slots.map((slot: PhotoSlot, i: number) => (
-        <SlotRenderer key={slot.photoId} slot={slot} tripId={tripId} photoUrls={photoUrls} pageId={page.id} index={i} onOffsetSaved={onOffsetSaved} onReplace={onReplace} />
+        <SlotRenderer
+          key={slot.photoId}
+          slot={slot} tripId={tripId} photoUrls={photoUrls} pageId={page.id} index={i}
+          onOffsetSaved={onOffsetSaved} onReplace={onReplace}
+          onSwapStart={onSwapStart}
+          swapActive={!!swapFrom}
+          isSwapSource={swapFrom?.pageId === page.id && swapFrom?.index === i}
+          isSwapTarget={swapTarget?.pageId === page.id && swapTarget?.index === i}
+        />
       ))}
       <LayoutControl
         visible={hover || pickerOpen}
@@ -775,10 +889,14 @@ function LayoutControl({ visible, open, busy, currentLayout, currentCount, unuse
   );
 }
 
-function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, onReplace }: {
+function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, onReplace, onSwapStart, swapActive, isSwapSource, isSwapTarget }: {
   slot: PhotoSlot; tripId: string; photoUrls: Record<string, string>; pageId: string; index: number;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
+  onSwapStart: (from: { pageId: string; index: number; photoId: string }, x: number, y: number) => void;
+  swapActive: boolean;
+  isSwapSource: boolean;
+  isSwapTarget: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -833,6 +951,7 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
   return (
     <div
       ref={containerRef}
+      data-slot={`${pageId}:${index}`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -890,6 +1009,37 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       >
         ⇄ Replace
       </button>
+      {/* Drag handle — grab it to move this photo onto another slot to swap them. */}
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation(); // don't start a crop-reframe drag
+          onSwapStart({ pageId, index, photoId: slot.photoId }, e.clientX, e.clientY);
+        }}
+        onClick={(e) => e.stopPropagation()}
+        title="Drag onto another photo to swap them"
+        style={{
+          position: "absolute", bottom: 6, left: 6,
+          display: "flex", alignItems: "center", gap: 4,
+          padding: "4px 10px", fontSize: 11, fontWeight: 800,
+          background: "rgba(20,17,15,0.72)", color: "var(--sb-cream)",
+          border: "none", borderRadius: 999, cursor: "grab",
+          fontFamily: "var(--font-bricolage)",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+          opacity: hover && !swapActive ? 1 : 0, transition: "opacity 0.15s",
+          pointerEvents: hover && !swapActive ? "auto" : "none",
+        }}
+      >
+        ⠿ Move
+      </button>
+      {/* The photo being dragged: dim it in place. */}
+      {isSwapSource && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 4, background: "rgba(243,234,216,0.5)", pointerEvents: "none" }} />
+      )}
+      {/* The slot the cursor is over: highlight it as the drop target. */}
+      {isSwapTarget && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 4, border: "3px solid var(--sb-gold)", boxShadow: "inset 0 0 0 9999px rgba(232,179,44,0.16)", pointerEvents: "none" }} />
+      )}
     </div>
   );
 }

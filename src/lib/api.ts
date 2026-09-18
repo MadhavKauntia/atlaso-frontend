@@ -586,6 +586,17 @@ export async function updateSlotPhoto(
   if (!res.ok) throw new Error(await res.text());
 }
 
+/** Swaps the photos in two slots of the same book (drag-to-swap). Fire-and-forget like the other slot edits. */
+export async function swapSlots(pageAId: string, slotA: number, pageBId: string, slotB: number): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/slots/swap`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pageAId, slotA, pageBId, slotB }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 /**
  * Switches a page to a different layout. Returns the updated book — the backend recomputes the
  * page's slots (and, when growing to a larger layout, fills the new slots from the trip's unused
