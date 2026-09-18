@@ -627,6 +627,66 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
   onClose: () => void;
   onSelect: (photoId: string) => void;
 }) {
+  const COL_W = 160;
+  const GAP = 10;
+  // CSS columns fill top-to-bottom (column-major), which scrambles the chronological order when read
+  // left-to-right. So we distribute photos into N explicit columns round-robin (photo i -> column
+  // i % N): the top row then reads 0,1,2,3, the next 4,5,6,7, etc. — masonry that reads horizontally.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [colCount, setColCount] = useState(4);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => setColCount(Math.max(1, Math.floor((el.clientWidth + GAP) / (COL_W + GAP))));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const columns: Photo[][] = Array.from({ length: colCount }, () => []);
+  photos.forEach((photo, i) => columns[i % colCount].push(photo));
+
+  const renderTile = (photo: Photo) => {
+    const isCurrent = photo.id === currentPhotoId;
+    const isUsed = usedPhotoIds.has(photo.id) && !isCurrent;
+    const w = photo.metadata?.width || 0;
+    const h = photo.metadata?.height || 0;
+    const aspectRatio = w > 0 && h > 0 ? `${w} / ${h}` : "1 / 1";
+    return (
+      <button
+        key={photo.id}
+        onClick={() => !isCurrent && onSelect(photo.id)}
+        disabled={isCurrent}
+        style={{
+          position: "relative", display: "block", width: "100%",
+          padding: 0, overflow: "hidden",
+          borderRadius: 8, cursor: isCurrent ? "default" : "pointer",
+          border: `2px solid ${isCurrent ? "var(--sb-gold)" : "#46403a"}`,
+          background: "var(--sb-panel-2)",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={photo.thumbnailUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
+          alt={photo.originalFilename ?? ""}
+          loading="lazy"
+          style={{ width: "100%", aspectRatio, height: "auto", display: "block", objectFit: "contain", opacity: isCurrent ? 0.55 : 1 }}
+        />
+        {isCurrent && (
+          <div style={{ position: "absolute", top: 6, left: 6, background: "var(--sb-gold)", color: "var(--sb-bg-deep)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 100, fontFamily: "var(--font-dm-sans)" }}>
+            In this frame
+          </div>
+        )}
+        {isUsed && (
+          <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(20,17,15,0.8)", color: "var(--sb-cream)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 100, fontFamily: "var(--font-dm-sans)" }}>
+            In book
+          </div>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div
       onClick={onClose}
@@ -659,54 +719,20 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
           </button>
         </div>
 
-        <div style={{
-          overflowY: "auto",
-          // Masonry columns: every photo shows at its true aspect ratio — no crop, no letterboxing.
-          columnWidth: 160, columnGap: 10,
-        }}>
-          {photos.map((photo) => {
-            const isCurrent = photo.id === currentPhotoId;
-            const isUsed = usedPhotoIds.has(photo.id) && !isCurrent;
-            const w = photo.metadata?.width || 0;
-            const h = photo.metadata?.height || 0;
-            // Reserve each tile's height up front so the masonry doesn't reflow as images load.
-            const aspectRatio = w > 0 && h > 0 ? `${w} / ${h}` : "1 / 1";
-            return (
-              <button
-                key={photo.id}
-                onClick={() => !isCurrent && onSelect(photo.id)}
-                disabled={isCurrent}
-                style={{
-                  position: "relative", display: "block", width: "100%", marginBottom: 10,
-                  breakInside: "avoid", padding: 0, overflow: "hidden",
-                  borderRadius: 8, cursor: isCurrent ? "default" : "pointer",
-                  border: `2px solid ${isCurrent ? "var(--sb-gold)" : "#46403a"}`,
-                  background: "var(--sb-panel-2)",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.thumbnailUrl ?? photo.imageUrl ?? getPhotoImageUrl(tripId, photo.id)}
-                  alt={photo.originalFilename ?? ""}
-                  loading="lazy"
-                  style={{ width: "100%", aspectRatio, height: "auto", display: "block", objectFit: "contain", opacity: isCurrent ? 0.55 : 1 }}
-                />
-                {isCurrent && (
-                  <div style={{ position: "absolute", top: 6, left: 6, background: "var(--sb-gold)", color: "var(--sb-bg-deep)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 100, fontFamily: "var(--font-dm-sans)" }}>
-                    In this frame
-                  </div>
-                )}
-                {isUsed && (
-                  <div style={{ position: "absolute", top: 6, left: 6, background: "rgba(20,17,15,0.8)", color: "var(--sb-cream)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 100, fontFamily: "var(--font-dm-sans)" }}>
-                    In book
-                  </div>
-                )}
-              </button>
-            );
-          })}
-          {photos.length === 0 && (
+        <div ref={scrollRef} style={{ overflowY: "auto" }}>
+          {photos.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--sb-muted)", fontSize: 13, padding: 40, fontFamily: "var(--font-dm-sans)" }}>
               No photos found for this trip.
+            </div>
+          ) : (
+            // Explicit columns, filled round-robin, so photos read left-to-right in chronological
+            // order while keeping each tile's true aspect ratio (no crop).
+            <div style={{ display: "flex", gap: GAP, alignItems: "flex-start" }}>
+              {columns.map((column, ci) => (
+                <div key={ci} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: GAP }}>
+                  {column.map(renderTile)}
+                </div>
+              ))}
             </div>
           )}
         </div>
