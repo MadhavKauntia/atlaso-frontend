@@ -441,7 +441,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             {paying
               ? "Processing…"
               : coupon?.free
-                ? "Place order — free"
+                ? "Place order"
                 : `🔒 Pay ₹${money(payableMinor)} securely`}
           </button>
 
