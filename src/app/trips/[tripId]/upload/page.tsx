@@ -225,27 +225,39 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           }}>
             choose photos
           </span>
-          <div style={{ marginTop: 20, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-            We'll read the date and location from each photo to help build your story
-          </div>
-        </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 16 }}>
-          {/* Hand off to the phone so users skip the AirDrop-to-desktop step. */}
+          {/* OR divider + phone hand-off, kept inside the box so it's actually seen. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: 300, margin: "24px auto" }}>
+            <div style={{ flex: 1, height: 1, background: "#46403a" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: "#46403a" }} />
+          </div>
+          {/* Hand off to the phone so users skip the AirDrop-to-desktop step.
+              stopPropagation: the whole box is a dropzone, so without it a tap here
+              would also pop the OS file picker. */}
           <button
-            onClick={openPhonePanel}
+            onClick={(e) => { e.stopPropagation(); openPhonePanel(); }}
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "11px 18px", background: "var(--sb-panel-2)", color: "var(--sb-cream)",
+              padding: "13px 22px", background: "var(--sb-panel)", color: "var(--sb-cream)",
               border: "1px solid #5a5249", borderRadius: 999, cursor: "pointer",
-              fontSize: 13, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif",
+              fontSize: 14, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif",
+              transition: "background 0.15s, border-color 0.15s",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--sb-panel-2)"; e.currentTarget.style.borderColor = "var(--sb-gold)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--sb-panel)"; e.currentTarget.style.borderColor = "#5a5249"; }}
           >
             📱 Upload from your phone
           </button>
 
-          {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
-          {notifyPerm === "default" && (
+          <div style={{ marginTop: 24, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+            We'll read the date and location from each photo to help build your story
+          </div>
+        </div>
+
+        {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
+        {notifyPerm === "default" && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 16 }}>
             <button
               onClick={enableNotifications}
               style={{
@@ -257,8 +269,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             >
               🔔 Notify me when uploads finish
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {notifyPerm === "granted" && (
           <div style={{ marginTop: 12, fontSize: 13, color: "var(--sb-muted)", display: "flex", alignItems: "center", gap: 6 }}>
             🔔 You&apos;ll get a notification when your uploads finish (if this tab isn&apos;t focused).
