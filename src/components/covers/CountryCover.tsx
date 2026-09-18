@@ -75,7 +75,10 @@ export default function CountryCover({
             padding: "0 6%",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2cqw" }}>
+          {/* Title wrapper keeps the title's position fixed regardless of the
+              description; the description is taken out of flow (absolute) so it
+              never re-centres the group or pulls the title toward the stamp. */}
+          <div style={{ position: "relative", display: "flex", justifyContent: "center", width: "100%" }}>
             <div
               style={{
                 fontFamily: TITLE_FONT,
@@ -94,6 +97,12 @@ export default function CountryCover({
             {displayDesc && (
               <div
                 style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  marginTop: "2cqw",
+                  width: "82cqw",
                   fontFamily: DESC_FONT,
                   fontSize: "4.5cqw",
                   lineHeight: 1.2,
