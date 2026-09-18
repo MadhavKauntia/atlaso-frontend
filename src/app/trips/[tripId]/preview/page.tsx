@@ -348,8 +348,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <FlowTopbar currentStep={3} />
 
       {/* Hero strip */}
-      <div style={{ padding: "52px 48px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 700, color: "var(--sb-gold)", marginBottom: 12, fontFamily: "var(--font-dm-sans)" }}>
+      <div style={{ padding: "26px 48px 18px", textAlign: "center" }}>
+        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 700, color: "var(--sb-gold)", marginBottom: 10, fontFamily: "var(--font-dm-sans)" }}>
           Your photobook is ready
         </div>
         <h1 style={{ fontFamily: "var(--font-dm-sans)", fontSize: 38, fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.03em", marginBottom: 8, color: "var(--sb-cream)" }}>
@@ -362,7 +362,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         <button
           onClick={startOnboarding}
           style={{
-            marginTop: 14, display: "inline-flex", alignItems: "center", gap: 6,
+            marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6,
             padding: "6px 14px", background: "transparent", border: "1px solid #5a5249",
             borderRadius: 999, cursor: "pointer", fontSize: 12, fontWeight: 700,
             color: "var(--sb-muted)", fontFamily: "var(--font-dm-sans)",
