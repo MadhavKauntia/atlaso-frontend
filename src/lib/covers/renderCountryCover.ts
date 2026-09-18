@@ -65,29 +65,29 @@ export async function renderCountryCoverPng(
     const gapTitleDesc = COVER_H * 0.014; // ~2cqw, matches the preview
     const gapTextStamp = COVER_H * 0.042; // ~6cqw, matches the preview
 
-    const textH = titlePx + (displayDesc ? gapTitleDesc + descPx : 0);
-    const totalH = textH + gapTextStamp + sh;
-    let y = (COVER_H - totalH) / 2; // top of the centred group
+    // Anchor the title and stamp where they sit when there is NO description
+    // (the title + stamp group centred on the face). The description then sits
+    // in the gap between them without moving either — the title never shifts.
+    const anchorH = titlePx + gapTextStamp + sh;
+    const titleTop = (COVER_H - anchorH) / 2;
+    const titleBottom = titleTop + titlePx;
+    const stampY = titleBottom + gapTextStamp;
 
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
     ctx.font = `400 ${titlePx}px ${TITLE_FONT}`;
-    ctx.fillText(displayTitle, COVER_W / 2, y, COVER_W * 0.82);
-    y += titlePx;
+    ctx.fillText(displayTitle, COVER_W / 2, titleTop, COVER_W * 0.82);
 
     if (displayDesc) {
-      y += gapTitleDesc;
       ctx.globalAlpha = 0.95;
       ctx.font = `400 ${descPx}px ${DESC_FONT}`;
-      ctx.fillText(displayDesc, COVER_W / 2, y, COVER_W * 0.82);
+      ctx.fillText(displayDesc, COVER_W / 2, titleBottom + gapTitleDesc, COVER_W * 0.82);
       ctx.globalAlpha = 1;
-      y += descPx;
     }
 
-    y += gapTextStamp;
-    ctx.drawImage(img, (COVER_W - sw) / 2, y, sw, sh);
+    ctx.drawImage(img, (COVER_W - sw) / 2, stampY, sw, sh);
   } else if (art) {
     const img = await loadImage(art);
     canvas.width = img.naturalWidth || COVER_W;
