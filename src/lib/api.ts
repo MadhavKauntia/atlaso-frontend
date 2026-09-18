@@ -173,9 +173,10 @@ export async function claimTrip(tripId: string): Promise<Trip> {
 }
 
 export interface RazorpayOrder {
-  orderId: string;
+  orderId: string | null; // null when free (order already placed, no Razorpay)
   amount: number;
   currency: string;
+  free?: boolean; // true => order recorded server-side, skip the Razorpay checkout
 }
 
 export interface CouponPreview {
@@ -183,6 +184,7 @@ export interface CouponPreview {
   code: string;
   discountMinor: number; // paise saved (preview)
   finalMinor: number; // paise payable (preview)
+  free?: boolean; // 100%-off coupon — skips payment
   message?: string; // reason when !valid
 }
 
