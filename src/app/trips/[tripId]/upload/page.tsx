@@ -178,7 +178,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       />
 
       <div className="flow-page-inner">
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 28 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 600, color: "var(--sb-gold)", marginBottom: 14, fontFamily: "var(--font-bricolage), sans-serif" }}>
             Step 1 of 4
           </div>
@@ -196,7 +196,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             background: "var(--sb-bg-deep)",
             border: `2px dashed ${isDragActive ? "var(--sb-gold)" : "#5a5249"}`,
             borderRadius: 20,
-            padding: "72px 32px",
+            padding: "36px 32px",
             textAlign: "center",
             cursor: "pointer",
             transition: "background 0.2s, border-color 0.2s",
@@ -205,7 +205,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         >
           <input {...getInputProps()} />
           <div style={{
-            width: 56, height: 56, margin: "0 auto 20px",
+            width: 56, height: 56, margin: "0 auto 14px",
             background: "var(--sb-panel)", borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "var(--sb-gold)", fontSize: 24,
@@ -213,7 +213,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           <div style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8, color: "var(--sb-cream)" }}>
             {isDragActive ? "Drop to upload" : "Drop photos here"}
           </div>
-          <div style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 24 }}>
+          <div style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 18 }}>
             or browse your device · JPG, PNG or HEIC up to 50 MB each
           </div>
           <span style={{
@@ -227,7 +227,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           </span>
 
           {/* OR divider + phone hand-off, kept inside the box so it's actually seen. */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: 300, margin: "24px auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: 300, margin: "18px auto" }}>
             <div style={{ flex: 1, height: 1, background: "#46403a" }} />
             <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>OR</span>
             <div style={{ flex: 1, height: 1, background: "#46403a" }} />
@@ -250,7 +250,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             📱 Upload from your phone
           </button>
 
-          <div style={{ marginTop: 24, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
+          <div style={{ marginTop: 18, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
             We'll read the date and location from each photo to help build your story
           </div>
         </div>
