@@ -41,9 +41,34 @@ const nunito = Nunito({
   display: "swap",
 });
 
+const title = "Atlaso";
+const description = "Create beautiful photobooks from your travel photos";
+
 export const metadata: Metadata = {
-  title: "Atlaso",
-  description: "Create beautiful photobooks from your travel photos",
+  metadataBase: new URL("https://myatlaso.com"),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: "https://myatlaso.com",
+    siteName: "Atlaso",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Atlaso",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
