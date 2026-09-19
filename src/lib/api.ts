@@ -297,12 +297,12 @@ export async function saveCoverConfig(
 }
 
 /** Persists the chosen country (illustrated stamp cover) and optional description on the book. */
-export async function saveCoverCountry(bookId: string, country: string, subtitle?: string): Promise<Book> {
-  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverCountry: country, subtitle: subtitle ?? null };
+export async function saveCoverCountry(bookId: string, country: string, subtitle?: string, title?: string): Promise<Book> {
+  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverCountry: country, subtitle: subtitle ?? null, title: title ?? "" };
   const res = await apiFetch(`${BASE}/books/${bookId}/cover`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ country, subtitle }),
+    body: JSON.stringify({ country, subtitle, title }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

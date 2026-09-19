@@ -54,11 +54,21 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
         if (bookId) {
           const [trip, book] = await Promise.all([getTrip(tripId), getBook(bookId)]);
-          const t = book.title || trip.name || "";
-          setTitle(t);
-          titleCustom.current = !!t.trim();
+          const pickedCountry = book.coverCountry || matchCountry(inf?.country, inf?.place);
+          setCountry(pickedCountry);
           setDescription(book.subtitle || "");
-          setCountry(book.coverCountry || matchCountry(inf?.country, inf?.place));
+          // Never surface the "Untitled Trip" placeholder as an editable value; fall back
+          // to the country name (like a fresh cover) so a blank/never-set title auto-heals.
+          const real = book.title && book.title !== "Untitled Trip"
+            ? book.title
+            : (trip.name && trip.name !== "Untitled Trip" ? trip.name : "");
+          if (real) {
+            setTitle(real);
+            titleCustom.current = true;
+          } else {
+            setTitle(getCountry(pickedCountry)?.name || "");
+            titleCustom.current = false;
+          }
         } else {
           const trip = await getTrip(tripId);
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
@@ -125,7 +135,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId || loading || !country) return;
     const t = setTimeout(async () => {
       try {
-        await saveCoverCountry(bookId, country, description);
+        await saveCoverCountry(bookId, country, description, title);
         showSaved();
       } catch {
         /* silent */
@@ -133,7 +143,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, country, description]);
+  }, [bookId, country, description, title]);
 
   const persistPrefs = () => {
     localStorage.setItem(
@@ -181,7 +191,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId) return;
     setSaving(true);
     try {
-      if (country) await saveCoverCountry(bookId, country, description);
+      if (country) await saveCoverCountry(bookId, country, description, title);
       router.push(`/trips/${tripId}/preview?bookId=${bookId}`);
     } catch {
       setError("Could not save cover.");
