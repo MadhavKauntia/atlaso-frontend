@@ -4,6 +4,25 @@ const COVER_W = 1414;
 const COVER_H = 2000; // 0.707 portrait, matches the cover art
 const DESC_FONT = "'Gochi Hand', 'Comic Sans MS', cursive";
 
+/**
+ * Loads a font face and resolves only once the browser confirms it's ready to
+ * paint (`document.fonts.check`). Retries briefly to ride out a slow woff2 fetch,
+ * then falls back to `document.fonts.ready`. Prevents the canvas from drawing with
+ * a fallback font (e.g. Comic Sans standing in for Gochi Hand, which reads bold).
+ */
+async function ensureFont(spec: string): Promise<void> {
+  try {
+    await document.fonts.load(spec);
+    for (let i = 0; i < 20; i++) {
+      if (document.fonts.check(spec)) return;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    await document.fonts.ready;
+  } catch {
+    // Best-effort: fall through and let the canvas draw with whatever is available.
+  }
+}
+
 /** Resolved Fraunces family (from next/font's CSS variable) for canvas rendering. */
 function frauncesFamily(): string {
   if (typeof document === "undefined") return "Georgia, serif";
@@ -29,10 +48,14 @@ export async function renderCountryCoverPng(
   const art = countryArtUrl(def);
 
   const TITLE_FONT = "'Aloja', 'Roboto Serif', Georgia, serif";
-  // Ensure the cover fonts are loaded before drawing to canvas.
-  await Promise.allSettled([
-    document.fonts.load(`400 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
-    document.fonts.load(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
+  // Ensure the cover fonts are actually loaded before drawing to canvas. A plain
+  // `document.fonts.load` + allSettled only *waits*; it doesn't verify the face is
+  // ready, so a slow/failed woff2 fetch would silently draw the description in the
+  // Comic Sans fallback (looks bold). Load, then poll `check` so we only proceed
+  // once the face is genuinely available.
+  await Promise.all([
+    ensureFont(`400 ${Math.round(COVER_H * 0.095)}px 'Aloja'`),
+    ensureFont(`400 ${Math.round(COVER_H * 0.028)}px 'Gochi Hand'`),
   ]);
 
   const canvas = document.createElement("canvas");
