@@ -84,7 +84,7 @@ export async function renderCountryCoverPng(
     const tl = displayTitle.length;
     const titleH = tl <= 6 ? 0.1 : tl <= 9 ? 0.078 : tl <= 12 ? 0.064 : 0.053;
     const titlePx = Math.round(COVER_H * titleH);
-    const descPx = Math.round(COVER_H * 0.03);
+    const descPx = Math.round(COVER_H * 0.026);
     const gapTitleDesc = COVER_H * 0.014; // ~2cqw, matches the preview
     const gapTextStamp = COVER_H * 0.078; // ~11cqw, matches the preview
 

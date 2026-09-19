@@ -104,7 +104,7 @@ export default function CountryCover({
                   marginTop: "2cqw",
                   width: "82cqw",
                   fontFamily: DESC_FONT,
-                  fontSize: "4.5cqw",
+                  fontSize: "3.7cqw",
                   lineHeight: 1.2,
                   color: ink,
                   opacity: 0.95,
