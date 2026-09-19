@@ -71,7 +71,7 @@ export default function CountryCover({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: "6cqw",
+            gap: "11cqw",
             padding: "0 6%",
           }}
         >

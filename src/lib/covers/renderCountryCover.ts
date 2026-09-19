@@ -63,7 +63,7 @@ export async function renderCountryCoverPng(
     const titlePx = Math.round(COVER_H * titleH);
     const descPx = Math.round(COVER_H * 0.03);
     const gapTitleDesc = COVER_H * 0.014; // ~2cqw, matches the preview
-    const gapTextStamp = COVER_H * 0.042; // ~6cqw, matches the preview
+    const gapTextStamp = COVER_H * 0.078; // ~11cqw, matches the preview
 
     // Anchor the title and stamp where they sit when there is NO description
     // (the title + stamp group centred on the face). The description then sits
