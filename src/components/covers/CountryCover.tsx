@@ -1,5 +1,5 @@
 import React from "react";
-import { getCountry, stampUrl, countryArtUrl } from "@/lib/covers/countries";
+import { getCountry, stampUrl, countryArtUrl, coverColors } from "@/lib/covers/countries";
 
 interface CountryCoverProps {
   /** country slug stored on the book */
@@ -8,6 +8,8 @@ interface CountryCoverProps {
   title?: string;
   /** optional description shown beneath the title */
   description?: string;
+  /** background colour override (book.coverPaletteId); ink auto-contrasts */
+  bg?: string | null;
   /** show the book spine on the left edge (default true) */
   spine?: boolean;
   className?: string;
@@ -28,6 +30,7 @@ export default function CountryCover({
   country,
   title = "",
   description = "",
+  bg: bgOverride,
   spine = true,
   className,
   style,
@@ -35,9 +38,7 @@ export default function CountryCover({
   const def = getCountry(country);
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
-  const bg = def?.bg ?? "#302b28";
-  const spineColor = def?.spine ?? bg;
-  const ink = def?.ink ?? "#f3ead8";
+  const { bg, ink, spine: spineColor } = coverColors(country, bgOverride);
 
   const displayTitle = (title || def?.name || "your trip").toUpperCase();
   const displayDesc = description.trim();

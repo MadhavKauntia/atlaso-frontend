@@ -298,12 +298,12 @@ export async function saveCoverConfig(
 }
 
 /** Persists the chosen country (illustrated stamp cover) and optional description on the book. */
-export async function saveCoverCountry(bookId: string, country: string, subtitle?: string, title?: string): Promise<Book> {
-  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverCountry: country, subtitle: subtitle ?? null, title: title ?? "" };
+export async function saveCoverCountry(bookId: string, country: string, subtitle?: string, title?: string, paletteId?: string | null): Promise<Book> {
+  if (IS_MOCK) return { ...mockBook("mock-trip", bookId), coverCountry: country, coverPaletteId: paletteId ?? null, subtitle: subtitle ?? null, title: title ?? "" };
   const res = await apiFetch(`${BASE}/books/${bookId}/cover`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ country, subtitle, title }),
+    body: JSON.stringify({ country, subtitle, title, paletteId: paletteId ?? null }),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -506,8 +506,8 @@ export async function exportBook(book: Book): Promise<Book> {
   let backImageBase64: string | undefined;
 
   try {
-    coverImageBase64 = await renderCountryCoverPng(book.coverCountry, book.title, book.subtitle ?? "");
-    backImageBase64 = await renderCoverBackPng(book.coverCountry);
+    coverImageBase64 = await renderCountryCoverPng(book.coverCountry, book.title, book.subtitle ?? "", book.coverPaletteId);
+    backImageBase64 = await renderCoverBackPng(book.coverCountry, book.coverPaletteId);
   } catch {
     // Fall through — backend will use plain text cover
   }

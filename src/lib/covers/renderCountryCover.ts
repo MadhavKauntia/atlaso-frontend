@@ -1,4 +1,4 @@
-import { getCountry, stampUrl, countryArtUrl } from "@/lib/covers/countries";
+import { getCountry, stampUrl, countryArtUrl, coverColors } from "@/lib/covers/countries";
 
 const COVER_W = 1414;
 const COVER_H = 2000; // 0.707 portrait, matches the cover art
@@ -40,12 +40,14 @@ function frauncesFamily(): string {
 export async function renderCountryCoverPng(
   country: string | null | undefined,
   title: string,
-  description = ""
+  description = "",
+  bgOverride?: string | null
 ): Promise<string | undefined> {
   if (typeof document === "undefined") return undefined;
   const def = getCountry(country);
   const stamp = stampUrl(def);
   const art = countryArtUrl(def);
+  const colors = coverColors(country, bgOverride);
 
   const TITLE_FONT = "'Aloja', 'Roboto Serif', Georgia, serif";
   // Ensure the cover fonts are actually loaded before drawing to canvas. A plain
@@ -68,8 +70,8 @@ export async function renderCountryCoverPng(
   if (stamp) {
     canvas.width = COVER_W;
     canvas.height = COVER_H;
-    const bg = def?.bg ?? def?.spine ?? "#302b28";
-    const ink = def?.ink ?? "#f3ead8";
+    const bg = colors.bg;
+    const ink = colors.ink;
 
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, COVER_W, COVER_H);
@@ -119,8 +121,8 @@ export async function renderCountryCoverPng(
   } else {
     canvas.width = COVER_W;
     canvas.height = COVER_H;
-    const spineColor = def?.spine ?? "#302b28";
-    const ink = def?.ink ?? "#f3ead8";
+    const spineColor = colors.spine;
+    const ink = colors.ink;
     const grad = ctx.createLinearGradient(0, 0, COVER_W, COVER_H);
     grad.addColorStop(0, spineColor);
     grad.addColorStop(1, "rgba(0,0,0,0.5)");
@@ -149,11 +151,12 @@ export async function renderCountryCoverPng(
  * wordmark and URL centred in the lower third — as a print-ready PNG (base64, no
  * data-URL prefix). This becomes page 2 of the cover PDF.
  */
-export async function renderCoverBackPng(country: string | null | undefined): Promise<string | undefined> {
+export async function renderCoverBackPng(
+  country: string | null | undefined,
+  bgOverride?: string | null
+): Promise<string | undefined> {
   if (typeof document === "undefined") return undefined;
-  const def = getCountry(country);
-  const bg = def?.bg ?? "#302b28";
-  const ink = def?.ink ?? "#f3ead8";
+  const { bg, ink } = coverColors(country, bgOverride);
 
   const font = frauncesFamily();
   await Promise.allSettled([
