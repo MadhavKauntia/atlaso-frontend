@@ -93,6 +93,7 @@ export interface PhotoSlot {
   rotation: number;
   offsetX: number | null;
   offsetY: number | null;
+  zoomScale: number | null;
 }
 
 export interface PageData {
@@ -569,6 +570,21 @@ export async function updateSlotOffset(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ offsetX, offsetY }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+/** Persists a slot's zoom-in factor (1.0 = fit, up to 3.0). */
+export async function updateSlotZoom(
+  pageId: string,
+  slotIndex: number,
+  zoomScale: number
+): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/zoom`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ zoomScale }),
   });
   if (!res.ok) throw new Error(await res.text());
 }

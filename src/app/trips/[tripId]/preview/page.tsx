@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotZoom,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
@@ -292,6 +292,21 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     });
   };
 
+  const handleZoomSaved = (pageId: string, slotIndex: number, zoomScale: number) => {
+    setBook((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        pages: prev.pages.map((p) =>
+          p.id !== pageId ? p : {
+            ...p,
+            slots: p.slots.map((sl, i) => i !== slotIndex ? sl : { ...sl, zoomScale }),
+          }
+        ),
+      };
+    });
+  };
+
   const openPicker = (pageId: string, slotIndex: number, currentPhotoId: string) =>
     setPicker({ pageId, slotIndex, currentPhotoId });
 
@@ -312,7 +327,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           p.id !== pageId ? p : {
             ...p,
             slots: p.slots.map((sl, i) =>
-              i !== slotIndex ? sl : { ...sl, photoId, offsetX: 0.5, offsetY: 0.5, rotation: 0 }
+              i !== slotIndex ? sl : { ...sl, photoId, offsetX: 0.5, offsetY: 0.5, zoomScale: 1, rotation: 0 }
             ),
           }
         ),
@@ -481,10 +496,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                       </>
                     ) : isFirstInterior ? (
@@ -492,13 +507,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                       <>
                         <BlankPage />
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onReplace={openPicker} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
                         </div>
                         <BlankPage />
                       </>
@@ -827,11 +842,12 @@ function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tr
   );
 }
 
-function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onChangeLayout, unusedCount, busy, onSwapStart, swapFrom, swapTarget }: {
+function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onZoomSaved, onReplace, onChangeLayout, unusedCount, busy, onSwapStart, swapFrom, swapTarget }: {
   page: PageData;
   tripId: string;
   photoUrls: Record<string, string>;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
+  onZoomSaved: (pageId: string, slotIndex: number, zoomScale: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
   onChangeLayout: (pageId: string, layout: string) => void;
   unusedCount: number;
@@ -852,7 +868,7 @@ function PageRenderer({ page, tripId, photoUrls, onOffsetSaved, onReplace, onCha
         <SlotRenderer
           key={slot.photoId}
           slot={slot} tripId={tripId} photoUrls={photoUrls} pageId={page.id} index={i}
-          onOffsetSaved={onOffsetSaved} onReplace={onReplace}
+          onOffsetSaved={onOffsetSaved} onZoomSaved={onZoomSaved} onReplace={onReplace}
           onSwapStart={onSwapStart}
           swapActive={!!swapFrom}
           isSwapSource={swapFrom?.pageId === page.id && swapFrom?.index === i}
@@ -972,21 +988,30 @@ function LayoutControl({ visible, open, busy, currentLayout, currentCount, unuse
   );
 }
 
-function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, onReplace, onSwapStart, swapActive, isSwapSource, isSwapTarget }: {
+function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, onZoomSaved, onReplace, onSwapStart, swapActive, isSwapSource, isSwapTarget }: {
   slot: PhotoSlot; tripId: string; photoUrls: Record<string, string>; pageId: string; index: number;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
+  onZoomSaved: (pageId: string, slotIndex: number, zoomScale: number) => void;
   onReplace: (pageId: string, slotIndex: number, currentPhotoId: string) => void;
   onSwapStart: (from: { pageId: string; index: number; photoId: string }, x: number, y: number) => void;
   swapActive: boolean;
   isSwapSource: boolean;
   isSwapTarget: boolean;
 }) {
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 3;
+  const ZOOM_STEP = 0.25;
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const offsetRef = useRef({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
   const [displayOffset, setDisplayOffset] = useState({ x: slot.offsetX ?? 0.5, y: slot.offsetY ?? 0.5 });
+  // Zoom-in factor (1 = cover-fit). Kept in a ref too so the drag handler's overflow math and the
+  // debounced save always read the live value without re-subscribing the listeners.
+  const [zoom, setZoom] = useState(slot.zoomScale ?? 1);
+  const zoomRef = useRef(slot.zoomScale ?? 1);
+  const zoomSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hover, setHover] = useState(false);
 
@@ -996,6 +1021,20 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
     lastPos.current = { x: e.clientX, y: e.clientY };
   }, []);
 
+  // Apply a new zoom: clamp, update UI immediately, and debounce the persist. The offset is left
+  // as-is (zoom anchors on it); the backend re-clamps to the same range.
+  const applyZoom = useCallback((nextZoom: number) => {
+    const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(nextZoom * 100) / 100));
+    if (z === zoomRef.current) return;
+    zoomRef.current = z;
+    setZoom(z);
+    if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current);
+    zoomSaveTimer.current = setTimeout(() => {
+      onZoomSaved(pageId, index, z);
+      updateSlotZoom(pageId, index, z).catch(() => {});
+    }, 400);
+  }, [pageId, index, onZoomSaved]);
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current || !containerRef.current || !imgRef.current) return;
@@ -1003,7 +1042,8 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       const cH = containerRef.current.clientHeight;
       const nW = imgRef.current.naturalWidth || cW;
       const nH = imgRef.current.naturalHeight || cH;
-      const scale = Math.max(cW / nW, cH / nH);
+      // Match the on-screen render: cover-fit scale times the current zoom.
+      const scale = Math.max(cW / nW, cH / nH) * zoomRef.current;
       const overflowX = nW * scale - cW;
       const overflowY = nH * scale - cH;
       const dx = e.clientX - lastPos.current.x;
@@ -1061,7 +1101,10 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
         style={{
           width: "100%", height: "100%", objectFit: "cover", display: "block",
           objectPosition: `${displayOffset.x * 100}% ${displayOffset.y * 100}%`,
-          transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined,
+          // scale(zoom) about the offset anchor reproduces the backend's cover-fit crop exactly, so
+          // the browser preview and the printed PDF frame the photo identically.
+          transform: `scale(${zoom})${slot.rotation ? ` rotate(${slot.rotation}deg)` : ""}`,
+          transformOrigin: `${displayOffset.x * 100}% ${displayOffset.y * 100}%`,
           pointerEvents: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.2s ease",
         }}
       />
@@ -1118,6 +1161,48 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       >
         ⠿ Move
       </button>
+      {/* Zoom control — appears on hover; − / + step the zoom-in factor (1× = fit). */}
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{
+          position: "absolute", bottom: 6, right: 6,
+          display: "flex", alignItems: "center", gap: 2,
+          background: "rgba(20,17,15,0.72)", borderRadius: 999,
+          padding: "2px", boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+          opacity: hover && !swapActive ? 1 : 0, transition: "opacity 0.15s",
+          pointerEvents: hover && !swapActive ? "auto" : "none",
+        }}
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); applyZoom(zoom - ZOOM_STEP); }}
+          disabled={zoom <= ZOOM_MIN}
+          title="Zoom out"
+          style={{
+            width: 22, height: 22, borderRadius: "50%", border: "none",
+            background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
+            cursor: zoom <= ZOOM_MIN ? "default" : "pointer", opacity: zoom <= ZOOM_MIN ? 0.4 : 1,
+            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+          }}
+        >
+          −
+        </button>
+        <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
+          {zoom.toFixed(1)}×
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); applyZoom(zoom + ZOOM_STEP); }}
+          disabled={zoom >= ZOOM_MAX}
+          title="Zoom in"
+          style={{
+            width: 22, height: 22, borderRadius: "50%", border: "none",
+            background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
+            cursor: zoom >= ZOOM_MAX ? "default" : "pointer", opacity: zoom >= ZOOM_MAX ? 0.4 : 1,
+            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+          }}
+        >
+          +
+        </button>
+      </div>
       {/* The photo being dragged: dim it in place. */}
       {isSwapSource && (
         <div style={{ position: "absolute", inset: 0, zIndex: 4, background: "rgba(243,234,216,0.5)", pointerEvents: "none" }} />

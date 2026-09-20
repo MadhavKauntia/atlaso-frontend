@@ -52,6 +52,7 @@ function slot(
     rotation: 0,
     offsetX: 0.5,
     offsetY: 0.5,
+    zoomScale: 1,
   };
 }
 
