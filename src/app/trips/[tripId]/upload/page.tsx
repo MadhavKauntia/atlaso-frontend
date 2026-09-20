@@ -185,8 +185,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 14, color: "var(--sb-cream)" }}>
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
-          <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            No need to hand-pick your best. Just add them all. Drop in 50 to 1000 photos and we'll curate the highlights into your book. You can't add more later, so upload everything now.
+          <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 680, lineHeight: 1.5 }}>
+            <strong style={{ fontWeight: 700, color: "var(--sb-cream)" }}>No need to hand-pick your best. Just add them all.</strong> Drop in 50 to 1000 photos and we'll curate the highlights into your book. You can't add more later, so upload everything now.
           </p>
         </div>
 
