@@ -308,10 +308,10 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
       <style>{`
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="layout"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="replace"],
-        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="zoom"],
-        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="rotate"],
-        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="reset"],
-        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="swap"] {
+        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="swap"],
+        /* The framing pill holds the rotate/zoom/reset spotlight targets; force the whole pill visible
+           so those children (which can't out-opacity a transparent parent) show through the cutout. */
+        body.preview-onboarding-active [data-spread-visible="true"] .slot-controls {
           opacity: 1 !important;
         }
       `}</style>

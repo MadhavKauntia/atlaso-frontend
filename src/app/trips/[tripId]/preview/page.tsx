@@ -1279,7 +1279,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
       </button>
       {/* Framing controls — appears on hover: rotate 90°, zoom (− / +), and reset. */}
       <div
-        data-onboard={index === 0 ? "zoom" : undefined}
+        className="slot-controls"
         onMouseDown={(e) => e.stopPropagation()}
         style={{
           position: "absolute", bottom: 6, right: 6,
@@ -1303,37 +1303,40 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
           ⟳
         </button>
         <span style={{ width: 1, height: 15, background: "rgba(243,234,216,0.22)", margin: "0 1px" }} />
-        <button
-          onClick={(e) => { e.stopPropagation(); applyZoom(zoom - ZOOM_STEP); }}
-          disabled={zoom <= ZOOM_MIN}
-          title="Zoom out"
-          style={{
-            width: 22, height: 22, borderRadius: "50%", border: "none",
-            background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
-            cursor: zoom <= ZOOM_MIN ? "default" : "pointer", opacity: zoom <= ZOOM_MIN ? 0.4 : 1,
-            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-          }}
-        >
-          −
-        </button>
-        {!compactControls && (
-          <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
-            {zoom.toFixed(1)}×
-          </span>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); applyZoom(zoom + ZOOM_STEP); }}
-          disabled={zoom >= ZOOM_MAX}
-          title="Zoom in"
-          style={{
-            width: 22, height: 22, borderRadius: "50%", border: "none",
-            background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
-            cursor: zoom >= ZOOM_MAX ? "default" : "pointer", opacity: zoom >= ZOOM_MAX ? 0.4 : 1,
-            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-          }}
-        >
-          +
-        </button>
+        {/* Zoom sub-group — the tour spotlights just this, not the whole pill. */}
+        <span data-onboard={index === 0 ? "zoom" : undefined} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); applyZoom(zoom - ZOOM_STEP); }}
+            disabled={zoom <= ZOOM_MIN}
+            title="Zoom out"
+            style={{
+              width: 22, height: 22, borderRadius: "50%", border: "none",
+              background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
+              cursor: zoom <= ZOOM_MIN ? "default" : "pointer", opacity: zoom <= ZOOM_MIN ? 0.4 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+            }}
+          >
+            −
+          </button>
+          {!compactControls && (
+            <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
+              {zoom.toFixed(1)}×
+            </span>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); applyZoom(zoom + ZOOM_STEP); }}
+            disabled={zoom >= ZOOM_MAX}
+            title="Zoom in"
+            style={{
+              width: 22, height: 22, borderRadius: "50%", border: "none",
+              background: "transparent", color: "var(--sb-cream)", fontSize: 15, fontWeight: 800,
+              cursor: zoom >= ZOOM_MAX ? "default" : "pointer", opacity: zoom >= ZOOM_MAX ? 0.4 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+            }}
+          >
+            +
+          </button>
+        </span>
         <span style={{ width: 1, height: 15, background: "rgba(243,234,216,0.22)", margin: "0 1px" }} />
         <button
           data-onboard={index === 0 ? "reset" : undefined}
