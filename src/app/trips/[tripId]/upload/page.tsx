@@ -186,7 +186,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 540, lineHeight: 1.5 }}>
-            The moment they're in, they're automatically arranged into a photo book. You need at least 50 photos to get started, and adding more, up to 1000, lets us curate the best ones.
+            No need to hand-pick your best. Just add them all. Drop in 50 to 1000 photos and we'll curate the highlights into your book. You can't add more later, so upload everything now.
           </p>
         </div>
 

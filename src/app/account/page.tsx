@@ -425,6 +425,10 @@ function TripCard({
   actionLabel: "Resume" | "Review";
   href: string;
 }) {
+  const router = useRouter();
+  // Navigating to the preview refetches the book, so it can take a beat. Show a spinner and
+  // disable the button on click rather than leaving it looking inert.
+  const [navigating, setNavigating] = useState(false);
   return (
     <div
       style={{
@@ -463,9 +467,32 @@ function TripCard({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        <Link href={href} style={goldBtn}>
-          {actionLabel} →
-        </Link>
+        <button
+          onClick={() => { if (navigating) return; setNavigating(true); router.push(href); }}
+          disabled={navigating}
+          style={{
+            ...goldBtn,
+            border: "none",
+            cursor: navigating ? "default" : "pointer",
+            opacity: navigating ? 0.8 : 1,
+          }}
+        >
+          {navigating ? (
+            <>
+              <span
+                style={{
+                  width: 14, height: 14, borderRadius: "50%",
+                  border: "2px solid rgba(0,0,0,0.25)", borderTopColor: "var(--sb-ink)",
+                  display: "inline-block", animation: "tripCardSpin 0.7s linear infinite",
+                }}
+              />
+              Opening…
+            </>
+          ) : (
+            <>{actionLabel} →</>
+          )}
+        </button>
+        <style>{`@keyframes tripCardSpin { to { transform: rotate(360deg); } }`}</style>
         <DeleteButton onClick={() => onDelete(trip.id)} />
       </div>
     </div>
