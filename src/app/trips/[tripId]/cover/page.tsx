@@ -561,8 +561,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             </div>
           </div>
 
-          {/* RIGHT: Preview — pinned to the viewport centre (see .flow-cover-preview) */}
+          {/* RIGHT: Preview — cell stretches full-height; inner wrapper pins it (see globals.css) */}
           <div className="flow-cover-preview">
+            <div className="flow-cover-preview-pin">
             {savedIndicator && <div style={{ marginBottom: 12, fontSize: 12, color: "var(--sb-gold)" }}>Saved</div>}
             <CountryCover
               country={country}
@@ -596,6 +597,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                   <div style={{ fontWeight: 600, fontSize: 14, color: "var(--sb-cream)" }}>{val}</div>
                 </div>
               ))}
+            </div>
             </div>
           </div>
         </div>
