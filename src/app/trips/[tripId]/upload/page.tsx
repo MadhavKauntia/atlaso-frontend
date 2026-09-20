@@ -186,7 +186,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
           </h1>
           <p style={{ fontSize: 17, color: "var(--sb-muted)", maxWidth: 680, lineHeight: 1.5 }}>
-            <strong style={{ fontWeight: 700, color: "var(--sb-cream)" }}>No need to hand-pick your best. Just add them all.</strong> Drop in 50 to 1000 photos and we'll curate the highlights into your book. You can't add more later, so upload everything now.
+            <strong style={{ fontWeight: 700, color: "var(--sb-cream)" }}>No need to hand-pick your best. Just add them all.</strong><br />
+            Drop in 50 to 1000 photos and we'll curate the highlights into your book. You can't add more later, so upload everything now.
           </p>
         </div>
 
