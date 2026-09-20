@@ -10,7 +10,7 @@ import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 import Link from "next/link";
 
-const BOOK_PRICE = 1999; // ₹ per copy, all-inclusive (shipping + taxes included)
+const BOOK_PRICE = 2499; // ₹ per copy, all-inclusive (shipping + taxes included)
 
 const DASH = "1px dashed #46403a";
 

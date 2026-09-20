@@ -9,7 +9,7 @@ import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 
 // Single product: one hardcover photobook, flat all-inclusive price.
-const BOOK_PRICE = 1999; // ₹ per copy
+const BOOK_PRICE = 2499; // ₹ per copy
 
 const INCLUDED_FEATURES = [
   "6.9 × 9.8 inch photo-wrap hardcover",
