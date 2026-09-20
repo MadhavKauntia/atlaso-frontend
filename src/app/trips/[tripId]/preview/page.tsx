@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto,
@@ -675,6 +675,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
   // left-to-right. So we distribute photos into N explicit columns round-robin (photo i -> column
   // i % N): the top row then reads 0,1,2,3, the next 4,5,6,7, etc. — masonry that reads horizontally.
   const scrollRef = useRef<HTMLDivElement>(null);
+  const currentTileRef = useRef<HTMLButtonElement>(null);
   const [colCount, setColCount] = useState(4);
   useEffect(() => {
     const el = scrollRef.current;
@@ -685,6 +686,18 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // On open, position the picker so the currently-used photo sits in the middle, letting the user pick
+  // photos taken around the same time instead of starting at the top. useLayoutEffect sets scrollTop
+  // before paint so the modal simply appears already scrolled — no visible jump. Keyed on colCount so
+  // it re-centers once the columns have been measured.
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    const tile = currentTileRef.current;
+    if (!container || !tile) return;
+    const offsetWithin = tile.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    container.scrollTop = offsetWithin - container.clientHeight / 2 + tile.clientHeight / 2;
+  }, [colCount]);
 
   const columns: Photo[][] = Array.from({ length: colCount }, () => []);
   photos.forEach((photo, i) => columns[i % colCount].push(photo));
@@ -698,6 +711,7 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
     return (
       <button
         key={photo.id}
+        ref={isCurrent ? currentTileRef : undefined}
         onClick={() => !isCurrent && onSelect(photo.id)}
         disabled={isCurrent}
         style={{
