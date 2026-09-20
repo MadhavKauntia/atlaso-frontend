@@ -561,8 +561,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             </div>
           </div>
 
-          {/* RIGHT: Preview */}
-          <div style={{ position: "sticky", top: 32, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* RIGHT: Preview — pinned to the viewport centre (see .flow-cover-preview) */}
+          <div className="flow-cover-preview">
             {savedIndicator && <div style={{ marginBottom: 12, fontSize: 12, color: "var(--sb-gold)" }}>Saved</div>}
             <CountryCover
               country={country}
