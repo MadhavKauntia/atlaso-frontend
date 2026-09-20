@@ -8,6 +8,13 @@ export function getAutoFontSize(text: string, breakpoints: FontSizeBreakpoint[])
   return breakpoints[0]?.size ?? 32;
 }
 
+/** Capitalises the first letter of a title, leaving the rest as the user typed it. */
+export function capitalizeFirstLetter(input: string): string {
+  const trimmed = input.trimStart();
+  if (!trimmed) return input;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 /** Sanitises title: uppercase, strip special chars, collapse spaces, clamp */
 export function sanitizeCoverTitle(input: string): string {
   return input

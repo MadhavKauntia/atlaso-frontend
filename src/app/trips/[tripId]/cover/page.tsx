@@ -6,6 +6,7 @@ import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import CountryCover from "@/components/covers/CountryCover";
 import { COUNTRIES, getCountry, stampUrl } from "@/lib/covers/countries";
+import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { getToken, setToken } from "@/lib/auth";
 import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib/api";
@@ -135,7 +136,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId || loading || !country) return;
     const t = setTimeout(async () => {
       try {
-        await saveCoverCountry(bookId, country, description, title);
+        await saveCoverCountry(bookId, country, description, capitalizeFirstLetter(title));
         showSaved();
       } catch {
         /* silent */
@@ -148,7 +149,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const persistPrefs = () => {
     localStorage.setItem(
       "atlaso_cover_prefs",
-      JSON.stringify({ title: title.trim(), country: country ?? "", description: description.trim() })
+      JSON.stringify({ title: capitalizeFirstLetter(title), country: country ?? "", description: description.trim() })
     );
   };
 
@@ -191,7 +192,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
     if (!bookId) return;
     setSaving(true);
     try {
-      if (country) await saveCoverCountry(bookId, country, description, title);
+      if (country) await saveCoverCountry(bookId, country, description, capitalizeFirstLetter(title));
       router.push(`/trips/${tripId}/preview?bookId=${bookId}`);
     } catch {
       setError("Could not save cover.");
@@ -412,6 +413,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               <input
                 value={title}
                 onChange={(e) => onTitleChange(e.target.value)}
+                onBlur={() => setTitle((t) => capitalizeFirstLetter(t))}
                 maxLength={40}
                 placeholder="Defaults to the cover, edit to rename"
                 style={inputStyle}
