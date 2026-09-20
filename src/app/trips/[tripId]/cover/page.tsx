@@ -450,7 +450,31 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                   );
                 })}
                 {visible.length === 0 && (
-                  <span style={{ fontSize: 14, color: "var(--sb-muted-2)" }}>No designs match “{query}”.</span>
+                  <div style={{ gridColumn: "1 / -1", padding: "20px 16px", background: "var(--sb-panel)", borderRadius: 12, textAlign: "center" }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--sb-cream)", marginBottom: 4 }}>
+                      No cover for “{query}” yet.
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--sb-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+                      Try a nearby place, or pick a theme that matches your trip’s vibe.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setQuery(""); setCategory("theme"); setShowAll(false); }}
+                      style={{
+                        border: "none",
+                        background: "var(--sb-gold)",
+                        color: "var(--sb-ink)",
+                        fontFamily: "var(--font-dm-sans), sans-serif",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        padding: "9px 18px",
+                        borderRadius: 999,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Browse themes instead →
+                    </button>
+                  </div>
                 )}
               </div>
               {(collapsed || (!q && showAll && base.length > GRID_CAP)) && (
