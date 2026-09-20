@@ -33,8 +33,8 @@ const STEPS: { key: StepKey; title: string; body: string }[] = [
   },
   {
     key: "zoom",
-    title: "Zoom in on a photo",
-    body: "Use the − / + control to zoom into a photo, then drag to reframe the closer crop.",
+    title: "Rotate, zoom & reset",
+    body: "Rotate a photo, zoom in with − / +, or reset its framing — then drag to reposition the crop.",
   },
   {
     key: "swap",

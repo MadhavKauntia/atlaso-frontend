@@ -589,6 +589,21 @@ export async function updateSlotZoom(
   if (!res.ok) throw new Error(await res.text());
 }
 
+/** Persists a slot's rotation in degrees (normalised server-side to 0/90/180/270). */
+export async function updateSlotRotation(
+  pageId: string,
+  slotIndex: number,
+  rotation: number
+): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/pages/${pageId}/slots/${slotIndex}/rotation`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rotation }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 /** Replaces the photo shown in a page slot with another photo from the trip. */
 export async function updateSlotPhoto(
   pageId: string,
