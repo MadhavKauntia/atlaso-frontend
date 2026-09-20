@@ -13,7 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * they show through the spotlight cutout.
  */
 
-type StepKey = "layout" | "replace" | "reposition" | "swap";
+type StepKey = "layout" | "replace" | "reposition" | "zoom" | "swap";
 
 const STEPS: { key: StepKey; title: string; body: string }[] = [
   {
@@ -30,6 +30,11 @@ const STEPS: { key: StepKey; title: string; body: string }[] = [
     key: "reposition",
     title: "Drag to reframe",
     body: "Click and drag directly on a photo to move what shows inside the frame.",
+  },
+  {
+    key: "zoom",
+    title: "Zoom in on a photo",
+    body: "Use the − / + control to zoom into a photo, then drag to reframe the closer crop.",
   },
   {
     key: "swap",
@@ -293,6 +298,7 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
       <style>{`
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="layout"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="replace"],
+        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="zoom"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="swap"] {
           opacity: 1 !important;
         }

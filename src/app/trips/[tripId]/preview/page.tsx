@@ -1105,7 +1105,9 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
           // the browser preview and the printed PDF frame the photo identically.
           transform: `scale(${zoom})${slot.rotation ? ` rotate(${slot.rotation}deg)` : ""}`,
           transformOrigin: `${displayOffset.x * 100}% ${displayOffset.y * 100}%`,
-          pointerEvents: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.2s ease",
+          // Ease the scale change so zoom glides in/out. Panning changes objectPosition/transform-origin
+          // (not the transform value), so those stay instant and the drag never lags.
+          pointerEvents: "none", opacity: loaded ? 1 : 0, transition: "opacity 0.2s ease, transform 0.25s ease",
         }}
       />
       {slot.caption && (
@@ -1163,6 +1165,7 @@ function SlotRenderer({ slot, tripId, photoUrls, pageId, index, onOffsetSaved, o
       </button>
       {/* Zoom control — appears on hover; − / + step the zoom-in factor (1× = fit). */}
       <div
+        data-onboard={index === 0 ? "zoom" : undefined}
         onMouseDown={(e) => e.stopPropagation()}
         style={{
           position: "absolute", bottom: 6, right: 6,
