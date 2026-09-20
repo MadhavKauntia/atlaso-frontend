@@ -250,10 +250,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           >
             📱 Upload from your phone
           </button>
-
-          <div style={{ marginTop: 18, fontSize: 12, color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>
-            We'll read the date and location from each photo to help build your story
-          </div>
         </div>
 
         {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
