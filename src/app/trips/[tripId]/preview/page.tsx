@@ -1191,6 +1191,9 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
     : Infinity;
   const lowRes = printDpi < MIN_PRINT_DPI;
   const isDefaultFraming = displayOffset.x === 0.5 && displayOffset.y === 0.5 && zoom === 1 && norm === 0;
+  // On narrow slots (multi-photo grid pages) drop the button labels so the bottom-left Move control and
+  // the bottom-right framing controls don't collide — keeps a gap like the wider single-photo pages.
+  const compactControls = box.w > 0 && box.w < 250;
 
   return (
     <div
@@ -1263,7 +1266,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
         style={{
           position: "absolute", bottom: 6, left: 6,
           display: "flex", alignItems: "center", gap: 4,
-          padding: "4px 10px", fontSize: 11, fontWeight: 800,
+          padding: compactControls ? "4px 7px" : "4px 10px", fontSize: 11, fontWeight: 800,
           background: "rgba(20,17,15,0.72)", color: "var(--sb-cream)",
           border: "none", borderRadius: 999, cursor: "grab",
           fontFamily: "var(--font-bricolage)",
@@ -1272,7 +1275,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
           pointerEvents: hover && !swapActive ? "auto" : "none",
         }}
       >
-        ⠿ Move
+        {compactControls ? "⠿" : "⠿ Move"}
       </button>
       {/* Framing controls — appears on hover: rotate 90°, zoom (− / +), and reset. */}
       <div
@@ -1313,9 +1316,11 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
         >
           −
         </button>
-        <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
-          {zoom.toFixed(1)}×
-        </span>
+        {!compactControls && (
+          <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
+            {zoom.toFixed(1)}×
+          </span>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); applyZoom(zoom + ZOOM_STEP); }}
           disabled={zoom >= ZOOM_MAX}
@@ -1336,22 +1341,24 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
           disabled={isDefaultFraming}
           title="Reset framing"
           style={{
-            width: 22, height: 22, borderRadius: "50%", border: "none",
-            background: "transparent", color: "var(--sb-cream)", fontSize: 13, fontWeight: 800,
+            height: 22, padding: "0 9px", borderRadius: 999, border: "none",
+            background: "transparent", color: "var(--sb-cream)", fontSize: 10, fontWeight: 800,
+            letterSpacing: "0.02em", fontFamily: "var(--font-bricolage)",
             cursor: isDefaultFraming ? "default" : "pointer", opacity: isDefaultFraming ? 0.4 : 1,
-            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, whiteSpace: "nowrap",
           }}
         >
-          ↺
+          ↺ Reset
         </button>
       </div>
-      {/* Low-resolution warning — this photo is too small to print sharply at its slot size. */}
+      {/* Low-resolution warning — this photo is too small to print sharply at its slot size. Anchored
+          top-centre so it clears the page's Layout button (top-left) and the Replace button (top-right). */}
       {lowRes && (
         <div
           title={`This photo may look blurry in print (~${Math.round(printDpi)} DPI). Zoom out, or replace it with a higher-resolution shot.`}
           style={{
-            position: "absolute", top: 6, left: 6,
-            display: "flex", alignItems: "center", gap: 4,
+            position: "absolute", top: 6, left: "50%", transform: "translateX(-50%)", zIndex: 3,
+            display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
             padding: "3px 8px", fontSize: 10, fontWeight: 800,
             background: "rgba(178,74,20,0.92)", color: "var(--sb-cream)",
             borderRadius: 999, fontFamily: "var(--font-bricolage)",
