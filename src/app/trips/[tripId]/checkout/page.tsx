@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getBook, getBookByTripId, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, type Book, type User, type CouponPreview } from "@/lib/api";
+import { getBook, getBookByTripId, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, exportBook, type Book, type User, type CouponPreview } from "@/lib/api";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -149,6 +149,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       phone: `+91${phone}`,
     };
     try {
+      // Guarantee the fulfilment PDF is current before the order is recorded. The order
+      // page only re-exports when the book isn't already PDF_READY, so a book that went
+      // stale — edited since its last export, or rendered by an older backend — would
+      // otherwise be purchased as-is. Re-exporting here (cover is client-rendered) closes
+      // that gap for every purchase; if it fails we abort rather than charge for a stale book.
+      if (book) setBook(await exportBook(book));
+
       // 100%-off coupon: no payment. create-order records the order server-side and returns
       // { free: true }; skip Razorpay entirely and go straight to the confirmation page.
       if (coupon?.free) {
