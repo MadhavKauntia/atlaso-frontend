@@ -159,7 +159,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       const b = prev.pages.find((p) => p.id === to.pageId)?.slots[to.index];
       if (!a || !b) return prev;
       const withPhotoOf = (sl: PhotoSlot, src: PhotoSlot): PhotoSlot =>
-        ({ ...sl, photoId: src.photoId, rotation: src.rotation, caption: src.caption, offsetX: 0.5, offsetY: 0.5 });
+        ({ ...sl, photoId: src.photoId, rotation: src.rotation, caption: src.caption, offsetX: 0.5, offsetY: 0.5, zoomScale: 1 });
       return {
         ...prev,
         pages: prev.pages.map((p) => {
