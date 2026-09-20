@@ -49,14 +49,18 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   // capped to GRID_CAP until "Show all". The selected design is floated to the
   // front so it's always visible even when collapsed.
   const q = query.trim().toLowerCase();
-  let base = q
+  const base = q
     ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(q))
     : COUNTRIES.filter((c) => c.category === category);
-  if (!q && country) {
-    base = [...base].sort((a, b) => (a.slug === country ? -1 : b.slug === country ? 1 : 0));
-  }
   const collapsed = !q && !showAll && base.length > GRID_CAP;
-  const visible = collapsed ? base.slice(0, GRID_CAP) : base;
+  let visible = collapsed ? base.slice(0, GRID_CAP) : base;
+  // Keep the grid in its natural order (selecting never reorders it), but if the
+  // chosen design falls beyond the cap while collapsed, append it so it stays
+  // visible and highlighted instead of disappearing.
+  if (collapsed && country && !visible.some((c) => c.slug === country)) {
+    const sel = base.find((c) => c.slug === country);
+    if (sel) visible = [...visible, sel];
+  }
 
   useEffect(() => {
     const run = async () => {
