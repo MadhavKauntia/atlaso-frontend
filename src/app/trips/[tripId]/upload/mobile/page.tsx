@@ -67,7 +67,7 @@ export default function MobileUploadPage({ params }: { params: Promise<{ tripId:
           add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
         </h1>
         <p style={{ fontSize: 15, color: "var(--sb-muted)", lineHeight: 1.5, marginBottom: 26 }}>
-          Pick photos from your camera roll and they&apos;ll upload straight into your book. Keep this page open while they finish, then head back to your computer to design it.
+          No need to hand-pick your best, just add them all from your camera roll. You can&apos;t add more later, so upload everything now. Keep this page open while they finish, then head back to your computer to design it.
         </p>
 
         {/* Hidden inputs driven by the two buttons below. `image/*` (not an
