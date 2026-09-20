@@ -13,7 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * they show through the spotlight cutout.
  */
 
-type StepKey = "layout" | "replace" | "reposition" | "zoom" | "swap";
+type StepKey = "layout" | "replace" | "reposition" | "rotate" | "zoom" | "swap" | "reset";
 
 const STEPS: { key: StepKey; title: string; body: string }[] = [
   {
@@ -32,14 +32,24 @@ const STEPS: { key: StepKey; title: string; body: string }[] = [
     body: "Click and drag directly on a photo to move what shows inside the frame.",
   },
   {
+    key: "rotate",
+    title: "Rotate a photo",
+    body: "Hit the rotate button to turn a sideways photo upright, 90° at a time.",
+  },
+  {
     key: "zoom",
-    title: "Rotate, zoom & reset",
-    body: "Rotate a photo, zoom in with − / +, or reset its framing — then drag to reposition the crop.",
+    title: "Zoom in on a photo",
+    body: "Use the − / + control to zoom into a photo, then drag to reframe the closer crop.",
   },
   {
     key: "swap",
     title: "Swap two photos",
     body: "Grab the Move handle and drop it onto another photo to trade their spots.",
+  },
+  {
+    key: "reset",
+    title: "Reset the framing",
+    body: "Changed your mind? Reset restores the photo's original crop, zoom and rotation.",
   },
 ];
 
@@ -299,6 +309,8 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="layout"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="replace"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="zoom"],
+        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="rotate"],
+        body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="reset"],
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="swap"] {
           opacity: 1 !important;
         }

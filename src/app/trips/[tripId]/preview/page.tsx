@@ -1288,6 +1288,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
         }}
       >
         <button
+          data-onboard={index === 0 ? "rotate" : undefined}
           onClick={(e) => { e.stopPropagation(); rotate90(); }}
           title="Rotate 90°"
           style={{
@@ -1330,6 +1331,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
         </button>
         <span style={{ width: 1, height: 15, background: "rgba(243,234,216,0.22)", margin: "0 1px" }} />
         <button
+          data-onboard={index === 0 ? "reset" : undefined}
           onClick={(e) => { e.stopPropagation(); resetFraming(); }}
           disabled={isDefaultFraming}
           title="Reset framing"
