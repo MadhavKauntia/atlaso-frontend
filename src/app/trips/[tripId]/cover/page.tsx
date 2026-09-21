@@ -3,7 +3,6 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FlowTopbar from "@/components/layout/FlowTopbar";
-import FlowBottomBar from "@/components/layout/FlowBottomBar";
 import CountryCover from "@/components/covers/CountryCover";
 import { COUNTRIES, getCountry, stampUrl, PALETTE, inkFor, type CoverCategory } from "@/lib/covers/countries";
 import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
@@ -266,7 +265,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
         minHeight: "100vh",
         background: "var(--sb-bg)",
         color: "var(--sb-cream)",
-        paddingBottom: 110,
+        paddingBottom: 48,
         fontFamily: "var(--font-dm-sans), sans-serif",
       }}
     >
@@ -631,38 +630,24 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
         </div>
       )}
 
-      <FlowBottomBar
-        leftContent={
-          !bookId ? (
-            <span>
-              Next: our AI generates your photobook.{" "}
-              <strong style={{ color: "var(--sb-cream)", fontWeight: 700 }}>Sign in takes one click.</strong>
-            </span>
-          ) : null
-        }
-        rightButton={
-          <button
-            onClick={bookId ? handleSaveThenPreview : handleGenerate}
-            disabled={saving || loading}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "14px 26px",
-              background: saving || loading ? "var(--sb-panel-2)" : "var(--sb-red)",
-              color: saving || loading ? "#8a7f6f" : "var(--sb-cream)",
-              border: "none",
-              borderRadius: 999,
-              fontFamily: "var(--font-bricolage), sans-serif",
-              fontWeight: 800,
-              fontSize: 16,
-              cursor: saving || loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {bookId ? (saving ? "Saving…" : "continue →") : saving ? "Starting…" : "build my photobook →"}
-          </button>
-        }
-      />
+      {/* Sticky continue button (no bar) */}
+      <button
+        onClick={bookId ? handleSaveThenPreview : handleGenerate}
+        disabled={saving || loading}
+        style={{
+          position: "fixed", bottom: 18, right: 48, zIndex: 10,
+          display: "inline-flex", alignItems: "center", gap: 10,
+          padding: "14px 26px",
+          background: saving || loading ? "var(--sb-panel-2)" : "var(--sb-red)",
+          color: saving || loading ? "#8a7f6f" : "var(--sb-cream)",
+          border: "none", borderRadius: 999,
+          fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 800, fontSize: 15,
+          cursor: saving || loading ? "not-allowed" : "pointer",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+        }}
+      >
+        {bookId ? (saving ? "Saving…" : "continue →") : saving ? "Starting…" : "build my photobook →"}
+      </button>
     </div>
   );
 }
