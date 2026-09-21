@@ -1,0 +1,76 @@
+.list {
+  border-top: 1px solid #3d3833;
+  margin-top: 8px;
+}
+
+.item {
+  border-bottom: 1px solid #3d3833;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sb-cream);
+  transition: color 160ms ease;
+}
+.trigger:hover {
+  color: var(--sb-gold);
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--sb-muted);
+  transition: transform 220ms ease, color 160ms ease;
+}
+.item.open .chevron {
+  transform: rotate(180deg);
+  color: var(--sb-gold);
+}
+
+/* Height animation via grid-template-rows 0fr -> 1fr (no fixed height needed). */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms ease;
+}
+.item.open .panel {
+  grid-template-rows: 1fr;
+}
+.panelInner {
+  overflow: hidden;
+}
+
+.answer {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--sb-muted);
+  padding: 0 4px 22px;
+}
+.answer p {
+  margin: 0;
+}
+.answer a {
+  color: var(--sb-gold);
+  text-decoration: underline;
+  transition: color 160ms ease;
+}
+.answer a:hover {
+  color: var(--sb-orange);
+}
+.answer strong {
+  color: var(--sb-cream);
+  font-weight: 700;
+}
