@@ -42,32 +42,34 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className={s.footerCol}>
-          <div className={s.footerColTitle}>Product</div>
-          <nav>
-            <Link href="/how-it-works" className={s.footerLink}>how it works</Link>
-            <Link href="/create" className={s.footerLink}>start a book</Link>
-            <Link href="/account" className={s.footerLink}>account</Link>
-          </nav>
-        </div>
+        <div className={s.footerCols}>
+          <div className={s.footerCol}>
+            <div className={s.footerColTitle}>Product</div>
+            <nav>
+              <Link href="/how-it-works" className={s.footerLink}>how it works</Link>
+              <Link href="/create" className={s.footerLink}>start a book</Link>
+              <Link href="/account" className={s.footerLink}>account</Link>
+            </nav>
+          </div>
 
-        <div className={s.footerCol}>
-          <div className={s.footerColTitle}>Legal</div>
-          <nav>
-            <Link href="/privacy" className={s.footerLink}>privacy policy</Link>
-            <Link href="/terms" className={s.footerLink}>terms &amp; conditions</Link>
-            <Link href="/refund" className={s.footerLink}>refunds &amp; cancellation</Link>
-            <Link href="/shipping" className={s.footerLink}>shipping &amp; delivery</Link>
-          </nav>
-        </div>
+          <div className={s.footerCol}>
+            <div className={s.footerColTitle}>Legal</div>
+            <nav>
+              <Link href="/privacy" className={s.footerLink}>privacy policy</Link>
+              <Link href="/terms" className={s.footerLink}>terms &amp; conditions</Link>
+              <Link href="/refund" className={s.footerLink}>refunds &amp; cancellation</Link>
+              <Link href="/shipping" className={s.footerLink}>shipping &amp; delivery</Link>
+            </nav>
+          </div>
 
-        <div className={s.footerCol}>
-          <div className={s.footerColTitle}>Support</div>
-          <nav>
-            <Link href="/faq" className={s.footerLink}>faq</Link>
-            <Link href="/contact" className={s.footerLink}>contact us</Link>
-            <a href="mailto:support@myatlaso.com" className={s.footerLink}>support@myatlaso.com</a>
-          </nav>
+          <div className={s.footerCol}>
+            <div className={s.footerColTitle}>Support</div>
+            <nav>
+              <Link href="/faq" className={s.footerLink}>faq</Link>
+              <Link href="/contact" className={s.footerLink}>contact us</Link>
+              <a href="mailto:support@myatlaso.com" className={s.footerLink}>support@myatlaso.com</a>
+            </nav>
+          </div>
         </div>
       </div>
 
