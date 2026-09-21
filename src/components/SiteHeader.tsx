@@ -11,6 +11,7 @@ export default function SiteHeader() {
       <nav className={s.nav}>
         <Link href="/create" className={s.navLink}>make a book</Link>
         <Link href="/how-it-works" className={s.navLink}>how it works</Link>
+        <Link href="/faq" className={s.navLink}>faq</Link>
         <Link href="/account" className={s.navLink}>account</Link>
         <Link href="/create" className={s.navCta}>start ›</Link>
       </nav>

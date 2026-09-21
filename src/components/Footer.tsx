@@ -64,6 +64,7 @@ export default function Footer() {
         <div className={s.footerCol}>
           <div className={s.footerColTitle}>Support</div>
           <nav>
+            <Link href="/faq" className={s.footerLink}>faq</Link>
             <Link href="/contact" className={s.footerLink}>contact us</Link>
             <a href="mailto:support@myatlaso.com" className={s.footerLink}>support@myatlaso.com</a>
           </nav>
