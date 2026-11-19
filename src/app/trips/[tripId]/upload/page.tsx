@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import FlowTopbar from "@/components/layout/FlowTopbar";
@@ -12,6 +12,7 @@ import { usePhotoUpload } from "@/lib/upload/usePhotoUpload";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
 import PhoneUploadPanel from "@/components/upload/PhoneUploadPanel";
 import { setTabText, flashTabDone, ensureNotifyPermission, notify, canNotify } from "@/lib/notify";
+import { isPhoneBrowser } from "@/lib/device";
 
 interface InferredLocation {
   place: string;
@@ -56,6 +57,8 @@ async function inferLocationFromPhotos(
   }
 }
 
+const noopSubscribe = () => () => {};
+
 export default function UploadPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = use(params);
   const router = useRouter();
@@ -68,6 +71,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const [phonePanelOpen, setPhonePanelOpen] = useState(false);
   const [phoneUrl, setPhoneUrl] = useState("");
   const [newFromPhone, setNewFromPhone] = useState(0);
+  // No phone hand-off when already on a phone. Server snapshot is `false` so the
+  // button never flashes on phones; desktop shows it right after hydration.
+  const showPhoneHandoff = useSyncExternalStore(noopSubscribe, () => !isPhoneBrowser(), () => false);
 
   const upload = usePhotoUpload({ tripId, onBatchSettled: () => runInference() });
   const { photos, setPhotos, pendingCards, uploading, error, uploadPct, totalCount, handleFiles, deletePhoto, dismissPending, thumbUrls, coordsRef, datesRef } = upload;
@@ -227,29 +233,34 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             choose photos
           </span>
 
-          {/* OR divider + phone hand-off, kept inside the box so it's actually seen. */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: 300, margin: "18px auto" }}>
-            <div style={{ flex: 1, height: 1, background: "#46403a" }} />
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>OR</span>
-            <div style={{ flex: 1, height: 1, background: "#46403a" }} />
-          </div>
-          {/* Hand off to the phone so users skip the AirDrop-to-desktop step.
-              stopPropagation: the whole box is a dropzone, so without it a tap here
-              would also pop the OS file picker. */}
-          <button
-            onClick={(e) => { e.stopPropagation(); openPhonePanel(); }}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "13px 22px", background: "var(--sb-panel)", color: "var(--sb-cream)",
-              border: "1px solid #5a5249", borderRadius: 999, cursor: "pointer",
-              fontSize: 14, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif",
-              transition: "background 0.15s, border-color 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--sb-panel-2)"; e.currentTarget.style.borderColor = "var(--sb-gold)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--sb-panel)"; e.currentTarget.style.borderColor = "#5a5249"; }}
-          >
-            📱 Upload from your phone
-          </button>
+          {/* OR divider + phone hand-off, kept inside the box so it's actually seen.
+              Skipped on phones: the user is already on the device with the photos. */}
+          {showPhoneHandoff && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: 300, margin: "18px auto" }}>
+                <div style={{ flex: 1, height: 1, background: "#46403a" }} />
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "var(--sb-muted-2)", fontFamily: "var(--font-dm-sans), sans-serif" }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: "#46403a" }} />
+              </div>
+              {/* Hand off to the phone so users skip the AirDrop-to-desktop step.
+                  stopPropagation: the whole box is a dropzone, so without it a tap here
+                  would also pop the OS file picker. */}
+              <button
+                onClick={(e) => { e.stopPropagation(); openPhonePanel(); }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "13px 22px", background: "var(--sb-panel)", color: "var(--sb-cream)",
+                  border: "1px solid #5a5249", borderRadius: 999, cursor: "pointer",
+                  fontSize: 14, fontWeight: 700, fontFamily: "var(--font-dm-sans), sans-serif",
+                  transition: "background 0.15s, border-color 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--sb-panel-2)"; e.currentTarget.style.borderColor = "var(--sb-gold)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "var(--sb-panel)"; e.currentTarget.style.borderColor = "#5a5249"; }}
+              >
+                📱 Upload from your phone
+              </button>
+            </>
+          )}
         </div>
 
         {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
