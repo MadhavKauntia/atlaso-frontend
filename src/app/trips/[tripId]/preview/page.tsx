@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
@@ -733,8 +733,19 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
     container.scrollTop = offsetWithin - container.clientHeight / 2 + tile.clientHeight / 2;
   }, [colCount]);
 
+  // Day filter: group photos by the calendar day they were taken. Day 1 is the earliest photo's day
+  // and numbering follows the calendar, so a day with no photos leaves a gap (Day 1, Day 3).
+  const { dayOf, dayChips, hasUndated } = useMemo(() => buildDayIndex(photos), [photos]);
+  const [dayFilter, setDayFilter] = useState<DayFilter>("all");
+  const showDayFilter = dayChips.length > 1 || (dayChips.length === 1 && hasUndated);
+  const visiblePhotos = dayFilter === "all" ? photos : photos.filter((p) => dayOf.get(p.id) === dayFilter);
+  const selectDay = (f: DayFilter) => {
+    setDayFilter(f);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  };
+
   const columns: Photo[][] = Array.from({ length: colCount }, () => []);
-  photos.forEach((photo, i) => columns[i % colCount].push(photo));
+  visiblePhotos.forEach((photo, i) => columns[i % colCount].push(photo));
 
   const renderTile = (photo: Photo) => {
     const isCurrent = photo.id === currentPhotoId;
@@ -809,6 +820,16 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
           </button>
         </div>
 
+        {showDayFilter && (
+          <div role="tablist" aria-label="Filter by day" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 4, flexShrink: 0 }}>
+            <DayChip label="All" active={dayFilter === "all"} onClick={() => selectDay("all")} />
+            {dayChips.map((d) => (
+              <DayChip key={d.day} label={`Day ${d.day}`} sub={d.dateLabel} active={dayFilter === d.day} onClick={() => selectDay(d.day)} />
+            ))}
+            {hasUndated && <DayChip label="No date" active={dayFilter === "undated"} onClick={() => selectDay("undated")} />}
+          </div>
+        )}
+
         <div ref={scrollRef} style={{ overflowY: "auto" }}>
           {photos.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--sb-muted)", fontSize: 13, padding: 40, fontFamily: "var(--font-dm-sans)" }}>
@@ -828,6 +849,54 @@ function PhotoPickerModal({ tripId, photos, usedPhotoIds, currentPhotoId, onClos
         </div>
       </div>
     </div>
+  );
+}
+
+type DayFilter = "all" | "undated" | number;
+
+/** Local calendar-day key (days since epoch). EXIF capture times carry no zone and are read as the
+ *  uploader's local time, so formatting back in local time recovers the wall-clock day. */
+function localDayKey(d: Date): number {
+  return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000);
+}
+
+function buildDayIndex(photos: Photo[]) {
+  const dayOf = new Map<string, number | "undated">();
+  const dated: { id: string; key: number; date: Date }[] = [];
+  for (const p of photos) {
+    const raw = p.metadata?.takenAt;
+    const date = raw ? new Date(raw) : null;
+    if (date && !Number.isNaN(date.getTime())) dated.push({ id: p.id, key: localDayKey(date), date });
+    else dayOf.set(p.id, "undated");
+  }
+  const firstKey = dated.length ? Math.min(...dated.map((d) => d.key)) : 0;
+  const chips = new Map<number, string>();
+  for (const d of dated) {
+    const day = d.key - firstKey + 1;
+    dayOf.set(d.id, day);
+    if (!chips.has(day)) chips.set(day, d.date.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+  }
+  const dayChips = [...chips.entries()].sort((a, b) => a[0] - b[0]).map(([day, dateLabel]) => ({ day, dateLabel }));
+  return { dayOf, dayChips, hasUndated: dated.length < photos.length };
+}
+
+function DayChip({ label, sub, active, onClick }: { label: string; sub?: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      style={{
+        flexShrink: 0, padding: "6px 12px", borderRadius: 100, cursor: "pointer",
+        fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
+        border: `1px solid ${active ? "var(--sb-gold)" : "#5a5249"}`,
+        background: active ? "var(--sb-gold)" : "transparent",
+        color: active ? "var(--sb-bg-deep)" : "var(--sb-cream)",
+      }}
+    >
+      {label}
+      {sub && <span style={{ fontWeight: 500, opacity: 0.7, marginLeft: 6 }}>{sub}</span>}
+    </button>
   );
 }
 

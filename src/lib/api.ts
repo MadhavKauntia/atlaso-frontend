@@ -76,7 +76,8 @@ export interface Photo {
   originalFilename: string;
   contentType: string;
   fileSize: number;
-  metadata: { width: number; height: number };
+  /** takenAt is the EXIF capture time as an ISO instant (null when the photo had no date). */
+  metadata: { width: number; height: number; takenAt?: string | null };
   rotation: number;
   uploadedAt: string;
   /** Direct (presigned) URL to the image, so the browser skips the backend redirect. */
