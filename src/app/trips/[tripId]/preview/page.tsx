@@ -428,7 +428,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 key={idx}
                 onClick={() => setCurrentSpread(idx)}
                 style={{
-                  aspectRatio: "8/5",
+                  aspectRatio: "993.6 / 705.6",
                   flexShrink: 0,
                   borderRadius: 6,
                   overflow: "hidden",
@@ -469,13 +469,17 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div ref={boxRef} style={{
               position: "relative",
-              aspectRatio: "16/10",
+              // Match the print trim exactly: two 496.8×705.6pt pages side by side. content-box so
+              // the 10px padding doesn't distort the inner (inset: 10) spread's aspect — otherwise
+              // the on-screen crop differs from the PDF.
+              boxSizing: "content-box",
+              aspectRatio: "993.6 / 705.6",
               boxShadow: "0 24px 60px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3)",
               borderRadius: 8,
               overflow: "hidden",
               background: "var(--sb-cream)",
               padding: 10,
-              width: "100%",
+              width: "calc(100% - 20px)",
             }}>
               {/* Dashed center gutter (hidden on the cover spread) */}
               {currentSpread !== 0 && (
