@@ -1389,7 +1389,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
           </button>
           {!compactControls && (
             <span style={{ color: "var(--sb-cream)", fontSize: 10, fontWeight: 800, minWidth: 26, textAlign: "center", fontFamily: "var(--font-bricolage)" }}>
-              {zoom.toFixed(1)}×
+              {Number(zoom.toFixed(2))}×
             </span>
           )}
           <button
