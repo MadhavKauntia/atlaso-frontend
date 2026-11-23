@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter_Tight, DM_Sans, Bricolage_Grotesque, Nunito } from "next/font/google";
+import { Fraunces, Inter_Tight, DM_Sans, Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import GoogleAuthProvider from "@/components/GoogleAuthProvider";
 import "./globals.css";
@@ -27,10 +28,12 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
+// Self-hosted: Google Fonts now serves Bricolage via a URL that Next's Turbopack font
+// loader can't parse on Vercel builds. Variable weight file (Fontsource, OFL).
+const bricolage = localFont({
+  src: "./fonts/bricolage-grotesque-latin-wght-normal.woff2",
   variable: "--font-bricolage",
-  weight: ["600", "800"],
+  weight: "200 800",
   display: "swap",
 });
 
