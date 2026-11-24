@@ -38,7 +38,7 @@ const isRemote = (s: UploadSource): s is RemoteImage => "remote" in s && s.remot
 /** A short, human reason for a failed upload, shown on its tile. */
 function describeUploadError(err: unknown): string {
   if (err instanceof UploadError || err instanceof DriveImportError) return err.message;
-  if (isTransientError(err)) return "Network problem — please try this photo again.";
+  if (isTransientError(err)) return "Network problem. Please try this photo again.";
   if (err instanceof ApiError) return err.message || "Upload failed";
   return "Upload failed";
 }

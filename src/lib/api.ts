@@ -598,7 +598,7 @@ export async function updateSlotOffset(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ offsetX, offsetY }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
 }
 
 /** Persists a slot's zoom-in factor (1.0 = fit, up to 3.0). */
@@ -613,7 +613,7 @@ export async function updateSlotZoom(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ zoomScale }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
 }
 
 /** Persists a slot's rotation in degrees (normalised server-side to 0/90/180/270). */
@@ -628,7 +628,7 @@ export async function updateSlotRotation(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rotation }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
 }
 
 /** Replaces the photo shown in a page slot with another photo from the trip. */
@@ -643,7 +643,7 @@ export async function updateSlotPhoto(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ photoId }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
 }
 
 /** Swaps the photos in two slots of the same book (drag-to-swap). Fire-and-forget like the other slot edits. */
@@ -654,7 +654,7 @@ export async function swapSlots(pageAId: string, slotA: number, pageBId: string,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pageAId, slotA, pageBId, slotB }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
 }
 
 /** Swaps two adjacent pages of the same book (exchanges their page numbers; content is untouched). */

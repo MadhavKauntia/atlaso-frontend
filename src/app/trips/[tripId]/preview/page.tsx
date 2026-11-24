@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapPages, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, isTransientError, swapPages, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
@@ -15,6 +15,14 @@ import CountryCover from "@/components/covers/CountryCover";
 import PreviewOnboarding from "./PreviewOnboarding";
 
 const ONBOARDING_KEY = "atlaso_preview_onboarded";
+
+/**
+ * Saves an edit in the background. `key` names what the edit writes (e.g. "pageId:2:zoom") so an
+ * older failed save is dropped instead of retried once a newer edit to the same thing exists.
+ */
+export type PersistEdit = (key: string | null, save: () => Promise<unknown>) => void;
+
+const EDIT_SAVE_ATTEMPTS = 3;
 
 export default function PreviewPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
@@ -41,6 +49,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const [layoutBusy, setLayoutBusy] = useState<string | null>(null);
   // Transient error toast (e.g. layout switch rejected). Auto-clears.
   const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Edits are optimistic and saved in the background (see persistEdit). If one can't be saved we
+  // reload the book once the in-flight saves settle, and bump this so slots remount from the
+  // server's state instead of keeping their local, unsaved framing.
+  const [resyncVersion, setResyncVersion] = useState(0);
+  const editsInFlight = useRef(0);
+  const needsResync = useRef(false);
+  const editSeq = useRef(new Map<string, number>());
   // Drag-to-swap: the slot being dragged (null = idle) and the slot currently under the cursor.
   // Cursor position drives the ghost via a ref (no re-render per pixel); only target changes hit state.
   const [swapFrom, setSwapFrom] = useState<{ pageId: string; index: number; photoId: string } | null>(null);
@@ -150,6 +166,51 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     return () => document.removeEventListener("keydown", onKey);
   });
 
+  const showNotice = useCallback((message: string, ms = 4000) => {
+    setNotice(message);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), ms);
+  }, []);
+
+  const reloadBook = useCallback(() => {
+    (bookId ? getBook(bookId) : getBookByTripId(tripId))
+      .then((fresh) => { setBook(fresh); setResyncVersion((v) => v + 1); })
+      .catch(() => showNotice("We couldn't reload your book. Please refresh the page.", 8000));
+  }, [bookId, tripId, showNotice]);
+
+  const persistEdit: PersistEdit = useCallback((key, save) => {
+    const seq = key ? (editSeq.current.get(key) ?? 0) + 1 : 0;
+    if (key) editSeq.current.set(key, seq);
+    // A newer edit to the same thing has been sent since; it owns the outcome now.
+    const superseded = () => key !== null && editSeq.current.get(key) !== seq;
+    editsInFlight.current += 1;
+    (async () => {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await save();
+          return;
+        } catch (err) {
+          if (superseded()) return;
+          if (isTransientError(err) && attempt < EDIT_SAVE_ATTEMPTS) {
+            await new Promise((r) => setTimeout(r, 800 * 2 ** (attempt - 1) + Math.random() * 300));
+            if (superseded()) return;
+            continue;
+          }
+          console.error(`[preview] couldn't save edit ${key ?? ""}`, err);
+          needsResync.current = true;
+          return;
+        }
+      }
+    })().finally(() => {
+      editsInFlight.current -= 1;
+      if (editsInFlight.current === 0 && needsResync.current) {
+        needsResync.current = false;
+        showNotice("We couldn't save one of your changes, so we've reloaded your book to show exactly what will print.", 7000);
+        reloadBook();
+      }
+    });
+  }, [showNotice, reloadBook]);
+
   // Optimistically exchange two slots' photo content (photoId + rotation + caption, recentred),
   // then persist. Works within one page or across the two pages of the visible spread.
   const performSwap = useCallback((from: { pageId: string; index: number }, to: { pageId: string; index: number }) => {
@@ -175,8 +236,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         }),
       };
     });
-    swapSlots(from.pageId, from.index, to.pageId, to.index).catch(() => {});
-  }, []);
+    persistEdit(null, () => swapSlots(from.pageId, from.index, to.pageId, to.index));
+  }, [persistEdit]);
 
   // While a swap drag is active, move the ghost with the cursor (via ref, no re-render) and resolve
   // the drop target under the pointer. Only the visible spread's slots are hit-testable, so the
@@ -352,7 +413,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         ),
       };
     });
-    updateSlotPhoto(pageId, slotIndex, photoId).catch(() => {});
+    persistEdit(`${pageId}:${slotIndex}:photo`, () => updateSlotPhoto(pageId, slotIndex, photoId));
     setPicker(null);
   };
 
@@ -373,11 +434,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       );
       return { ...prev, pages: [...swapped].sort((a, b) => a.pageNumber - b.pageNumber) };
     });
-    swapPages(left.id, right.id).catch((e) => {
-      setNotice(e instanceof Error && e.message ? e.message : "Couldn't swap the pages.");
-      window.setTimeout(() => setNotice(null), 4000);
-      (bookId ? getBook(bookId) : getBookByTripId(tripId)).then(setBook).catch(() => {});
-    });
+    persistEdit(null, () => swapPages(left.id, right.id));
   };
 
   const handleChangeLayout = async (pageId: string, layout: string) => {
@@ -389,8 +446,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       const updated = await updatePageLayout(pageId, layout);
       setBook(updated);
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "Couldn't change the layout.");
-      window.setTimeout(() => setNotice(null), 4000);
+      showNotice(e instanceof Error ? e.message : "Couldn't change the layout.");
     } finally {
       setLayoutBusy(null);
     }
@@ -538,10 +594,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                     ) : isDoubleSp ? (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} persistEdit={persistEdit} resyncVersion={resyncVersion} />
                         </div>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[1]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[1].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} persistEdit={persistEdit} resyncVersion={resyncVersion} />
                         </div>
                       </>
                     ) : isFirstInterior ? (
@@ -549,13 +605,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                       <>
                         <BlankPage />
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset 6px 0 12px rgba(38,34,32,0.06)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} persistEdit={persistEdit} resyncVersion={resyncVersion} />
                         </div>
                       </>
                     ) : (
                       <>
                         <div style={{ flex: 1, position: "relative", overflow: "hidden", boxShadow: "inset -6px 0 12px rgba(38,34,32,0.08)" }}>
-                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} />
+                          <PageRenderer page={sp[0]} tripId={tripId} photoUrls={photoUrls} onOffsetSaved={handleOffsetSaved} onZoomSaved={handleZoomSaved} onRotationSaved={handleRotationSaved} onReplace={openPicker} photoDims={photoDims} onChangeLayout={handleChangeLayout} unusedCount={unusedCount} busy={layoutBusy === sp[0].id} onSwapStart={handleSwapStart} swapFrom={swapFrom} swapTarget={swapTarget} persistEdit={persistEdit} resyncVersion={resyncVersion} />
                         </div>
                         <BlankPage />
                       </>
@@ -977,7 +1033,7 @@ function ThumbHalf({ page, tripId, photoUrls }: { page: PageData | undefined; tr
   );
 }
 
-function PageRenderer({ page, tripId, photoUrls, photoDims, onOffsetSaved, onZoomSaved, onRotationSaved, onReplace, onChangeLayout, unusedCount, busy, onSwapStart, swapFrom, swapTarget }: {
+function PageRenderer({ page, tripId, photoUrls, photoDims, onOffsetSaved, onZoomSaved, onRotationSaved, onReplace, onChangeLayout, unusedCount, busy, onSwapStart, swapFrom, swapTarget, persistEdit, resyncVersion }: {
   page: PageData;
   tripId: string;
   photoUrls: Record<string, string>;
@@ -992,6 +1048,8 @@ function PageRenderer({ page, tripId, photoUrls, photoDims, onOffsetSaved, onZoo
   onSwapStart: (from: { pageId: string; index: number; photoId: string }, x: number, y: number) => void;
   swapFrom: { pageId: string; index: number; photoId: string } | null;
   swapTarget: { pageId: string; index: number } | null;
+  persistEdit: PersistEdit;
+  resyncVersion: number;
 }) {
   const [hover, setHover] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -1003,8 +1061,11 @@ function PageRenderer({ page, tripId, photoUrls, photoDims, onOffsetSaved, onZoo
     >
       {page.slots.map((slot: PhotoSlot, i: number) => (
         <SlotRenderer
-          key={slot.photoId}
+          // resyncVersion in the key remounts slots after a reload, so their local framing state
+          // is rebuilt from the server rather than keeping an edit that failed to save.
+          key={`${slot.photoId}:${resyncVersion}`}
           slot={slot} tripId={tripId} photoUrls={photoUrls} photoDim={photoDims[slot.photoId]} pageId={page.id} index={i}
+          persistEdit={persistEdit}
           onOffsetSaved={onOffsetSaved} onZoomSaved={onZoomSaved} onRotationSaved={onRotationSaved} onReplace={onReplace}
           onSwapStart={onSwapStart}
           swapActive={!!swapFrom}
@@ -1125,8 +1186,9 @@ function LayoutControl({ visible, open, busy, currentLayout, currentCount, unuse
   );
 }
 
-function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffsetSaved, onZoomSaved, onRotationSaved, onReplace, onSwapStart, swapActive, isSwapSource, isSwapTarget }: {
+function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, persistEdit, onOffsetSaved, onZoomSaved, onRotationSaved, onReplace, onSwapStart, swapActive, isSwapSource, isSwapTarget }: {
   slot: PhotoSlot; tripId: string; photoUrls: Record<string, string>; photoDim?: { width: number; height: number }; pageId: string; index: number;
+  persistEdit: PersistEdit;
   onOffsetSaved: (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => void;
   onZoomSaved: (pageId: string, slotIndex: number, zoomScale: number) => void;
   onRotationSaved: (pageId: string, slotIndex: number, rotation: number) => void;
@@ -1193,9 +1255,9 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
     if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current);
     zoomSaveTimer.current = setTimeout(() => {
       onZoomSaved(pageId, index, z);
-      updateSlotZoom(pageId, index, z).catch(() => {});
+      persistEdit(`${pageId}:${index}:zoom`, () => updateSlotZoom(pageId, index, z));
     }, 400);
-  }, [pageId, index, onZoomSaved]);
+  }, [pageId, index, onZoomSaved, persistEdit]);
 
   // Rotate a further 90° clockwise, matching the backend's bitmap rotation.
   const rotate90 = useCallback(() => {
@@ -1203,8 +1265,8 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
     rotationRef.current = next;
     setRotation(next);
     onRotationSaved(pageId, index, next);
-    updateSlotRotation(pageId, index, next).catch(() => {});
-  }, [pageId, index, onRotationSaved]);
+    persistEdit(`${pageId}:${index}:rotation`, () => updateSlotRotation(pageId, index, next));
+  }, [pageId, index, onRotationSaved, persistEdit]);
 
   // Restore default framing: recenter, zoom 1, no rotation.
   const resetFraming = useCallback(() => {
@@ -1217,10 +1279,10 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
     onOffsetSaved(pageId, index, 0.5, 0.5);
     onZoomSaved(pageId, index, 1);
     onRotationSaved(pageId, index, 0);
-    updateSlotOffset(pageId, index, 0.5, 0.5).catch(() => {});
-    updateSlotZoom(pageId, index, 1).catch(() => {});
-    updateSlotRotation(pageId, index, 0).catch(() => {});
-  }, [pageId, index, onOffsetSaved, onZoomSaved, onRotationSaved]);
+    persistEdit(`${pageId}:${index}:offset`, () => updateSlotOffset(pageId, index, 0.5, 0.5));
+    persistEdit(`${pageId}:${index}:zoom`, () => updateSlotZoom(pageId, index, 1));
+    persistEdit(`${pageId}:${index}:rotation`, () => updateSlotRotation(pageId, index, 0));
+  }, [pageId, index, onOffsetSaved, onZoomSaved, onRotationSaved, persistEdit]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -1253,7 +1315,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
       dragging.current = false;
       const { x, y } = offsetRef.current;
       onOffsetSaved(pageId, index, x, y);
-      updateSlotOffset(pageId, index, x, y).catch(() => {});
+      persistEdit(`${pageId}:${index}:offset`, () => updateSlotOffset(pageId, index, x, y));
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -1261,7 +1323,7 @@ function SlotRenderer({ slot, tripId, photoUrls, photoDim, pageId, index, onOffs
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
     };
-  }, [pageId, index, onOffsetSaved, photoDim]);
+  }, [pageId, index, onOffsetSaved, photoDim, persistEdit]);
 
   const norm = rotation;
   const swap = norm === 90 || norm === 270;

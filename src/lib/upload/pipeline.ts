@@ -198,7 +198,7 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
     // Undecodable (corrupt, truncated, or a format this browser can't read). The server
     // fully decodes every upload and would reject it anyway — fail now, with a reason,
     // instead of uploading the whole file first.
-    throw new UploadError("We couldn't read this photo — it may be damaged or in an unsupported format.");
+    throw new UploadError("We couldn't read this photo. It may be damaged or in an unsupported format.");
   }
   const { width, height } = bitmap;
   const longest = Math.max(width, height) || 1;
