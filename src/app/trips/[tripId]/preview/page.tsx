@@ -564,9 +564,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 );
               })}
             </div>
-            {/* Swap the two facing pages. Sits on the book's bottom edge, centred on the gutter, so
-                it never covers a photo or its controls. Fades in while the book is hovered (always
-                shown on touch screens) and hides during a photo drag. */}
+            {/* Swap the two facing pages. Centred on the gutter (vertical middle of the book). Fades
+                in while the book is hovered (always shown on touch screens) and hides during a photo
+                drag. Rendered above the spread (zIndex 8) so it stays clickable over slot controls. */}
             {spreads[currentSpread]?.length === 2 && !swapFrom && (
               <button
                 className="spread-swap-btn"
@@ -574,7 +574,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 title="Swap these two pages"
                 aria-label="Swap these two pages"
                 style={{
-                  position: "absolute", top: "100%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 8,
+                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 8,
                   width: 34, height: 34, padding: 0, borderRadius: "50%", border: "1px solid #5a5249",
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   background: "var(--sb-panel)", color: "var(--sb-cream)",
