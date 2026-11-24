@@ -8,12 +8,16 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * Move-to-swap), with a caption card beside it.
  *
  * It locates the live controls by their `data-onboard` marker, scoped to the
- * currently visible spread (`[data-spread-visible="true"]`). A body class forces
+ * currently visible spread (`[data-spread-visible="true"]`), except page-level
+ * targets (the swap-pages button and the rail) which are looked up page-wide. A body class forces
  * those normally hover-only buttons to stay visible while the tour is running so
  * they show through the spotlight cutout.
  */
 
-type StepKey = "layout" | "replace" | "reposition" | "rotate" | "zoom" | "swap" | "reset";
+type StepKey = "layout" | "replace" | "reposition" | "rotate" | "zoom" | "swap" | "reset" | "swap-pages" | "rearrange";
+
+/** Targets that live outside the visible spread (looked up page-wide). */
+const PAGE_LEVEL: ReadonlySet<StepKey> = new Set<StepKey>(["swap-pages", "rearrange"]);
 
 const STEPS: { key: StepKey; title: string; body: string }[] = [
   {
@@ -51,7 +55,20 @@ const STEPS: { key: StepKey; title: string; body: string }[] = [
     title: "Reset the framing",
     body: "Changed your mind? Reset restores the photo's original crop, zoom and rotation.",
   },
+  {
+    key: "swap-pages",
+    title: "Swap facing pages",
+    body: "Hit this button in the middle of the book to flip the left and right pages. It shows whenever you hover the book.",
+  },
+  {
+    key: "rearrange",
+    title: "Rearrange spreads",
+    body: "Drag any two-page spread in this panel to move it to a different spot in your book.",
+  },
 ];
+
+// The left panel (and so the rearrange tip) is hidden at phone widths; mirrors globals.css.
+const RAIL_VISIBLE_QUERY = "(min-width: 769px)";
 
 const CARD_W = 288;
 const CARD_H_EST = 176;
@@ -61,10 +78,14 @@ const GAP = 18; // gap between spotlight and card
 type Rect = { top: number; left: number; width: number; height: number };
 
 function measureTarget(key: StepKey): Rect | null {
-  const el = document.querySelector(
-    `[data-spread-visible="true"] [data-onboard="${key}"]`
-  ) as HTMLElement | null;
+  const selector = PAGE_LEVEL.has(key)
+    ? `[data-onboard="${key}"]`
+    : `[data-spread-visible="true"] [data-onboard="${key}"]`;
+  const el = document.querySelector(selector) as HTMLElement | null;
   if (!el) return null;
+  // The rail may be scrolled past its first spread; bring the target into view (a no-op when it
+  // already is). The resulting scroll event re-measures, so the spotlight lands on it.
+  if (PAGE_LEVEL.has(key)) el.scrollIntoView({ block: "nearest", inline: "nearest" });
   const r = el.getBoundingClientRect();
   if (r.width === 0 && r.height === 0) return null;
   return { top: r.top, left: r.left, width: r.width, height: r.height };
@@ -92,13 +113,25 @@ function placeCard(spot: Rect): { left: number; top: number } {
   return { left: clampLeft(midX), top: Math.max(16, spot.top - GAP - CARD_H_EST) };
 }
 
-export default function PreviewOnboarding({ onClose }: { onClose: () => void }) {
+export default function PreviewOnboarding({ onClose, includeSwapPages, includeRearrange }: {
+  onClose: () => void;
+  /** The tour's spread has two facing pages, so the swap-pages button exists. */
+  includeSwapPages: boolean;
+  /** The book has at least two draggable spreads. Also needs the left panel on screen. */
+  includeRearrange: boolean;
+}) {
+  // Decided once when the tour opens, so the step count can't change mid-tour.
+  const [steps] = useState(() => STEPS.filter((s) =>
+    s.key === "swap-pages" ? includeSwapPages
+    : s.key === "rearrange" ? includeRearrange && window.matchMedia(RAIL_VISIBLE_QUERY).matches
+    : true
+  ));
   const [step, setStep] = useState(0);
   const [spot, setSpot] = useState<Rect | null>(null);
   const rafRef = useRef<number>(0);
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
 
   // Measure the current step's target. Retries across a few frames because on
   // first load the target spread may not have mounted its DOM yet (the page
@@ -107,7 +140,7 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
     cancelAnimationFrame(rafRef.current);
     let attempts = 0;
     const tick = () => {
-      const r = measureTarget(STEPS[step].key);
+      const r = measureTarget(steps[step].key);
       if (r || attempts >= 12) {
         setSpot(r);
         return;
@@ -116,7 +149,7 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-  }, [step]);
+  }, [step, steps]);
 
   // Keep the tour flagged on the body so the hover-only controls stay visible.
   useEffect(() => {
@@ -150,12 +183,12 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight" || e.key === "Enter") {
         if (isLast) onClose();
-        else setStep((s) => Math.min(STEPS.length - 1, s + 1));
+        else setStep((s) => Math.min(steps.length - 1, s + 1));
       } else if (e.key === "ArrowLeft") setStep((s) => Math.max(0, s - 1));
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [isLast, onClose]);
+  }, [isLast, onClose, steps.length]);
 
   const next = () => (isLast ? onClose() : setStep((s) => s + 1));
 
@@ -217,7 +250,7 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
             marginBottom: 8,
           }}
         >
-          Tip {step + 1} of {STEPS.length}
+          Tip {step + 1} of {steps.length}
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6, letterSpacing: "-0.01em" }}>
           {current.title}
@@ -236,7 +269,7 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
         >
           {/* Progress dots */}
           <div style={{ display: "flex", gap: 6 }}>
-            {STEPS.map((s, i) => (
+            {steps.map((s, i) => (
               <span
                 key={s.key}
                 style={{
@@ -311,7 +344,9 @@ export default function PreviewOnboarding({ onClose }: { onClose: () => void }) 
         body.preview-onboarding-active [data-spread-visible="true"] [data-onboard="swap"],
         /* The framing pill holds the rotate/zoom/reset spotlight targets; force the whole pill visible
            so those children (which can't out-opacity a transparent parent) show through the cutout. */
-        body.preview-onboarding-active [data-spread-visible="true"] .slot-controls {
+        body.preview-onboarding-active [data-spread-visible="true"] .slot-controls,
+        /* The swap-pages button is hover-only; keep it visible for its tip. */
+        body.preview-onboarding-active .spread-swap-btn {
           opacity: 1 !important;
         }
       `}</style>

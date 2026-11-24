@@ -50,6 +50,11 @@ function buildSpreads(pages: PageData[]): PageData[][] {
   return spreads;
 }
 
+/** Spread the tour opens on: index 2 is the first two-page spread whenever there are 4+ pages. */
+function tourSpreadIndex(pageCount: number): number {
+  return pageCount >= 4 ? 2 : 1;
+}
+
 /** Index range of the two-page spreads (the only ones that can be dragged), or null if none. */
 function pairRange(spreads: PageData[][]): { start: number; end: number } | null {
   const start = spreads.findIndex((sp) => sp.length === 2);
@@ -168,13 +173,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   }, [currentSpread]);
 
   // On first visit (and only once), run the spotlight tour. It needs an editable
-  // interior page on screen, so jump off the cover to the first interior spread.
+  // interior page on screen, so jump off the cover: to the first two-page spread
+  // when there is one (the swap-pages tip needs facing pages), else the first page.
   useEffect(() => {
     if (loading || !book) return;
     if (typeof window === "undefined") return;
     if (localStorage.getItem(ONBOARDING_KEY)) return;
     if ((book.pages?.length ?? 0) < 1) return;
-    setCurrentSpread(1);
+    setCurrentSpread(tourSpreadIndex(book.pages.length));
     setShowOnboarding(true);
   }, [loading, book]);
 
@@ -183,10 +189,11 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch {}
   }, []);
 
+  const tourPageCount = book?.pages?.length ?? 0;
   const startOnboarding = useCallback(() => {
-    setCurrentSpread(1);
+    setCurrentSpread(tourSpreadIndex(tourPageCount));
     setShowOnboarding(true);
-  }, []);
+  }, [tourPageCount]);
 
   // Keep the cache warm with the latest book (incl. local crop/replace edits) and photos.
   useEffect(() => { if (book) setPreviewBook(cacheKey, book); }, [book, cacheKey]);
@@ -705,6 +712,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   railPending.current = { idx, x: e.clientX, y: e.clientY, width: e.currentTarget.offsetWidth };
                 } : undefined}
                 title={draggable ? "Drag to move these pages" : undefined}
+                data-onboard={draggable && idx === pairs?.start ? "rearrange" : undefined}
                 style={{
                   aspectRatio: "993.6 / 705.6",
                   flexShrink: 0,
@@ -845,6 +853,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             {spreads[currentSpread]?.length === 2 && !swapFrom && (
               <button
                 className="spread-swap-btn"
+                data-onboard="swap-pages"
                 onClick={() => { const [l, r] = spreads[currentSpread]; handleSwapPages(l, r); }}
                 title="Swap these two pages"
                 aria-label="Swap these two pages"
@@ -1002,7 +1011,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
         </div>
       )}
 
-      {showOnboarding && <PreviewOnboarding onClose={closeOnboarding} />}
+      {showOnboarding && (
+        <PreviewOnboarding
+          onClose={closeOnboarding}
+          includeSwapPages={spreads[tourSpreadIndex(pages.length)]?.length === 2}
+          includeRearrange={!!pairs && pairs.end > pairs.start}
+        />
+      )}
 
       <style>{`
         @keyframes shimmer { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
