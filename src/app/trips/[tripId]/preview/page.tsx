@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, swapPages, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
@@ -361,6 +361,25 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   // Spare photos not placed anywhere in the book — how many a page can grow into a bigger layout.
   const unusedCount = Math.max(0, photos.length - usedPhotoIds.size);
 
+  // Swap the two facing pages of a spread. Optimistic: exchange their page numbers and re-sort, so
+  // the spread immediately shows them flipped; on failure, reload the server's order.
+  const handleSwapPages = (left: PageData, right: PageData) => {
+    setBook((prev) => {
+      if (!prev) return prev;
+      const swapped = prev.pages.map((p) =>
+        p.id === left.id ? { ...p, pageNumber: right.pageNumber }
+        : p.id === right.id ? { ...p, pageNumber: left.pageNumber }
+        : p
+      );
+      return { ...prev, pages: [...swapped].sort((a, b) => a.pageNumber - b.pageNumber) };
+    });
+    swapPages(left.id, right.id).catch((e) => {
+      setNotice(e instanceof Error && e.message ? e.message : "Couldn't swap the pages.");
+      window.setTimeout(() => setNotice(null), 4000);
+      (bookId ? getBook(bookId) : getBookByTripId(tripId)).then(setBook).catch(() => {});
+    });
+  };
+
   const handleChangeLayout = async (pageId: string, layout: string) => {
     if (layoutBusy) return;
     setLayoutBusy(pageId);
@@ -466,7 +485,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
         {/* Center: book spread — all spreads rendered, CSS-toggled to preserve image cache */}
         <div>
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div className="preview-book" style={{ display: "flex", justifyContent: "center", position: "relative" }}>
             <div ref={boxRef} style={{
               position: "relative",
               // Match the print trim exactly: two 496.8×705.6pt pages side by side. content-box so
@@ -545,6 +564,26 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 );
               })}
             </div>
+            {/* Swap the two facing pages. Sits on the book's bottom edge, centred on the gutter, so
+                it never covers a photo or its controls. Fades in while the book is hovered (always
+                shown on touch screens) and hides during a photo drag. */}
+            {spreads[currentSpread]?.length === 2 && !swapFrom && (
+              <button
+                className="spread-swap-btn"
+                onClick={() => { const [l, r] = spreads[currentSpread]; handleSwapPages(l, r); }}
+                title="Swap these two pages"
+                aria-label="Swap these two pages"
+                style={{
+                  position: "absolute", top: "100%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 8,
+                  width: 34, height: 34, padding: 0, borderRadius: "50%", border: "1px solid #5a5249",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--sb-panel)", color: "var(--sb-cream)",
+                  fontSize: 16, lineHeight: 1, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                }}
+              >
+                ⇄
+              </button>
+            )}
           </div>
 
           {/* Nav under book */}
@@ -693,6 +732,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       <style>{`
         @keyframes shimmer { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .shimmer { animation: shimmer 1.4s ease-in-out infinite; }
+        .spread-swap-btn { opacity: 0; pointer-events: none; transition: opacity 0.15s, background 0.15s; }
+        .preview-book:hover .spread-swap-btn, .spread-swap-btn:focus-visible { opacity: 1; pointer-events: auto; }
+        .spread-swap-btn:hover { background: var(--sb-panel-2) !important; border-color: var(--sb-gold) !important; }
+        @media (hover: none) { .spread-swap-btn { opacity: 1; pointer-events: auto; } }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>

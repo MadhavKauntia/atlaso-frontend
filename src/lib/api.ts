@@ -657,6 +657,17 @@ export async function swapSlots(pageAId: string, slotA: number, pageBId: string,
   if (!res.ok) throw new Error(await res.text());
 }
 
+/** Swaps two adjacent pages of the same book (exchanges their page numbers; content is untouched). */
+export async function swapPages(pageAId: string, pageBId: string): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/pages/swap`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pageAId, pageBId }),
+  });
+  if (!res.ok) await throwApiError(res);
+}
+
 /**
  * Switches a page to a different layout. Returns the updated book — the backend recomputes the
  * page's slots (and, when growing to a larger layout, fills the new slots from the trip's unused
