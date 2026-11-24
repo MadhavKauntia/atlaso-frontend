@@ -345,13 +345,34 @@ export interface ConfirmUploadRequest {
   thumbnailStorageKey?: string | null;
 }
 
+/** Worth retrying: network drop (status 0 / fetch TypeError), server error, or rate limit. */
+export function isTransientError(err: unknown): boolean {
+  if (err instanceof ApiError) return err.status === 0 || err.status === 429 || err.status >= 500;
+  return err instanceof TypeError; // fetch() rejects with TypeError when the network drops
+}
+
+/**
+ * Runs [fn], retrying transient failures (network / 5xx / 429) with backoff.
+ * Non-transient errors (e.g. a 400 validation failure) are thrown immediately.
+ */
+export async function withRetry<T>(fn: (attempt: number) => Promise<T>, attempts = 3): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn(attempt);
+    } catch (err) {
+      if (!isTransientError(err) || attempt >= attempts) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1) + Math.random() * 400));
+    }
+  }
+}
+
 export async function initiateUploads(tripId: string, files: InitiateUploadRequest[]): Promise<InitiateUploadResponse[]> {
   const res = await apiFetch(`${BASE}/trips/${tripId}/photos/initiate`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...guestTokenHeader(tripId) },
     body: JSON.stringify(files),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
   return res.json();
 }
 
@@ -363,9 +384,9 @@ export function uploadToS3(uploadUrl: string, file: File, onProgress: (pct: numb
     });
     xhr.addEventListener("load", () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error(`Upload failed: ${xhr.status}`));
+      else reject(new ApiError(xhr.status, `Upload failed: ${xhr.status}`));
     });
-    xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+    xhr.addEventListener("error", () => reject(new ApiError(0, "Network error while uploading")));
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", file.type);
     xhr.send(file);
@@ -378,9 +399,9 @@ export function uploadBlobToS3(uploadUrl: string, blob: Blob): Promise<void> {
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error(`Thumbnail upload failed: ${xhr.status}`));
+      else reject(new ApiError(xhr.status, `Thumbnail upload failed: ${xhr.status}`));
     });
-    xhr.addEventListener("error", () => reject(new Error("Thumbnail upload failed")));
+    xhr.addEventListener("error", () => reject(new ApiError(0, "Network error while uploading")));
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", blob.type || "image/jpeg");
     xhr.send(blob);
@@ -393,7 +414,7 @@ export async function confirmUploads(tripId: string, confirmations: ConfirmUploa
     headers: { "Content-Type": "application/json", ...guestTokenHeader(tripId) },
     body: JSON.stringify(confirmations),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) await throwApiError(res);
   return res.json();
 }
 

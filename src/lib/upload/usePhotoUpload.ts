@@ -8,6 +8,9 @@ import {
   uploadToS3,
   uploadBlobToS3,
   confirmUploads,
+  withRetry,
+  isTransientError,
+  ApiError,
   type Photo,
   type ConfirmUploadRequest,
 } from "@/lib/api";
@@ -22,8 +25,18 @@ import {
   runPool,
   prepareForUpload,
   convertHeic,
+  sniffHeic,
+  UploadError,
   type PendingCard,
 } from "@/lib/upload/pipeline";
+
+/** A short, human reason for a failed upload, shown on its tile. */
+function describeUploadError(err: unknown): string {
+  if (err instanceof UploadError) return err.message;
+  if (isTransientError(err)) return "Network problem — please try this photo again.";
+  if (err instanceof ApiError) return err.message || "Upload failed";
+  return "Upload failed";
+}
 
 export interface UsePhotoUploadOptions {
   tripId: string;
@@ -120,7 +133,10 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
         try {
           let file = f;
 
-          if (isHeic(f)) {
+          // Also sniff the bytes: some tools save HEICs with a ".jpg" name, which the
+          // browser can't decode and the server would reject as "not a valid JPEG".
+          if (isHeic(f) || (await sniffHeic(f))) {
+            setPendingCards((prev) => prev.map((c) => (c.tempId === tempIds[i] ? { ...c, converting: true } : c)));
             file = await convertHeic(f);
           }
 
@@ -154,12 +170,12 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           if (gps?.latitude != null && gps?.longitude != null) coordsRef.current.push({ lat: gps.latitude, lon: gps.longitude });
           if (takenAt) datesRef.current.push(takenAt);
 
-          const [init] = await initiateUploads(tripId, [{
+          const [init] = await withRetry(() => initiateUploads(tripId, [{
             filename: file.name,
             contentType: file.type,
             fileSize: file.size,
             thumbnailFileSize: thumbBlob?.size ?? null,
-          }]);
+          }]));
 
           // Re-key the placeholder card to the real photo id, keeping its thumbnail.
           setPendingCards((prev) => {
@@ -172,9 +188,10 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           currentTempId = init.photoId;
           if (thumbUrl) thumbUrls.current.set(init.photoId, thumbUrl);
 
-          await uploadToS3(init.uploadUrl, file, (pct) => {
+          // Presigned PUTs are idempotent (same key), so transient failures are safe to retry.
+          await withRetry(() => uploadToS3(init.uploadUrl, file, (pct) => {
             setPendingCards((prev) => prev.map((c) => c.tempId === init.photoId ? { ...c, progress: pct } : c));
-          });
+          }));
 
           // Upload the display thumbnail alongside. Initiation already reserved and
           // bound this thumbnail key, so confirmation must send the same key with the
@@ -183,15 +200,12 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           // then let the failure fail this file rather than confirming an unusable upload.
           let thumbnailStorageKey: string | null = null;
           if (thumbBlob && init.thumbnailUploadUrl && init.thumbnailStorageKey) {
-            try {
-              await uploadBlobToS3(init.thumbnailUploadUrl, thumbBlob);
-            } catch {
-              await uploadBlobToS3(init.thumbnailUploadUrl, thumbBlob); // one retry; throws on repeat failure
-            }
+            const thumbUrl = init.thumbnailUploadUrl;
+            await withRetry(() => uploadBlobToS3(thumbUrl, thumbBlob)); // throws after the last retry
             thumbnailStorageKey = init.thumbnailStorageKey;
           }
 
-          const [photo] = await confirmUploads(tripId, [{
+          const confirmation = {
             photoId: init.photoId,
             storageKey: init.storageKey,
             originalFilename: file.name,
@@ -204,16 +218,29 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             longitude: gps?.longitude ?? null,
             sharpness: prepared.sharpness ?? null,
             thumbnailStorageKey,
-          } as ConfirmUploadRequest]);
+          } as ConfirmUploadRequest;
+          let photo: Photo | null = null;
+          try {
+            [photo] = await withRetry(() => confirmUploads(tripId, [confirmation]));
+          } catch (err) {
+            // A retried confirm whose first attempt actually landed (response lost) comes back
+            // "already confirmed" — the photo exists, so resync instead of showing a failure.
+            if (!(err instanceof ApiError && /already confirmed/i.test(err.message))) throw err;
+          }
 
           // Keep the thumbnail URL alive — the confirmed tile now renders from it.
           setPendingCards((prev) => prev.filter((c) => c.tempId !== init.photoId));
-          setPhotos((prev) => [...prev, photo]);
+          if (photo) {
+            const confirmed = photo;
+            setPhotos((prev) => [...prev, confirmed]);
+          } else {
+            getPhotos(tripId).then(setPhotos).catch(() => {});
+          }
         } catch (err) {
-          // Surface the real reason — the tile only says "Upload failed".
           console.error(`[upload] ${f.name} (${f.type || "no type"}, ${f.size}B) failed`, err);
+          const reason = describeUploadError(err);
           setPendingCards((prev) => prev.map((c) =>
-            c.tempId === currentTempId ? { ...c, error: "Upload failed", progress: 0, converting: false } : c
+            c.tempId === currentTempId ? { ...c, error: reason, progress: 0, converting: false } : c
           ));
         }
       };

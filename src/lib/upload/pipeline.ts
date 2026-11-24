@@ -27,6 +27,37 @@ export function isHeic(file: File): boolean {
   return ext === "heic" || ext === "heif";
 }
 
+/** A failure with a message that's safe and useful to show on the upload tile. */
+export class UploadError extends Error {}
+
+// ISOBMFF brands that mean HEIC/HEIF (HEVC-coded). AVIF shares the `mif1` container
+// brand, so for generic `mif1`/`msf1` we also require an HEVC brand in the list.
+const HEIC_MAJOR_BRANDS = new Set(["heic", "heix", "heim", "heis", "hevc", "hevx", "hevm", "hevs"]);
+const HEIF_GENERIC_BRANDS = new Set(["mif1", "msf1"]);
+
+/**
+ * Whether the file's bytes are HEIC, regardless of its name/type. Catches HEICs
+ * saved as ".jpg" (some transfer/export tools do this) which would otherwise
+ * skip conversion and be rejected server-side as "not a valid JPEG".
+ */
+export async function sniffHeic(file: File): Promise<boolean> {
+  try {
+    const head = new Uint8Array(await file.slice(0, 64).arrayBuffer());
+    if (head.length < 16) return false;
+    const ascii = (o: number) => String.fromCharCode(head[o], head[o + 1], head[o + 2], head[o + 3]);
+    if (ascii(4) !== "ftyp") return false;
+    const boxSize = Math.min(head.length, (head[0] << 24) | (head[1] << 16) | (head[2] << 8) | head[3]);
+    const brands = [ascii(8)];
+    for (let o = 16; o + 4 <= boxSize; o += 4) brands.push(ascii(o)); // compatible brands
+    if (HEIC_MAJOR_BRANDS.has(brands[0])) return true;
+    return HEIF_GENERIC_BRANDS.has(brands[0])
+      && brands.some((b) => HEIC_MAJOR_BRANDS.has(b))
+      && !brands.some((b) => b === "avif" || b === "avis");
+  } catch {
+    return false;
+  }
+}
+
 // How many files to run through the convert→upload pipeline at once. Firing all
 // of them concurrently (e.g. 1000) floods the CPU (EXIF + decode) and network,
 // freezing the UI. A small pool keeps things responsive and roughly matches the
@@ -51,6 +82,18 @@ export const THUMB_QUALITY = 0.72;
 export const MAX_PHOTOS = 1000;
 export const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
 
+/** Whether a file labelled image/jpeg or image/png really contains those bytes. */
+async function bytesMatchType(file: File): Promise<boolean> {
+  try {
+    const b = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    if (file.type === "image/jpeg") return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+    if (file.type === "image/png") return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 /** Run an async worker over items with a fixed concurrency limit. */
 export async function runPool<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>): Promise<void> {
   let cursor = 0;
@@ -66,13 +109,20 @@ export async function runPool<T>(items: T[], limit: number, worker: (item: T, in
 export async function encodeJpeg(bitmap: ImageBitmap, w: number, h: number, quality: number): Promise<Blob> {
   if (typeof OffscreenCanvas !== "undefined") {
     const canvas = new OffscreenCanvas(w, h);
-    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
+    const ctx = canvas.getContext("2d")!;
+    // JPEG has no alpha: paint white first so transparent areas don't turn black.
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bitmap, 0, 0, w, h);
     return canvas.convertToBlob({ type: "image/jpeg", quality });
   }
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/jpeg", quality)
   );
@@ -145,7 +195,10 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    return { file, width: 0, height: 0 }; // undecodable — upload as-is
+    // Undecodable (corrupt, truncated, or a format this browser can't read). The server
+    // fully decodes every upload and would reject it anyway — fail now, with a reason,
+    // instead of uploading the whole file first.
+    throw new UploadError("We couldn't read this photo — it may be damaged or in an unsupported format.");
   }
   const { width, height } = bitmap;
   const longest = Math.max(width, height) || 1;
@@ -166,7 +219,9 @@ export async function prepareForUpload(file: File, maxEdge: number, quality: num
     // Within the size cap: JPEG/PNG pass through untouched, but re-encode anything
     // else (e.g. a small WebP) to JPEG at native size — the backend only accepts
     // JPEG/PNG, so the pipeline must always emit one of those regardless of size.
-    if (file.type === "image/jpeg" || file.type === "image/png") {
+    // Check the actual bytes, not just the label: a WebP/AVIF saved as ".jpg" decodes
+    // fine here but would be rejected server-side as an invalid JPEG if passed through.
+    if ((file.type === "image/jpeg" || file.type === "image/png") && (await bytesMatchType(file))) {
       bitmap.close();
       return { file, width, height, thumbUrl, thumbBlob, sharpness };
     }
@@ -214,9 +269,14 @@ export async function convertHeic(f: File): Promise<File> {
       const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.9 });
       return new File([blob], jpegName, { type: "image/jpeg" });
     } catch {
-      const heic2any = (await import("heic2any")).default;
-      const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
-      return new File([converted as Blob], jpegName, { type: "image/jpeg" });
+      try {
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.9 });
+        return new File([converted as Blob], jpegName, { type: "image/jpeg" });
+      } catch (err) {
+        console.warn(`[upload] all HEIC decoders failed for ${f.name}`, err);
+        throw new UploadError("We couldn't convert this HEIC photo. Try exporting it as JPEG.");
+      }
     }
   }
 }

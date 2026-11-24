@@ -66,6 +66,10 @@ export const PendingTile = memo(function PendingTile({ card, onDismiss }: { card
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
         }}>
           <span style={{ color: "var(--sb-cream)", fontSize: 18 }}>✕</span>
+          <span title={card.error} style={{
+            color: "var(--sb-cream)", fontSize: 10, lineHeight: 1.25, textAlign: "center", padding: "0 8px",
+            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}>{card.error}</span>
           <button onClick={() => onDismiss(card.tempId)} style={{
             background: "rgba(243,234,216,0.2)", border: "1px solid rgba(243,234,216,0.45)",
             borderRadius: 6, color: "var(--sb-cream)", fontSize: 10, padding: "3px 8px", cursor: "pointer",
