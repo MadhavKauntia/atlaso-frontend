@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, isTransientError, swapPages, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
+  getBook, getBookByTripId, getPhotoImageUrl, getPhotos, isTransientError, reorderPages, swapSlots, updatePageLayout, updateSlotOffset, updateSlotPhoto, updateSlotRotation, updateSlotZoom,
   type Book, type PageData, type Photo, type PhotoSlot,
 } from "@/lib/api";
 import { activeLayoutId, LAYOUT_OPTIONS, type LayoutRect } from "@/lib/layouts";
@@ -23,6 +23,54 @@ const ONBOARDING_KEY = "atlaso_preview_onboarded";
 export type PersistEdit = (key: string | null, save: () => Promise<unknown>) => void;
 
 const EDIT_SAVE_ATTEMPTS = 3;
+
+/**
+ * Groups pages into on-screen spreads: the cover alone (index 0, no pages), the first page alone
+ * (it opens on the right), then facing pairs, then the last page alone. When the middle has an odd
+ * count, one single page sits just before the last. Two-page spreads are always contiguous.
+ */
+function buildSpreads(pages: PageData[]): PageData[][] {
+  const spreads: PageData[][] = [[]];
+  if (pages.length === 1) {
+    spreads.push([pages[0]]);
+  } else if (pages.length >= 2) {
+    spreads.push([pages[0]]);
+    let i = 1;
+    while (i <= pages.length - 2) {
+      if (i + 1 <= pages.length - 2) {
+        spreads.push([pages[i], pages[i + 1]]);
+        i += 2;
+      } else {
+        spreads.push([pages[i]]);
+        i += 1;
+      }
+    }
+    spreads.push([pages[pages.length - 1]]);
+  }
+  return spreads;
+}
+
+/** Index range of the two-page spreads (the only ones that can be dragged), or null if none. */
+function pairRange(spreads: PageData[][]): { start: number; end: number } | null {
+  const start = spreads.findIndex((sp) => sp.length === 2);
+  if (start < 0) return null;
+  let end = start;
+  while (end + 1 < spreads.length && spreads[end + 1].length === 2) end++;
+  return { start, end };
+}
+
+/** Rail drag state: the spread being dragged and where it would land (null = nowhere useful). */
+interface RailDrag {
+  from: number;
+  /** Insert before this spread index; null when the drop would be a no-op or is outside the rail. */
+  gap: number | null;
+  /** Insertion line position, in the rail's scroll coordinates. */
+  lineTop: number;
+  /** Where the drag started (viewport), for the ghost's first frame, and the ghost's size. */
+  startX: number;
+  startY: number;
+  width: number;
+}
 
 export default function PreviewPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
@@ -57,6 +105,8 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
   const editsInFlight = useRef(0);
   const needsResync = useRef(false);
   const editSeq = useRef(new Map<string, number>());
+  // Per-key queue so saves of the same thing reach the server in order (newest always wins).
+  const editChains = useRef(new Map<string, Promise<void>>());
   // Drag-to-swap: the slot being dragged (null = idle) and the slot currently under the cursor.
   // Cursor position drives the ghost via a ref (no re-render per pixel); only target changes hit state.
   const [swapFrom, setSwapFrom] = useState<{ pageId: string; index: number; photoId: string } | null>(null);
@@ -184,7 +234,10 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     // A newer edit to the same thing has been sent since; it owns the outcome now.
     const superseded = () => key !== null && editSeq.current.get(key) !== seq;
     editsInFlight.current += 1;
-    (async () => {
+    const previous = key ? editChains.current.get(key) ?? Promise.resolve() : Promise.resolve();
+    const run = previous.then(async () => {
+      // Every keyed save writes an absolute value, so if a newer one is queued it alone matters.
+      if (superseded()) return;
       for (let attempt = 1; ; attempt++) {
         try {
           await save();
@@ -201,7 +254,13 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
           return;
         }
       }
-    })().finally(() => {
+    });
+    if (key) {
+      editChains.current.set(key, run);
+      // Drop the queue entry once this was the last save for the key, so the map doesn't grow.
+      run.finally(() => { if (editChains.current.get(key) === run) editChains.current.delete(key); });
+    }
+    run.finally(() => {
       editsInFlight.current -= 1;
       if (editsInFlight.current === 0 && needsResync.current) {
         needsResync.current = false;
@@ -210,6 +269,152 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       }
     });
   }, [showNotice, reloadBook]);
+
+  // Spreads are derived here (not after the loading returns) so the rail drag handlers can use them.
+  const spreads = useMemo(() => buildSpreads(book?.pages ?? []), [book?.pages]);
+  const pairs = useMemo(() => pairRange(spreads), [spreads]);
+  const loadedBookId = book?.id;
+
+  // Apply a new full page order optimistically, then save it. Every page-order change (rail drag
+  // and the swap button) goes through here with the same key, so saves queue in order and a retry
+  // can never resurrect an older order.
+  const applyPageOrder = useCallback((orderedIds: string[]) => {
+    if (!loadedBookId) return;
+    setBook((prev) => {
+      if (!prev) return prev;
+      const position = new Map(orderedIds.map((id, i) => [id, i + 1]));
+      if (position.size !== prev.pages.length || prev.pages.some((p) => !position.has(p.id))) return prev;
+      const renumbered = prev.pages.map((p) => ({ ...p, pageNumber: position.get(p.id)! }));
+      return { ...prev, pages: renumbered.sort((a, b) => a.pageNumber - b.pageNumber) };
+    });
+    persistEdit(`${loadedBookId}:page-order`, () => reorderPages(loadedBookId, orderedIds));
+  }, [loadedBookId, persistEdit]);
+
+  // ---- Rail drag-to-rearrange (two-page spreads only, mouse and pen) ----
+  const [railDrag, setRailDrag] = useState<RailDrag | null>(null);
+  const railDragRef = useRef<RailDrag | null>(null);
+  const railPending = useRef<{ idx: number; x: number; y: number; width: number } | null>(null);
+  const railPointer = useRef({ x: 0, y: 0 });
+  const railGhostRef = useRef<HTMLDivElement>(null);
+  const thumbRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const suppressRailClick = useRef(false);
+  const railLatest = useRef({ spreads, pairs, applyPageOrder });
+  useLayoutEffect(() => { railLatest.current = { spreads, pairs, applyPageOrder }; });
+
+  const updateRailDrag = useCallback((next: RailDrag | null) => {
+    railDragRef.current = next;
+    setRailDrag(next);
+  }, []);
+
+  /** Where a drop at viewport point (x, y) would insert, plus the insertion line's position. */
+  const railGapAt = useCallback((x: number, y: number, from: number): { gap: number | null; lineTop: number } => {
+    const rail = railRef.current;
+    const range = railLatest.current.pairs;
+    const none = { gap: null, lineTop: 0 };
+    if (!rail || !range) return none;
+    const r = rail.getBoundingClientRect();
+    // Generous horizontal slack so a slightly wide drag still counts; far away cancels.
+    if (x < r.left - 80 || x > r.right + 160) return none;
+    let gap = range.end + 1;
+    for (let i = range.start; i <= range.end; i++) {
+      const el = thumbRefs.current[i];
+      if (!el) continue;
+      const tr = el.getBoundingClientRect();
+      if (y < tr.top + tr.height / 2) { gap = i; break; }
+    }
+    if (gap === from || gap === from + 1) return none; // would land where it already is
+    const before = thumbRefs.current[gap];
+    const after = thumbRefs.current[gap - 1];
+    // Centre the line in the 8px gap between thumbnails (offsetTop is in the rail's scroll space).
+    const lineTop = gap <= range.end && before ? before.offsetTop - 5.5 : after ? after.offsetTop + after.offsetHeight + 2.5 : 0;
+    return { gap, lineTop };
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+    const endDrag = () => {
+      railPending.current = null;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      if (railDragRef.current) updateRailDrag(null);
+    };
+    // Scroll the rail while the pointer is held near its top or bottom edge.
+    const autoScroll = () => {
+      const drag = railDragRef.current;
+      const rail = railRef.current;
+      if (!drag || !rail) { raf = 0; return; }
+      const r = rail.getBoundingClientRect();
+      const { x, y } = railPointer.current;
+      const edge = 48;
+      let delta = 0;
+      if (y < r.top + edge) delta = -Math.ceil(((r.top + edge - y) / edge) * 14);
+      else if (y > r.bottom - edge) delta = Math.ceil(((y - (r.bottom - edge)) / edge) * 14);
+      if (delta) {
+        const before = rail.scrollTop;
+        rail.scrollTop += Math.max(-18, Math.min(18, delta));
+        if (rail.scrollTop !== before) {
+          const next = railGapAt(x, y, drag.from);
+          if (next.gap !== drag.gap || next.lineTop !== drag.lineTop) updateRailDrag({ ...drag, ...next });
+        }
+      }
+      raf = requestAnimationFrame(autoScroll);
+    };
+    const onMove = (e: PointerEvent) => {
+      const pending = railPending.current;
+      const drag = railDragRef.current;
+      if (!pending && !drag) return;
+      railPointer.current = { x: e.clientX, y: e.clientY };
+      if (!drag && pending) {
+        // A small threshold keeps plain clicks (select a spread) working.
+        if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) < 5) return;
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+        const { gap, lineTop } = railGapAt(e.clientX, e.clientY, pending.idx);
+        updateRailDrag({ from: pending.idx, gap, lineTop, startX: e.clientX, startY: e.clientY, width: pending.width });
+        if (!raf) raf = requestAnimationFrame(autoScroll);
+        return;
+      }
+      if (!drag) return;
+      const ghost = railGhostRef.current;
+      if (ghost) ghost.style.transform = `translate(${e.clientX - drag.startX}px, ${e.clientY - drag.startY}px) rotate(-2deg)`;
+      const next = railGapAt(e.clientX, e.clientY, drag.from);
+      if (next.gap !== drag.gap || next.lineTop !== drag.lineTop) updateRailDrag({ ...drag, ...next });
+    };
+    const onUp = () => {
+      const drag = railDragRef.current;
+      if (drag) {
+        // The click that follows a drag must not also select the spread under the pointer.
+        suppressRailClick.current = true;
+        setTimeout(() => { suppressRailClick.current = false; }, 0);
+        if (drag.gap !== null) {
+          const { spreads: sp, applyPageOrder: apply } = railLatest.current;
+          const next = sp.slice();
+          const [moved] = next.splice(drag.from, 1);
+          const insertAt = drag.gap > drag.from ? drag.gap - 1 : drag.gap;
+          next.splice(insertAt, 0, moved);
+          apply(next.slice(1).flat().map((p) => p.id)); // index 0 is the cover (no pages)
+          setCurrentSpread(insertAt);
+        }
+      }
+      endDrag();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && (railDragRef.current || railPending.current)) endDrag(); };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", endDrag);
+    window.addEventListener("blur", endDrag);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", endDrag);
+      window.removeEventListener("blur", endDrag);
+      window.removeEventListener("keydown", onKey);
+      endDrag();
+    };
+  }, [railGapAt, updateRailDrag]);
 
   // Optimistically exchange two slots' photo content (photoId + rotation + caption, recentred),
   // then persist. Works within one page or across the two pages of the visible spread.
@@ -322,24 +527,6 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
     if (p.metadata?.width && p.metadata?.height) photoDims[p.id] = p.metadata;
   }
 
-  // Build spreads: cover alone, then interior pages (first alone, middle pairs, last alone)
-  const spreads: PageData[][] = [[]]; // index 0 = cover (no pages)
-  if (pages.length === 1) {
-    spreads.push([pages[0]]);
-  } else if (pages.length >= 2) {
-    spreads.push([pages[0]]);
-    let i = 1;
-    while (i <= pages.length - 2) {
-      if (i + 1 <= pages.length - 2) {
-        spreads.push([pages[i], pages[i + 1]]);
-        i += 2;
-      } else {
-        spreads.push([pages[i]]);
-        i += 1;
-      }
-    }
-    spreads.push([pages[pages.length - 1]]);
-  }
 
 
   const handleOffsetSaved = (pageId: string, slotIndex: number, offsetX: number, offsetY: number) => {
@@ -424,17 +611,9 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
   // Swap the two facing pages of a spread. Optimistic: exchange their page numbers and re-sort, so
   // the spread immediately shows them flipped; on failure, reload the server's order.
+  // Flip the two facing pages of a spread, saved as a full page order like the rail drag.
   const handleSwapPages = (left: PageData, right: PageData) => {
-    setBook((prev) => {
-      if (!prev) return prev;
-      const swapped = prev.pages.map((p) =>
-        p.id === left.id ? { ...p, pageNumber: right.pageNumber }
-        : p.id === right.id ? { ...p, pageNumber: left.pageNumber }
-        : p
-      );
-      return { ...prev, pages: [...swapped].sort((a, b) => a.pageNumber - b.pageNumber) };
-    });
-    persistEdit(null, () => swapPages(left.id, right.id));
+    applyPageOrder(pages.map((p) => (p.id === left.id ? right.id : p.id === right.id ? left.id : p.id)));
   };
 
   const handleChangeLayout = async (pageId: string, layout: string) => {
@@ -444,7 +623,14 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
       // The server recomputes slots (and fills new ones from the pool), so we replace with its
       // authoritative book rather than guessing the geometry locally.
       const updated = await updatePageLayout(pageId, layout);
-      setBook(updated);
+      // A layout change never moves pages, so keep the local order (a page reorder may still be
+      // saving) and take everything else from the server.
+      setBook((prev) => {
+        if (!prev) return updated;
+        const local = new Map(prev.pages.map((p) => [p.id, p.pageNumber]));
+        const merged = updated.pages.map((p) => ({ ...p, pageNumber: local.get(p.id) ?? p.pageNumber }));
+        return { ...updated, pages: merged.sort((a, b) => a.pageNumber - b.pageNumber) };
+      });
     } catch (e) {
       showNotice(e instanceof Error ? e.message : "Couldn't change the layout.");
     } finally {
@@ -489,9 +675,18 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
 
         {/* Left rail: spread thumbnails */}
         <div ref={railRef} onScroll={updateRailFade} className="flow-preview-thumbs" style={{ position: "sticky", top: 100, alignSelf: "start", flexDirection: "column", gap: 8, height: railHeight, maxHeight: railHeight ?? "calc(100vh - 210px)", overflowY: "auto", padding: 4, maskImage: railMask, WebkitMaskImage: railMask }}>
+          {/* Insertion line while dragging a spread (absolute, so it never shifts the thumbnails). */}
+          {railDrag && railDrag.gap !== null && (
+            <div aria-hidden style={{
+              position: "absolute", left: 2, right: 2, top: railDrag.lineTop, height: 3, borderRadius: 2,
+              background: "var(--sb-gold)", boxShadow: "0 0 0 1px rgba(20,17,15,0.4)", zIndex: 3, pointerEvents: "none",
+            }} />
+          )}
           {spreads.map((sp, idx) => {
             const isCover = idx === 0;
             const firstInterior = idx === 1;
+            const draggable = !!pairs && idx >= pairs.start && idx <= pairs.end && (pairs.end > pairs.start);
+            const isDragSource = railDrag?.from === idx;
             const leftPage = sp[0];
             const rightPage = sp[1];
             const label = isCover ? "CV" : sp.length === 2
@@ -501,18 +696,28 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             return (
               <div
                 key={idx}
-                onClick={() => setCurrentSpread(idx)}
+                ref={(el) => { thumbRefs.current[idx] = el; }}
+                onClick={() => { if (suppressRailClick.current) return; setCurrentSpread(idx); }}
+                onPointerDown={draggable ? (e) => {
+                  // Mouse and pen only: on touch the rail scrolls, and the swap button still works.
+                  if (e.pointerType === "touch" || e.button !== 0) return;
+                  e.preventDefault(); // no native image drag or text selection
+                  railPending.current = { idx, x: e.clientX, y: e.clientY, width: e.currentTarget.offsetWidth };
+                } : undefined}
+                title={draggable ? "Drag to move these pages" : undefined}
                 style={{
                   aspectRatio: "993.6 / 705.6",
                   flexShrink: 0,
                   borderRadius: 6,
                   overflow: "hidden",
-                  cursor: "pointer",
+                  cursor: draggable ? (railDrag ? "grabbing" : "grab") : "pointer",
                   position: "relative",
                   border: `2px solid ${currentSpread === idx ? "var(--sb-gold)" : "transparent"}`,
-                  transition: "border-color 0.15s, transform 0.15s",
+                  transition: "border-color 0.15s, transform 0.15s, opacity 0.15s",
                   display: "flex",
                   background: "var(--sb-cream)",
+                  opacity: isDragSource ? 0.35 : 1,
+                  touchAction: "pan-y",
                 }}
               >
                 <div style={{ position: "absolute", top: 2, left: 3, fontSize: 9, color: "var(--sb-cream)", fontWeight: 700, background: "rgba(20,17,15,0.7)", padding: "1px 5px", borderRadius: 3, zIndex: 1, fontFamily: "var(--font-dm-sans)" }}>
@@ -538,6 +743,20 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             );
           })}
         </div>
+
+        {/* Drag ghost: a copy of the dragged spread that follows the pointer (moved via ref). */}
+        {railDrag && spreads[railDrag.from]?.length === 2 && (
+          <div ref={railGhostRef} aria-hidden style={{
+            position: "fixed", zIndex: 500, pointerEvents: "none",
+            left: railDrag.startX - railDrag.width / 2, top: railDrag.startY - (railDrag.width * 705.6 / 993.6) / 2,
+            width: railDrag.width, aspectRatio: "993.6 / 705.6", display: "flex",
+            borderRadius: 6, overflow: "hidden", border: "2px solid var(--sb-gold)", background: "var(--sb-cream)",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.5)", transform: "rotate(-2deg)", opacity: 0.95,
+          }}>
+            <ThumbHalf page={spreads[railDrag.from][0]} tripId={tripId} photoUrls={thumbUrls} />
+            <ThumbHalf page={spreads[railDrag.from][1]} tripId={tripId} photoUrls={thumbUrls} />
+          </div>
+        )}
 
         {/* Center: book spread — all spreads rendered, CSS-toggled to preserve image cache */}
         <div>

@@ -657,6 +657,20 @@ export async function swapSlots(pageAId: string, slotA: number, pageBId: string,
   if (!res.ok) await throwApiError(res);
 }
 
+/**
+ * Sets the full page order of a book (drag-to-rearrange). [pageIds] lists every page of the book
+ * exactly once, in the new order. Sending the whole order makes retries safe.
+ */
+export async function reorderPages(bookId: string, pageIds: string[]): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/books/${bookId}/pages/order`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pageIds }),
+  });
+  if (!res.ok) await throwApiError(res);
+}
+
 /** Swaps two adjacent pages of the same book (exchanges their page numbers; content is untouched). */
 export async function swapPages(pageAId: string, pageBId: string): Promise<void> {
   if (IS_MOCK) return;
