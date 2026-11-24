@@ -209,7 +209,9 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           // Keep the thumbnail URL alive — the confirmed tile now renders from it.
           setPendingCards((prev) => prev.filter((c) => c.tempId !== init.photoId));
           setPhotos((prev) => [...prev, photo]);
-        } catch {
+        } catch (err) {
+          // Surface the real reason — the tile only says "Upload failed".
+          console.error(`[upload] ${f.name} (${f.type || "no type"}, ${f.size}B) failed`, err);
           setPendingCards((prev) => prev.map((c) =>
             c.tempId === currentTempId ? { ...c, error: "Upload failed", progress: 0, converting: false } : c
           ));

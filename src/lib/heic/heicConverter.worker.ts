@@ -3,7 +3,10 @@
 // first (fast on Safari/iOS, which decode HEIC natively even inside a worker),
 // and falls back to heic-to (libheif-wasm) elsewhere. The result is downscaled
 // so uploads stay small and encoding is quick.
-import { heicTo } from "heic-to";
+// Must be the "/next" build: the default build touches `document` after decoding,
+// which doesn't exist in a worker ("document is not defined"), so every HEIC
+// conversion here failed on browsers without native HEIC decode (Chrome/Firefox).
+import { heicTo } from "heic-to/next";
 
 interface ConvertRequest {
   id: number;

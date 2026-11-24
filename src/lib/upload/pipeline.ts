@@ -204,7 +204,8 @@ export async function convertHeic(f: File): Promise<File> {
   try {
     const blob = await convertHeicBlob(f, { maxEdge: MAX_EDGE, quality: JPEG_QUALITY });
     return new File([blob], jpegName, { type: "image/jpeg" });
-  } catch {
+  } catch (err) {
+    console.warn(`[upload] HEIC worker conversion failed for ${f.name}; falling back`, err);
     try {
       const bitmap = await createImageBitmap(f);
       const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
