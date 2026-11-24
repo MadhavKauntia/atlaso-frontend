@@ -11,6 +11,7 @@ import { MAX_PHOTOS } from "@/lib/upload/pipeline";
 import { usePhotoUpload } from "@/lib/upload/usePhotoUpload";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
 import PhoneUploadPanel from "@/components/upload/PhoneUploadPanel";
+import DriveImport from "@/components/upload/DriveImport";
 import { setTabText, flashTabDone, ensureNotifyPermission, notify, canNotify } from "@/lib/notify";
 import { isPhoneBrowser } from "@/lib/device";
 
@@ -263,6 +264,8 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
           )}
         </div>
 
+        <DriveImport onImages={handleFiles} disabled={totalCount >= MAX_PHOTOS} />
+
         {/* Opt-in: notify when uploads finish (only fires if this tab isn't focused). */}
         {notifyPerm === "default" && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 16 }}>
@@ -334,7 +337,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
       <FlowBottomBar
         progress={uploading ? uploadPct : null}
         leftContent={
-          pendingCards.some((c) => c.converting) ? (
+          pendingCards.some((c) => c.downloading) ? (
+            <span>Downloading your photos from Google Drive. Keep this tab open until they finish.</span>
+          ) : pendingCards.some((c) => c.converting) ? (
             <span>Converting your iPhone photos to JPEG before uploading. This only takes a moment.</span>
           ) : inferred && photos.length > 0 ? (
             <span>

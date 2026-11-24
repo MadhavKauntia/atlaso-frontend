@@ -29,10 +29,15 @@ import {
   UploadError,
   type PendingCard,
 } from "@/lib/upload/pipeline";
+import { DriveImportError, type RemoteImage } from "@/lib/upload/googleDrive";
+
+/** Something to upload: a local file, or a remote image downloaded when its turn comes. */
+export type UploadSource = File | RemoteImage;
+const isRemote = (s: UploadSource): s is RemoteImage => "remote" in s && s.remote === true;
 
 /** A short, human reason for a failed upload, shown on its tile. */
 function describeUploadError(err: unknown): string {
-  if (err instanceof UploadError) return err.message;
+  if (err instanceof UploadError || err instanceof DriveImportError) return err.message;
   if (isTransientError(err)) return "Network problem — please try this photo again.";
   if (err instanceof ApiError) return err.message || "Upload failed";
   return "Upload failed";
@@ -82,7 +87,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
     getPhotos(tripId).then(setPhotos).catch(() => {});
   }, [tripId]);
 
-  const handleFiles = useCallback(async (dropped: File[]) => {
+  const handleFiles = useCallback(async (dropped: UploadSource[]) => {
     if (!dropped.length) return;
 
     // Filter out anything we can't accept, keeping the rest, and summarise what
@@ -115,11 +120,12 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
     const tempIds = files.map((_, i) => `pending-${Date.now()}-${i}`);
     const initialCards: PendingCard[] = files.map((f, i) => ({
       tempId: tempIds[i],
-      previewUrl: isHeic(f) ? "" : URL.createObjectURL(f),
+      previewUrl: isRemote(f) || isHeic(f) ? "" : URL.createObjectURL(f),
       name: f.name,
       progress: 0,
       error: null,
-      converting: isHeic(f),
+      converting: !isRemote(f) && isHeic(f),
+      downloading: isRemote(f),
     }));
     setPendingCards((prev) => [...prev, ...initialCards]);
 
@@ -128,9 +134,19 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
 
       // Each file runs its own convert(HEIC) → downscale → initiate → upload →
       // confirm pipeline independently, capped by the concurrency pool.
-      const processFile = async (f: File, i: number) => {
+      const processFile = async (source: UploadSource, i: number) => {
         let currentTempId = tempIds[i];
         try {
+          // Remote sources (Google Drive) are fetched only now, when the pool reaches
+          // them, so a big folder never sits in memory all at once.
+          let f: File;
+          if (isRemote(source)) {
+            f = await withRetry(() => source.load());
+            if (f.size > MAX_FILE_BYTES) throw new UploadError("This photo is over 50 MB, so we skipped it.");
+            setPendingCards((prev) => prev.map((c) => (c.tempId === tempIds[i] ? { ...c, downloading: false } : c)));
+          } else {
+            f = source;
+          }
           let file = f;
 
           // Also sniff the bytes: some tools save HEICs with a ".jpg" name, which the
@@ -237,10 +253,10 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
             getPhotos(tripId).then(setPhotos).catch(() => {});
           }
         } catch (err) {
-          console.error(`[upload] ${f.name} (${f.type || "no type"}, ${f.size}B) failed`, err);
+          console.error(`[upload] ${source.name} (${source.type || "no type"}, ${source.size}B) failed`, err);
           const reason = describeUploadError(err);
           setPendingCards((prev) => prev.map((c) =>
-            c.tempId === currentTempId ? { ...c, error: reason, progress: 0, converting: false } : c
+            c.tempId === currentTempId ? { ...c, error: reason, progress: 0, converting: false, downloading: false } : c
           ));
         }
       };
@@ -291,7 +307,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
   // partial progress of the files still uploading.
   const activeCards = pendingCards.filter((c) => !c.error);
   const uploadDone = Math.max(0, batchTotal - pendingCards.length);
-  const uploadPartial = activeCards.reduce((s, c) => s + (c.converting ? 0 : c.progress) / 100, 0);
+  const uploadPartial = activeCards.reduce((s, c) => s + (c.converting || c.downloading ? 0 : c.progress) / 100, 0);
   const uploadPct = batchTotal > 0 ? Math.min(100, Math.round(((uploadDone + uploadPartial) / batchTotal) * 100)) : 0;
   const totalCount = photos.length + activeCards.length;
 

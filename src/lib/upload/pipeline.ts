@@ -14,14 +14,14 @@ const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "heic", "heif"
  * filename extension: mobile pickers (esp. iOS) sometimes hand back a HEIC with
  * an empty or unrecognised type, which would otherwise be wrongly rejected.
  */
-export function isAllowedImage(file: File): boolean {
+export function isAllowedImage(file: Pick<File, "name" | "type">): boolean {
   if (ALLOWED_TYPES.has(file.type)) return true;
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   return ALLOWED_EXTENSIONS.has(ext);
 }
 
 /** Whether a file should go through HEIC→JPEG conversion (by type or extension). */
-export function isHeic(file: File): boolean {
+export function isHeic(file: Pick<File, "name" | "type">): boolean {
   if (HEIC_TYPES.has(file.type)) return true;
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   return ext === "heic" || ext === "heif";
@@ -288,4 +288,6 @@ export interface PendingCard {
   progress: number;
   error: string | null;
   converting?: boolean;
+  /** Fetching the original from a remote source (e.g. Google Drive) before processing. */
+  downloading?: boolean;
 }

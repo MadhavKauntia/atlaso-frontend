@@ -75,14 +75,14 @@ export const PendingTile = memo(function PendingTile({ card, onDismiss }: { card
             borderRadius: 6, color: "var(--sb-cream)", fontSize: 10, padding: "3px 8px", cursor: "pointer",
           }}>Dismiss</button>
         </div>
-      ) : card.converting ? (
+      ) : card.converting || card.downloading ? (
         <div style={{
           position: "absolute", inset: 0,
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
           background: "rgba(28,25,23,0.82)",
         }}>
           <div style={{ width: 20, height: 20, border: "2px solid var(--sb-gold)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--sb-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Converting</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--sb-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>{card.downloading ? "Downloading" : "Converting"}</span>
         </div>
       ) : (
         <>
