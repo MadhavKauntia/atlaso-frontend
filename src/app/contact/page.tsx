@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <PolicyPage title="Contact Us" updated="12 September 2026">
+    <PolicyPage title="Contact Us" eyebrow="Help">
       <p>
         We&rsquo;d love to help. For any questions about your book, an order, a delivery, or a refund, reach
         out and we&rsquo;ll get back to you as soon as we can.
