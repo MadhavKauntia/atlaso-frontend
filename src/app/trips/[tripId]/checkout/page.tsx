@@ -154,7 +154,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
       // stale — edited since its last export, or rendered by an older backend — would
       // otherwise be purchased as-is. Re-exporting here (cover is client-rendered) closes
       // that gap for every purchase; if it fails we abort rather than charge for a stale book.
-      if (book) setBook(await exportBook(book));
+      // A partner (B2B) coupon co-brands the back cover: "atlaso x <partner>".
+      if (book) setBook(await exportBook(book, coupon?.partnerName));
 
       // 100%-off coupon: no payment. create-order records the order server-side and returns
       // { free: true }; skip Razorpay entirely and go straight to the confirmation page.

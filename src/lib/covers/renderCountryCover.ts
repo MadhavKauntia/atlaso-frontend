@@ -150,10 +150,14 @@ export async function renderCountryCoverPng(
  * Renders the hardcover BACK page — the cover's background colour with the atlaso
  * wordmark and URL centred in the lower third — as a print-ready PNG (base64, no
  * data-URL prefix). This becomes page 2 of the cover PDF.
+ *
+ * For partner (B2B) orders, [partnerName] co-brands the wordmark: "atlaso x <partner>",
+ * always lowercase.
  */
 export async function renderCoverBackPng(
   country: string | null | undefined,
-  bgOverride?: string | null
+  bgOverride?: string | null,
+  partnerName?: string | null
 ): Promise<string | undefined> {
   if (typeof document === "undefined") return undefined;
   const { bg, ink } = coverColors(country, bgOverride);
@@ -177,8 +181,11 @@ export async function renderCoverBackPng(
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
+  const partner = partnerName?.trim().toLowerCase();
+  const wordmark = partner ? `atlaso x ${partner}` : "atlaso";
   ctx.font = `800 ${Math.round(COVER_H * 0.042)}px ${font}`;
-  ctx.fillText("atlaso", COVER_W / 2, COVER_H * 0.79);
+  // Shrink-to-fit guard: a co-branded wordmark can't exceed 82% of the page width.
+  ctx.fillText(wordmark, COVER_W / 2, COVER_H * 0.79, COVER_W * 0.82);
 
   ctx.font = `400 ${Math.round(COVER_H * 0.02)}px ${font}`;
   ctx.fillText("www.myatlaso.com", COVER_W / 2, COVER_H * 0.83);

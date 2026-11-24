@@ -187,6 +187,7 @@ export interface CouponPreview {
   discountMinor: number; // paise saved (preview)
   finalMinor: number; // paise payable (preview)
   free?: boolean; // 100%-off coupon — skips payment
+  partnerName?: string | null; // B2B co-brand (lowercase) — back cover reads "atlaso x <partnerName>"
   message?: string; // reason when !valid
 }
 
@@ -502,13 +503,17 @@ export async function getBookByTripId(tripId: string): Promise<Book> {
   return res.json();
 }
 
-export async function exportBook(book: Book): Promise<Book> {
+/**
+ * Renders the cover + back-cover PNGs and exports the book PDF. [partnerName] (from a B2B
+ * coupon) co-brands the back cover as "atlaso x <partnerName>".
+ */
+export async function exportBook(book: Book, partnerName?: string | null): Promise<Book> {
   let coverImageBase64: string | undefined;
   let backImageBase64: string | undefined;
 
   try {
     coverImageBase64 = await renderCountryCoverPng(book.coverCountry, book.title, book.subtitle ?? "", book.coverPaletteId);
-    backImageBase64 = await renderCoverBackPng(book.coverCountry, book.coverPaletteId);
+    backImageBase64 = await renderCoverBackPng(book.coverCountry, book.coverPaletteId, partnerName);
   } catch {
     // Fall through — backend will use plain text cover
   }
