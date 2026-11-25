@@ -28,7 +28,7 @@ const post: BlogPost = {
     },
     {
       q: "How long does it take to get a printed photo book?",
-      a: "Designing can take anywhere from minutes to weeks depending on the tool. Printing and delivery usually add one to two weeks. Atlaso books are typically printed in about 3 days and arrive within roughly 10 days of ordering, anywhere in India.",
+      a: "Designing can take anywhere from minutes to weeks depending on the tool. Printing and delivery usually add one to two weeks. Atlaso books are typically printed in about 3 days and arrive within 7 to 10 days of ordering, anywhere in India.",
     },
   ],
   body: `

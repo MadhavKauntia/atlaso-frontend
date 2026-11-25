@@ -86,7 +86,7 @@ export default function LandingPage() {
                   <br />{BOOK_PAGES} pages · B5 · hardcover
                 </>
               ) : (
-                <>{BOOK_PAGES} pages · B5 · hardcover<br />ships in 3 days</>
+                <>{BOOK_PAGES} pages · B5 · hardcover<br />delivered in 7 to 10 days</>
               )}
             </div>
           </div>

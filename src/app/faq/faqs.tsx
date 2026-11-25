@@ -84,19 +84,33 @@ export const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Where do you ship, and how long does it take?",
     a: (
       <p>
-        We print and deliver across India. Orders are typically printed within about 3 days and arrive
-        within roughly 10 days of ordering. See{" "}
+        We print and deliver across India. Orders are printed within about 3 business days and usually
+        arrive within 7 to 10 days of ordering, depending on where you are. Shipping is included in the
+        price. See{" "}
         <Link href="/shipping">shipping &amp; delivery</Link> for details.
       </p>
     ),
   },
   {
-    q: "What if my book arrives damaged, or I'm not happy with it?",
+    q: "What if my book arrives damaged or misprinted?",
     a: (
       <p>
-        We stand behind every book. If it arrives damaged we&apos;ll reprint it free, and we offer a
-        satisfaction guarantee. See our{" "}
-        <Link href="/refund">refunds &amp; cancellation</Link> policy for how it works.
+        Email a photo of the problem with your order number to{" "}
+        <a href="mailto:support@myatlaso.com">support@myatlaso.com</a> within 7 days of delivery. We&apos;ll
+        reprint and reship your book free of charge, and if we can&apos;t get a replacement right, we&apos;ll
+        refund you in full. You also see every page before you pay, so nothing is printed until you&apos;re
+        happy with it. See our <Link href="/refund">refunds &amp; cancellation</Link> policy for details.
+      </p>
+    ),
+  },
+  {
+    q: "What if my destination isn't in the cover list?",
+    a: (
+      <p>
+        Pick a theme cover for now, or ask us for one: tap &quot;Request a cover&quot; on the cover step,
+        or email{" "}
+        <a href="mailto:support@myatlaso.com">support@myatlaso.com</a>. We add new destinations based on
+        what travellers ask for.
       </p>
     ),
   },

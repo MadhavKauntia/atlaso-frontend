@@ -13,6 +13,13 @@ import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib
 /** How many designs to show per category before the "Show all" toggle. */
 const GRID_CAP = 8;
 
+/** Prefilled email asking us to design a cover for a destination we don't have yet. */
+function coverRequestHref(place: string): string {
+  const subject = place ? `Cover request: ${place}` : "Cover request";
+  const body = `Hi Atlaso, please add a cover for: ${place || "(destination)"}`;
+  return `mailto:support@myatlaso.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 /** Best-effort: preselect a country when we inferred a place from the photos. */
 function matchCountry(...hints: (string | undefined)[]): string | null {
   const hay = hints.filter(Boolean).join(" ").toLowerCase();
@@ -479,9 +486,22 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                     >
                       Browse themes instead →
                     </button>
+                    <div style={{ marginTop: 12, fontSize: 13 }}>
+                      <a href={coverRequestHref(query.trim())} style={{ color: "var(--sb-gold)", fontWeight: 600 }}>
+                        Request a {query.trim()} cover
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
+              {visible.length > 0 && (
+                <div style={{ marginTop: 12, fontSize: 13, color: "var(--sb-muted)" }}>
+                  Don&apos;t see your destination?{" "}
+                  <a href={coverRequestHref("")} style={{ color: "var(--sb-gold)", fontWeight: 600 }}>
+                    Request a cover
+                  </a>
+                </div>
+              )}
               {(collapsed || (!q && showAll && base.length > GRID_CAP)) && (
                 <button
                   type="button"

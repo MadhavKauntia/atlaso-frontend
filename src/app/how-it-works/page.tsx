@@ -124,7 +124,7 @@ export default function HowItWorksPage() {
             <h2 className={s.stepTitle}>review, order, we ship</h2>
             <p className={s.stepDesc}>
               Your finished book is ready to see the moment it&apos;s built, with no proof to wait on. Order
-              when you love it, and we print and ship it in about 3 days.
+              when you love it. We print it in about 3 business days and it arrives within 7 to 10 days.
             </p>
           </div>
         </div>

@@ -28,7 +28,7 @@ const post: BlogPost = {
     },
     {
       q: "How quickly can I make a honeymoon photo book?",
-      a: "With Atlaso, the book itself is laid out in minutes once your photos are uploaded. Printing takes about 3 days, and delivery anywhere in India usually lands within roughly 10 days of ordering.",
+      a: "With Atlaso, the book itself is laid out in minutes once your photos are uploaded. Printing takes about 3 days, and delivery anywhere in India usually lands within 7 to 10 days of ordering.",
     },
   ],
   body: `

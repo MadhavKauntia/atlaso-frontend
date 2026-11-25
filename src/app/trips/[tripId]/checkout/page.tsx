@@ -468,8 +468,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               "256-bit encrypted checkout powered by Razorpay",
-              "Free reprint if your book arrives damaged",
-              "30-day satisfaction guarantee",
+              "Free reprint if your book arrives damaged or misprinted",
+              "Shipping included, delivered in 7 to 10 days",
             ].map((text) => (
               <div key={text} style={{ display: "flex", gap: 10, fontSize: 12, color: "var(--sb-muted)", lineHeight: 1.45 }}>
                 <div style={{ width: 16, height: 16, background: "rgba(30,138,95,0.18)", color: "var(--sb-green)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, flexShrink: 0 }}>✓</div>
