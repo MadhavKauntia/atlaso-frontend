@@ -183,8 +183,17 @@ export async function renderCoverBackPng(
 
   const partner = partnerName?.trim().toLowerCase();
   const wordmark = partner ? `atlaso x ${partner}` : "atlaso";
-  ctx.font = `800 ${Math.round(COVER_H * 0.042)}px ${font}`;
-  // Shrink-to-fit guard: a co-branded wordmark can't exceed 82% of the page width.
+  // The plain wordmark is set large; a co-branded one is set smaller so the longer line
+  // doesn't dominate the page, and long partner names shrink further to fit (real font
+  // scaling, never canvas's horizontal squish), floored just above the URL size.
+  let size = Math.round(COVER_H * (partner ? 0.03 : 0.042));
+  if (partner) {
+    const maxW = COVER_W * 0.66;
+    ctx.font = `800 ${size}px ${font}`;
+    const w = ctx.measureText(wordmark).width;
+    if (w > maxW) size = Math.max(Math.round(COVER_H * 0.022), Math.floor((size * maxW) / w));
+  }
+  ctx.font = `800 ${size}px ${font}`;
   ctx.fillText(wordmark, COVER_W / 2, COVER_H * 0.79, COVER_W * 0.82);
 
   ctx.font = `400 ${Math.round(COVER_H * 0.02)}px ${font}`;
