@@ -248,7 +248,7 @@ export function usePhotoUpload({ tripId, concurrency = UPLOAD_CONCURRENCY, onBat
           setPendingCards((prev) => prev.filter((c) => c.tempId !== init.photoId));
           if (photo) {
             const confirmed = photo;
-            setPhotos((prev) => [...prev, confirmed]);
+            setPhotos((prev) => (prev.some((p) => p.id === confirmed.id) ? prev : [...prev, confirmed]));
           } else {
             getPhotos(tripId).then(setPhotos).catch(() => {});
           }

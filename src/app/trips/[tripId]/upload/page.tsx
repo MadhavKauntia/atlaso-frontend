@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useSyncExternalStore } from "react";
+import { use, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
@@ -55,6 +55,27 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   });
 
   const canContinue = photos.length >= 50 && !uploading && !starting;
+
+  // The upload session outlives this page (it stays up while the user is on the cover
+  // step), so photos that arrived some other way meanwhile, e.g. from the phone after
+  // its panel closed, wouldn't show. Re-sync with the server each time this step opens.
+  const pendingIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => { pendingIdsRef.current = new Set(pendingCards.map((c) => c.tempId)); }, [pendingCards]);
+  useEffect(() => {
+    let cancelled = false;
+    getPhotos(tripId)
+      .then((latest) => {
+        if (cancelled) return;
+        setPhotos((prev) => {
+          const known = new Set(prev.map((p) => p.id));
+          // Skip photos still shown as in-flight tiles; their upload adds them when it confirms.
+          const added = latest.filter((p) => !known.has(p.id) && !pendingIdsRef.current.has(p.id));
+          return added.length ? [...prev, ...added] : prev;
+        });
+      })
+      .catch(() => { /* the session's own fetch already covers the first load */ });
+    return () => { cancelled = true; };
+  }, [tripId, setPhotos]);
 
   // Reflect current notification permission (client-only, no SSR mismatch).
   useEffect(() => {
@@ -113,8 +134,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const handleContinue = () => {
     if (!canContinue) return;
     // The cover is chosen on step 1. If this browser has no cover for the trip
-    // (resumed on another device, or storage cleared), send them to pick one first.
-    if (!readTripCoverPrefs(tripId)) {
+    // (resumed on another device, or storage cleared) or no design was picked, send
+    // them to pick one first.
+    if (!readTripCoverPrefs(tripId)?.country) {
       router.push(`/trips/${tripId}/cover`);
       return;
     }

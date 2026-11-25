@@ -1,6 +1,7 @@
 "use client";
 
 import Brand from "@/components/Brand";
+import { useOptionalUploadSession } from "@/components/upload/UploadSession";
 
 interface FlowTopbarProps {
   currentStep: 1 | 2 | 3 | 4;
@@ -15,6 +16,16 @@ const STEPS = [
 ];
 
 export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) {
+  // Leaving the cover/photo steps through the logo is an in-app navigation, so the
+  // browser's reload/close warning never fires. Ask here instead while photos upload.
+  const uploadSession = useOptionalUploadSession();
+  const guardLeave = (e: React.MouseEvent) => {
+    if (!uploadSession?.uploading) return;
+    if (!window.confirm("Your photos are still uploading. Leave anyway? Photos that haven't finished won't be saved to this book.")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
   return (
     <div
       className="flow-topbar"
@@ -31,7 +42,9 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
         zIndex: 20,
       }}
     >
-      <Brand height={26} />
+      <span onClickCapture={guardLeave} style={{ display: "inline-flex" }}>
+        <Brand height={26} />
+      </span>
 
       <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.6vw, 18px)", flexWrap: "wrap" }}>
         {STEPS.map((step) => {

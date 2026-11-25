@@ -233,6 +233,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
   // New book: the cover is step 1, photos are step 2.
   const handleContinueToPhotos = () => {
+    if (!country) return;
     persistPrefs();
     router.push(`/trips/${tripId}/upload`);
   };
@@ -621,20 +622,20 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       {/* Sticky continue button (no bar) */}
       <button
         onClick={bookId ? handleSaveThenPreview : handleContinueToPhotos}
-        disabled={saving || loading}
+        disabled={saving || loading || (!bookId && !country)}
         style={{
           position: "fixed", bottom: 18, right: 48, zIndex: 10,
           display: "inline-flex", alignItems: "center", gap: 10,
           padding: "14px 26px",
-          background: saving || loading ? "var(--sb-panel-2)" : "var(--sb-red)",
-          color: saving || loading ? "#8a7f6f" : "var(--sb-cream)",
+          background: saving || loading || (!bookId && !country) ? "var(--sb-panel-2)" : "var(--sb-red)",
+          color: saving || loading || (!bookId && !country) ? "#8a7f6f" : "var(--sb-cream)",
           border: "none", borderRadius: 999,
           fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 800, fontSize: 15,
-          cursor: saving || loading ? "not-allowed" : "pointer",
+          cursor: saving || loading || (!bookId && !country) ? "not-allowed" : "pointer",
           boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
         }}
       >
-        {bookId ? (saving ? "Saving…" : "continue →") : "add photos →"}
+        {bookId ? (saving ? "Saving…" : "continue →") : country ? "add photos →" : "pick a design first"}
       </button>
     </div>
   );
