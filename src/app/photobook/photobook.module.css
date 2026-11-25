@@ -62,3 +62,32 @@
 }
 .hubItem:hover { transform: translateY(-4px); color: var(--sb-ink); }
 .hubItem span { font-weight: 700; font-size: 15px; text-align: center; }
+
+/* Destination FAQ */
+.faq {
+  max-width: 760px;
+  margin: clamp(40px, 5vw, 64px) auto 0;
+}
+.faq h2 {
+  font-family: var(--font-dm-sans), sans-serif;
+  font-weight: 700;
+  font-size: clamp(22px, 2.4vw, 28px);
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.faqItem {
+  border-top: 1.5px solid rgba(38, 34, 32, 0.14);
+  padding: 14px 0;
+}
+.faqItem:last-child { border-bottom: 1.5px solid rgba(38, 34, 32, 0.14); }
+.faqItem summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--sb-ink);
+}
+.faqItem p {
+  margin: 10px 0 0;
+  line-height: 1.7;
+  color: #4a4036;
+}
