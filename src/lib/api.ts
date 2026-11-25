@@ -69,6 +69,10 @@ export interface Trip {
   status: string;
   createdAt: string;
   updatedAt: string;
+  // Cover chosen on the cover step, saved on the trip until the book exists (title = name).
+  coverCountry?: string | null;
+  coverPaletteId?: string | null;
+  coverSubtitle?: string | null;
 }
 
 export interface Photo {
@@ -285,6 +289,20 @@ export async function updateTrip(tripId: string, name?: string, destination?: st
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+/** Saves the cover step's choices on the trip (guest token or owner), so it shows everywhere. */
+export async function saveTripCover(
+  tripId: string,
+  cover: { title: string; country: string; subtitle: string; paletteId: string }
+): Promise<void> {
+  if (IS_MOCK) return;
+  const res = await apiFetch(`${BASE}/trips/${tripId}/cover`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...guestTokenHeader(tripId) },
+    body: JSON.stringify(cover),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 export async function saveCoverConfig(

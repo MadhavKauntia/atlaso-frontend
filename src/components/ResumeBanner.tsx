@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getToken } from "@/lib/auth";
 import { guestTokenHeader } from "@/lib/guest";
-import { readTripCoverPrefs } from "@/lib/coverPrefs";
+import { readTripCoverPrefs, coverPrefsFromTrip } from "@/lib/coverPrefs";
 import { getCountry } from "@/lib/covers/countries";
 import { readLastTrip, forgetLastTrip, dismissLastTrip } from "@/lib/lastTrip";
 import { IS_MOCK } from "@/lib/mock";
@@ -44,11 +44,11 @@ export default function ResumeBanner() {
     let cancelled = false;
     (async () => {
       try {
-        const trip = await get<{ status: string }>(`/trips/${tripId}`, tripId);
+        const trip = await get<{ status: string; name: string; coverCountry?: string | null }>(`/trips/${tripId}`, tripId);
         if (!trip) return; // transient error: try again on the next page view
         if (!IN_PROGRESS.has(trip.status)) { forgetLastTrip(tripId); return; }
         const photos = (await get<unknown[]>(`/trips/${tripId}/photos`, tripId))?.length ?? 0;
-        const prefs = readTripCoverPrefs(tripId);
+        const prefs = coverPrefsFromTrip(trip) ?? readTripCoverPrefs(tripId);
         // Nothing to come back to yet (no cover picked, no photos): don't nag.
         if (!photos && !prefs?.country) return;
         const name = prefs?.title || getCountry(prefs?.country)?.name || null;

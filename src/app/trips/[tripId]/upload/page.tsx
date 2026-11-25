@@ -6,10 +6,10 @@ import { useDropzone } from "react-dropzone";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
-import { getPhotos, googleAuth, claimTrip } from "@/lib/api";
+import { getPhotos, getTrip, googleAuth, claimTrip } from "@/lib/api";
 import { getToken, setToken } from "@/lib/auth";
 import { getGuestToken } from "@/lib/guest";
-import { readTripCoverPrefs } from "@/lib/coverPrefs";
+import { readTripCoverPrefs, saveCoverPrefs, coverPrefsFromTrip } from "@/lib/coverPrefs";
 import { MAX_PHOTOS } from "@/lib/upload/pipeline";
 import { useUploadSession } from "@/components/upload/UploadSession";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
@@ -131,14 +131,17 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!canContinue) return;
-    // The cover is chosen on step 1. If this browser has no cover for the trip
-    // (resumed on another device, or storage cleared) or no design was picked, send
-    // them to pick one first.
+    // The cover is chosen on step 1. This browser may not have it (picked on another device,
+    // or storage cleared): use the one saved on the trip, else send them to pick one first.
     if (!readTripCoverPrefs(tripId)?.country) {
-      router.push(`/trips/${tripId}/cover`);
-      return;
+      const fromServer = await getTrip(tripId).then(coverPrefsFromTrip).catch(() => null);
+      if (!fromServer) {
+        router.push(`/trips/${tripId}/cover`);
+        return;
+      }
+      saveCoverPrefs(tripId, fromServer);
     }
     if (!getToken()) {
       setShowLoginModal(true);

@@ -54,3 +54,19 @@ export function clearCoverPrefs(tripId: string): void {
     /* storage blocked */
   }
 }
+
+/** The cover saved on the server for this trip, as prefs (null if none was picked). */
+export function coverPrefsFromTrip(trip: {
+  name: string;
+  coverCountry?: string | null;
+  coverPaletteId?: string | null;
+  coverSubtitle?: string | null;
+}): CoverPrefs | null {
+  if (!trip.coverCountry) return null;
+  return {
+    title: trip.name && trip.name !== "Untitled Trip" ? trip.name : "",
+    country: trip.coverCountry,
+    description: trip.coverSubtitle ?? "",
+    bg: trip.coverPaletteId ?? "",
+  };
+}

@@ -2,8 +2,8 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { readTripCoverPrefs, clearCoverPrefs } from "@/lib/coverPrefs";
-import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
+import { readTripCoverPrefs, clearCoverPrefs, coverPrefsFromTrip } from "@/lib/coverPrefs";
+import { generateBook, regenerateBook, updateTrip, getTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
 import FullPageLoader from "@/components/FullPageLoader";
@@ -74,13 +74,15 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const bookRef = useRef<{ id: string } | null>(null);
   const notifiedDone = useRef(false);
 
+  // The cover saved on the trip (latest from any device), else this browser's copy.
+  const loadCoverPrefs = (): Promise<CoverPrefs | null> =>
+    getTrip(tripId).then(coverPrefsFromTrip).catch(() => null).then((p) => p ?? readTripCoverPrefs(tripId));
+
   useEffect(() => {
-    try {
-      const prefs = readTripCoverPrefs(tripId);
-      if (prefs) setCoverPrefs(prefs);
-    } catch {
-      /* ignore */
-    }
+    let cancelled = false;
+    loadCoverPrefs().then((prefs) => { if (prefs && !cancelled) setCoverPrefs(prefs); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
   // Regenerating: fetch the existing book so the animation shows its real cover.
@@ -144,7 +146,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
     const run = async () => {
       // This trip's cover from step 1 (the photo step guarantees one with a design).
-      const prefs: CoverPrefs | null = readTripCoverPrefs(tripId);
+      const prefs: CoverPrefs | null = await loadCoverPrefs();
 
       try {
         if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.description || undefined);

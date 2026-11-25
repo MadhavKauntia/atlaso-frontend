@@ -10,26 +10,40 @@ import Footer from "@/components/Footer";
 import Brand from "@/components/Brand";
 import FullPageLoader from "@/components/FullPageLoader";
 import CountryCover from "@/components/covers/CountryCover";
+import { getCountry } from "@/lib/covers/countries";
 
 interface Cover {
   coverCountry: string | null;
   title: string;
   subtitle: string;
+  bg?: string | null;
+}
+
+/** An unfinished trip's cover, as saved on the cover step (none until a design is picked). */
+function tripCover(trip: Trip): Cover | undefined {
+  if (!trip.coverCountry) return undefined;
+  return { coverCountry: trip.coverCountry, title: displayName(trip), subtitle: trip.coverSubtitle ?? "", bg: trip.coverPaletteId };
+}
+
+/** The trip's title, or its design's name before the user titles it. */
+function displayName(trip: Trip): string {
+  if (trip.name && trip.name !== "Untitled Trip") return trip.name;
+  return getCountry(trip.coverCountry)?.name ?? "Untitled photobook";
 }
 
 function resumeUrl(trip: Trip): string {
-  // Cover is step 1 and photos step 2: a trip with no photos yet resumes at the cover.
+  // Cover is step 1 and photos step 2: resume at the cover until one is picked or photos exist.
   if (trip.status === "BOOK_GENERATED") return `/trips/${trip.id}/preview`;
-  return trip.status === "CREATED" ? `/trips/${trip.id}/cover` : `/trips/${trip.id}/upload`;
+  return trip.status === "CREATED" && !trip.coverCountry ? `/trips/${trip.id}/cover` : `/trips/${trip.id}/upload`;
 }
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case "CREATED": return "Not started";
+function statusLabel(trip: Trip): string {
+  switch (trip.status) {
+    case "CREATED": return trip.coverCountry ? "Cover picked" : "Not started";
     case "UPLOADING_PHOTOS": return "Uploading photos";
     case "ANALYZING_PHOTOS": return "Analyzing photos";
     case "READY_FOR_BOOK_GENERATION": return "Ready to generate";
-    default: return status;
+    default: return trip.status;
   }
 }
 
@@ -58,7 +72,7 @@ export default function AccountPage() {
           withBooks.map(async (trip) => {
             try {
               const book = await getBookByTripId(trip.id);
-              return [trip.id, { coverCountry: book.coverCountry ?? null, title: book.title, subtitle: book.subtitle ?? "" }] as const;
+              return [trip.id, { coverCountry: book.coverCountry ?? null, title: book.title, subtitle: book.subtitle ?? "", bg: book.coverPaletteId ?? null }] as const;
             } catch {
               return null;
             }
@@ -316,7 +330,7 @@ export default function AccountPage() {
               <SectionTitle>in progress</SectionTitle>
               <div style={{ display: "grid", gap: 12 }}>
                 {inProgress.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} onDelete={handleDelete} actionLabel="Resume" href={resumeUrl(trip)} />
+                  <TripCard key={trip.id} trip={trip} cover={tripCover(trip)} onDelete={handleDelete} actionLabel="Resume" href={resumeUrl(trip)} />
                 ))}
               </div>
             </div>
@@ -455,13 +469,13 @@ function TripCard({
             textOverflow: "ellipsis",
           }}
         >
-          {trip.name}
+          {displayName(trip)}
         </div>
         <div style={{ fontSize: 13, color: "var(--sb-muted-2)", marginTop: 3, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {trip.destination && <span>{trip.destination}</span>}
           {trip.createdAt && <span>{fmt(trip.createdAt)}</span>}
           {actionLabel === "Resume" && (
-            <span style={{ color: "var(--sb-gold)", fontWeight: 600 }}>{statusLabel(trip.status)}</span>
+            <span style={{ color: "var(--sb-gold)", fontWeight: 600 }}>{statusLabel(trip)}</span>
           )}
         </div>
       </div>
@@ -555,7 +569,7 @@ function BookThumb({ trip, cover, spineColor }: { trip: Trip; cover?: Cover; spi
   if (cover) {
     return (
       <div style={{ flex: "none", width: 62 }}>
-        <CountryCover country={cover.coverCountry} title={cover.title} description={cover.subtitle} style={{ width: 62 }} />
+        <CountryCover country={cover.coverCountry} title={cover.title} description={cover.subtitle} bg={cover.bg ?? null} style={{ width: 62 }} />
       </div>
     );
   }
@@ -585,7 +599,7 @@ function BookThumb({ trip, cover, spineColor }: { trip: Trip; cover?: Cover; spi
           color: "var(--sb-muted)",
         }}
       >
-        {(trip.name?.[0] ?? "?").toUpperCase()}
+        {(displayName(trip)[0] ?? "?").toUpperCase()}
       </div>
     </div>
   );

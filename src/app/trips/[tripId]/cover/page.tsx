@@ -6,8 +6,8 @@ import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 import { COUNTRIES, getCountry, stampUrl, PALETTE, inkFor, type CoverCategory } from "@/lib/covers/countries";
 import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
-import { getTrip, getBook, saveCoverCountry } from "@/lib/api";
-import { readTripCoverPrefs, saveCoverPrefs } from "@/lib/coverPrefs";
+import { getTrip, getBook, saveCoverCountry, saveTripCover } from "@/lib/api";
+import { readTripCoverPrefs, saveCoverPrefs, coverPrefsFromTrip, type CoverPrefs } from "@/lib/coverPrefs";
 import { useOptionalUploadSession } from "@/components/upload/UploadSession";
 
 /** How many designs to show per category before the "Show all" toggle. */
@@ -24,6 +24,11 @@ function coverRequestHref(place: string): string {
 function isCustomTitle(title: string, slug: string | null): boolean {
   const t = title.trim().toLowerCase();
   return !!t && t !== (getCountry(slug)?.name ?? "").toLowerCase();
+}
+
+/** The trip's cover in the shape the server stores it. */
+function serverCover(p: CoverPrefs) {
+  return { title: p.title, country: p.country, subtitle: p.description, paletteId: p.bg };
 }
 
 /** Best-effort: preselect a country when we inferred a place from the photos. */
@@ -58,6 +63,10 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   // Whether the user has typed their own title (preserved across country switches).
   const titleCustom = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // New book: the cover is also saved on the server (debounced) so the trip shows its name and
+  // cover in the account page and can be resumed on any device. Last payload sent, and a timer.
+  const lastServerCover = useRef<string | null>(null);
+  const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Search spans ALL designs (never capped); otherwise show the active category,
   // capped to GRID_CAP until "Show all". The selected design is floated to the
@@ -111,10 +120,12 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const trip = await getTrip(tripId);
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
 
-          // Choices already made for this trip (the user came back from the photo step)
-          // come first, then a destination chosen on a /photobook page. A new book never
-          // inherits another trip's cover: it starts blank.
-          const saved = readTripCoverPrefs(tripId);
+          // Choices already made for this trip come first: the ones saved on the server (made
+          // on any device), else this browser's. Then a destination chosen on a /photobook
+          // page. A new book never inherits another trip's cover: it starts blank.
+          const fromServer = coverPrefsFromTrip(trip);
+          const saved = fromServer ?? readTripCoverPrefs(tripId);
+          if (fromServer) lastServerCover.current = JSON.stringify(serverCover(fromServer));
           let landingPick: string | null = null;
           try { landingPick = getCountry(sessionStorage.getItem(`atlaso_cover_pick_${tripId}`))?.slug ?? null; } catch { /* storage blocked */ }
           const prefs = saved ?? { title: "", country: "", description: "", bg: "" };
@@ -131,12 +142,14 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             sessionStorage.removeItem(`atlaso_cover_handoff_${tripId}`);
           } catch { /* storage blocked */ }
           if (handOff && pickedCountry) {
-            saveCoverPrefs(tripId, {
+            const handed: CoverPrefs = {
               title: capitalizeFirstLetter(pickedTitle || getCountry(pickedCountry)?.name || ""),
               country: pickedCountry,
               description: prefs.description || "",
               bg: prefs.bg || "",
-            });
+            };
+            saveCoverPrefs(tripId, handed);
+            saveTripCover(tripId, serverCover(handed)).catch(() => { /* the photo step re-saves */ });
             try { sessionStorage.removeItem(`atlaso_cover_pick_${tripId}`); } catch { /* storage blocked */ }
             handedOff = true;
             router.push(`/trips/${tripId}/upload`);
@@ -227,21 +240,40 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   };
 
   // New book: keep this trip's saved cover in step with the editor, so moving to the
-  // photo step by any route (button, browser forward) carries the latest choices.
+  // photo step by any route (button, browser forward) carries the latest choices. Saved in
+  // this browser right away and on the server shortly after (debounced while typing).
+  const currentPrefs = (): CoverPrefs => ({
+    title: capitalizeFirstLetter(title),
+    country: country ?? "",
+    description: description.trim(),
+    bg: bgColor ?? "",
+  });
+  const flushServerCover = (prefs: CoverPrefs) => {
+    if (serverSaveTimer.current) { clearTimeout(serverSaveTimer.current); serverSaveTimer.current = null; }
+    const body = serverCover(prefs);
+    const key = JSON.stringify(body);
+    if (key === lastServerCover.current) return;
+    lastServerCover.current = key;
+    saveTripCover(tripId, body).catch(() => { lastServerCover.current = null; /* retried on the next change */ });
+  };
+  const flushRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (bookId || loading) return;
-    saveCoverPrefs(tripId, {
-      title: capitalizeFirstLetter(title),
-      country: country ?? "",
-      description: description.trim(),
-      bg: bgColor ?? "",
-    });
+    const prefs = currentPrefs();
+    saveCoverPrefs(tripId, prefs);
+    if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+    serverSaveTimer.current = setTimeout(() => flushServerCover(prefs), 600);
+    flushRef.current = () => flushServerCover(prefs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId, loading, tripId, country, description, title, bgColor]);
+  // Leaving the page (any route) sends a pending change straight away.
+  useEffect(() => () => { if (serverSaveTimer.current) flushRef.current(); }, []);
 
   // New book: the cover is step 1, photos are step 2.
   const handleContinueToPhotos = () => {
     if (!country) return;
     persistPrefs();
+    flushServerCover(currentPrefs());
     router.push(`/trips/${tripId}/upload`);
   };
 
