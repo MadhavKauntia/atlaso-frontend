@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "dubai-photo-book-ideas",
@@ -21,7 +24,7 @@ const post: BlogPost = {
     },
     {
       q: "Is there a Dubai-themed photo book cover?",
-      a: "Yes. Atlaso has an illustrated Dubai stamp cover showing the Burj Khalifa and skyline at sunset, with palm trees and a wooden abra boat on the water, on a navy hardcover. The title starts as \"Dubai\" and you can change it and add a line underneath. It's ₹2,499 with delivery across India.",
+      a: `Yes. Atlaso has an illustrated Dubai stamp cover showing the Burj Khalifa and skyline at sunset, with palm trees and a wooden abra boat on the water, on a navy hardcover. The title starts as \"Dubai\" and you can change it and add a line underneath. It's ${PRICE} with delivery across India.`,
     },
   ],
   body: `
@@ -102,7 +105,7 @@ Atlaso's [Dubai photo book](/photobook/dubai) has an illustrated stamp cover: th
 3. **Choose the Dubai cover** and set your title.
 4. **Get a finished 50-page book in minutes.** It picks the highlights and lays them out.
 5. **Make it yours.** Swap photos, reframe, rearrange spreads.
-6. **Order.** ₹2,499 for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
+6. **Order.** ${PRICE} for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
 
 Not sure how to cut 900 photos down? Read [how to pick the best photos for a photo book](/blog/how-to-choose-photos-for-a-photo-book). Want the full process? See [how to make a travel photo book](/blog/how-to-make-a-travel-photo-book).
 

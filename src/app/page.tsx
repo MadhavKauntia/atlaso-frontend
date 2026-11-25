@@ -5,7 +5,7 @@ import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { DESTINATIONS } from "@/lib/destinations";
-import { SITE_URL, SITE_NAME, DEFAULT_DESCRIPTION, BOOK_PRICE_INR, formatInr, productJsonLd } from "@/lib/site";
+import { SITE_URL, SITE_NAME, DEFAULT_DESCRIPTION, BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, BOOK_PAGES, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr, productJsonLd } from "@/lib/site";
 import s from "./landing.module.css";
 
 export const metadata: Metadata = {
@@ -44,6 +44,7 @@ const TICKER = [
   ["layout generated instantly", "var(--sb-orange)"],
   ["a cover for every country", "var(--sb-blue)"],
   ["7-10 day delivery", "var(--sb-gold)"],
+  ...(LAUNCH_OFFER_ACTIVE ? [[`launch price ${formatInr(BOOK_PRICE_INR)} till ${LAUNCH_OFFER_ENDS_LABEL.toLowerCase()}`, "var(--sb-red)"]] : []),
 ];
 
 const COVERS = [
@@ -72,11 +73,21 @@ export default function LandingPage() {
             we print and ship across India.
           </p>
           <div className={s.ctaRow}>
-            <Link href="/create" className={s.cta}>
-              start my photo book <span>→</span>
-            </Link>
+            <div className={s.ctaStack}>
+              <Link href="/create" className={s.cta}>
+                start for free <span>→</span>
+              </Link>
+              <span className={s.ctaSub}>pay only once you like it</span>
+            </div>
             <div className={s.ctaNote}>
-              free to build<br />ships in 3 days
+              {LAUNCH_OFFER_ACTIVE ? (
+                <>
+                  <span className={s.ctaPrice}><s>{formatInr(BOOK_LIST_PRICE_INR)}</s> {formatInr(BOOK_PRICE_INR)}</span>
+                  <br />{BOOK_PAGES} pages · B5 · hardcover
+                </>
+              ) : (
+                <>{BOOK_PAGES} pages · B5 · hardcover<br />ships in 3 days</>
+              )}
             </div>
           </div>
         </div>
@@ -127,7 +138,14 @@ export default function LandingPage() {
       <section className={s.covers}>
         <div className={s.coversHead}>
           <h2>your keepsake for every trip</h2>
-          <p>Hardbound travel photo books, 6.9 × 9.8 inches, 50 pages. {formatInr(BOOK_PRICE_INR)} with shipping.</p>
+          <p>
+            Hardbound travel photo books, 6.9 × 9.8 inches, 50 pages.{" "}
+            {LAUNCH_OFFER_ACTIVE ? (
+              <><s>{formatInr(BOOK_LIST_PRICE_INR)}</s> <strong>{formatInr(BOOK_PRICE_INR)}</strong> launch price until {LAUNCH_OFFER_ENDS_LABEL}, shipping included.</>
+            ) : (
+              <>{formatInr(BOOK_PRICE_INR)} with shipping.</>
+            )}
+          </p>
         </div>
         <div className={s.coversRow}>
           {COVERS.map((c) => (

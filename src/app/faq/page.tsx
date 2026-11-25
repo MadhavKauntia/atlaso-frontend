@@ -4,12 +4,12 @@ import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import FaqAccordion from "./FaqAccordion";
 import { FAQS, answerText } from "./faqs";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
 import s from "@/components/legal.module.css";
 
 export const metadata: Metadata = {
   title: "Photo Book FAQ: Pricing, Shipping and Editing",
-  description:
-    "Answers to common questions about Atlaso travel photo books: how it works, how many photos you need, editing, pricing (₹2,499 with shipping), delivery across India, and returns.",
+  description: `Answers to common questions about Atlaso travel photo books: how it works, how many photos you need, editing, pricing (${formatInr(BOOK_PRICE_INR)} with shipping), delivery across India, and returns.`,
   alternates: { canonical: "/faq" },
 };
 

@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "japan-photo-book-ideas",
@@ -21,7 +24,7 @@ const post: BlogPost = {
     },
     {
       q: "Is there a Japan-themed photo book cover?",
-      a: "Yes. Atlaso has an illustrated Japan stamp cover with a red pagoda, pink cherry blossoms, snow-capped Mount Fuji and a red sun, on a deep red hardcover. The title starts as \"Japan\" and you can change it and add a line underneath. It's ₹2,499 with delivery across India.",
+      a: `Yes. Atlaso has an illustrated Japan stamp cover with a red pagoda, pink cherry blossoms, snow-capped Mount Fuji and a red sun, on a deep red hardcover. The title starts as \"Japan\" and you can change it and add a line underneath. It's ${PRICE} with delivery across India.`,
     },
   ],
   body: `
@@ -89,7 +92,7 @@ Atlaso's [Japan photo book](/photobook/japan) comes with an illustrated stamp co
 3. **Choose the Japan cover** and set your title.
 4. **Get a finished 50-page book in minutes.** Atlaso picks the highlights and lays them out.
 5. **Adjust anything.** Swap photos, reframe, reorder spreads.
-6. **Order.** ₹2,499 for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
+6. **Order.** ${PRICE} for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
 
 Too many vending machine photos to choose from? Read [how to pick the best photos for a photo book](/blog/how-to-choose-photos-for-a-photo-book). New to all this? Start with [how to make a travel photo book](/blog/how-to-make-a-travel-photo-book).
 

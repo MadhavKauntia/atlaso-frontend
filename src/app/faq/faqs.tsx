@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr } from "@/lib/site";
 
 // Shared by the accordion (rendered answers) and the FAQ page's JSON-LD (plain text).
 export const FAQS: { q: string; a: React.ReactNode }[] = [
@@ -65,7 +66,15 @@ export const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "How much does it cost?",
     a: (
       <p>
-        A photobook is <strong>₹2,499</strong> per copy, all-inclusive, with shipping and taxes covered.
+        {LAUNCH_OFFER_ACTIVE ? (
+          <>
+            A photobook is <strong>{formatInr(BOOK_PRICE_INR)}</strong> per copy at our launch price, until{" "}
+            {LAUNCH_OFFER_ENDS_LABEL} 2026 (regular price {formatInr(BOOK_LIST_PRICE_INR)}). That&apos;s all-inclusive, with
+            shipping and taxes covered.
+          </>
+        ) : (
+          <>A photobook is <strong>{formatInr(BOOK_PRICE_INR)}</strong> per copy, all-inclusive, with shipping and taxes covered.</>
+        )}
         You can order multiple copies (they make great gifts), and any launch or promo codes can be
         applied at checkout.
       </p>

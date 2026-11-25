@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import CountryCover from "@/components/covers/CountryCover";
 import { DESTINATIONS, getDestination } from "@/lib/destinations";
-import { SITE_URL, BOOK_PAGES, BOOK_PRICE_INR, BOOK_SIZE, formatInr, productJsonLd } from "@/lib/site";
+import { SITE_URL, BOOK_PAGES, BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, BOOK_SIZE, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr, productJsonLd } from "@/lib/site";
 import l from "../../landing.module.css";
 import s from "../photobook.module.css";
 
@@ -88,7 +88,8 @@ export default async function DestinationPage({ params }: Props) {
               start my {d.name} book <span>→</span>
             </Link>
             <div className={l.ctaNote}>
-              free to build<br />{formatInr(BOOK_PRICE_INR)} with shipping
+              free to build<br />
+              {LAUNCH_OFFER_ACTIVE ? <><s>{formatInr(BOOK_LIST_PRICE_INR)}</s> {formatInr(BOOK_PRICE_INR)} launch price</> : <>{formatInr(BOOK_PRICE_INR)} with shipping</>}
             </div>
           </div>
         </div>
@@ -122,7 +123,11 @@ export default async function DestinationPage({ params }: Props) {
               <li>{BOOK_SIZE} hardcover, {BOOK_PAGES} pages</li>
               <li>Premium matte photo paper, full-bleed spreads</li>
               <li>Illustrated {d.name} cover with your own title</li>
-              <li>{formatInr(BOOK_PRICE_INR)} per copy, shipping and taxes included</li>
+              <li>
+                {LAUNCH_OFFER_ACTIVE
+                  ? `${formatInr(BOOK_PRICE_INR)} per copy (launch price until ${LAUNCH_OFFER_ENDS_LABEL}, regular ${formatInr(BOOK_LIST_PRICE_INR)}), shipping and taxes included`
+                  : `${formatInr(BOOK_PRICE_INR)} per copy, shipping and taxes included`}
+              </li>
             </ul>
           </div>
           <div className={s.card}>

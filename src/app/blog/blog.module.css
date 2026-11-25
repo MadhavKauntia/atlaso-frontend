@@ -108,3 +108,22 @@
 .card h2 { margin: 0 0 8px; font-size: 21px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .card p { margin: 0 0 10px; color: var(--sb-muted); font-size: 15px; line-height: 1.6; }
 .card span { font-size: 13px; color: var(--sb-gold); font-weight: 600; }
+
+/* Comparison tables: scroll sideways inside the article on narrow screens. */
+.body table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.body th, .body td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sb-panel-2);
+  min-width: 96px;
+}
+.body th { color: var(--sb-cream); font-weight: 700; background: var(--sb-panel); }

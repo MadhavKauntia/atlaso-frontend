@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "bali-photo-book-ideas",
@@ -21,7 +24,7 @@ const post: BlogPost = {
     },
     {
       q: "Is there a photo book with a Bali-themed cover?",
-      a: "Yes. Atlaso has an illustrated Bali stamp cover with palm trees, cliffs and a sunset over the sea, on a deep green hardcover. You add your own title and a line underneath. The book is ₹2,499 with delivery anywhere in India.",
+      a: `Yes. Atlaso has an illustrated Bali stamp cover with palm trees, cliffs and a sunset over the sea, on a deep green hardcover. You add your own title and a line underneath. The book is ${PRICE} with delivery anywhere in India.`,
     },
   ],
   body: `
@@ -90,7 +93,7 @@ You don't have to do all the sorting by hand:
 2. **Pick the Bali cover.** Add your title.
 3. **Get a finished book in minutes.** It picks the highlights and lays out 50 pages for you.
 4. **Fix anything you want.** Swap photos, reframe, change layouts, reorder spreads.
-5. **Order.** ₹2,499 for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
+5. **Order.** ${PRICE} for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
 
 Still sitting on a few thousand Bali photos? Start with [how to pick the best photos for a photo book](/blog/how-to-choose-photos-for-a-photo-book).
 

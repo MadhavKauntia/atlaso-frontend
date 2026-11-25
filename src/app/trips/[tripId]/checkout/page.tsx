@@ -1,5 +1,6 @@
 "use client";
 
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL } from "@/lib/site";
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, exportBook, type Book, type User, type CouponPreview } from "@/lib/api";
@@ -10,7 +11,7 @@ import CountryCover from "@/components/covers/CountryCover";
 import Brand from "@/components/Brand";
 import Link from "next/link";
 
-const BOOK_PRICE = 2499; // ₹ per copy, all-inclusive (shipping + taxes included)
+const BOOK_PRICE = BOOK_PRICE_INR; // ₹ per copy, all-inclusive (shipping + taxes included)
 
 const DASH = "1px dashed #46403a";
 
@@ -372,8 +373,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 {pageCount} pages · Qty: {qty}
               </div>
             </div>
-            <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 15, whiteSpace: "nowrap", color: "var(--sb-cream)" }}>
-              ₹{BOOK_PRICE.toLocaleString("en-IN")}
+            <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+              {LAUNCH_OFFER_ACTIVE && (
+                <div style={{ fontSize: 12, color: "var(--sb-muted)", textDecoration: "line-through" }}>₹{BOOK_LIST_PRICE_INR.toLocaleString("en-IN")}</div>
+              )}
+              <div style={{ fontFamily: "var(--font-bricolage)", fontWeight: 800, fontSize: 15, color: "var(--sb-cream)" }}>
+                ₹{BOOK_PRICE.toLocaleString("en-IN")}
+              </div>
             </div>
           </div>
 
@@ -387,6 +393,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 <div style={{ fontWeight: 700, color: "var(--sb-cream)" }}>{row.value}</div>
               </div>
             ))}
+            {LAUNCH_OFFER_ACTIVE && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
+                <div style={{ color: "var(--sb-green)" }}>Launch offer, until {LAUNCH_OFFER_ENDS_LABEL}</div>
+                <div style={{ fontWeight: 700, color: "var(--sb-green)" }}>You save ₹{((BOOK_LIST_PRICE_INR - BOOK_PRICE) * qty).toLocaleString("en-IN")}</div>
+              </div>
+            )}
             {coupon && discountMinor > 0 && (
               <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", fontSize: 14 }}>
                 <div style={{ color: "var(--sb-green)" }}>Coupon {coupon.code}</div>

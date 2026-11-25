@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "honeymoon-photo-book-ideas",
@@ -91,7 +94,7 @@ It also works for:
 - **Your partner, as a surprise**, if you can get their photos without them noticing
 - **The friends who planned part of the trip**, or who looked after your house while you were away
 
-At ₹2,499 a copy with shipping included, ordering an extra copy for parents is easy to justify.
+At ${PRICE} a copy with shipping included, ordering an extra copy for parents is easy to justify.
 
 ## How to make it this week
 

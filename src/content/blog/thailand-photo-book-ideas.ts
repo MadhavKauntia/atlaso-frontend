@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "thailand-photo-book-ideas",
@@ -21,7 +24,7 @@ const post: BlogPost = {
     },
     {
       q: "Is there a Thailand-themed photo book cover?",
-      a: "Yes. Atlaso has an illustrated Thailand stamp cover showing limestone islands rising out of clear turquoise water, on a deep teal hardcover. The title starts as \"Thailand\" and you can change it and add a line underneath. It's ₹2,499 with delivery across India.",
+      a: `Yes. Atlaso has an illustrated Thailand stamp cover showing limestone islands rising out of clear turquoise water, on a deep teal hardcover. The title starts as \"Thailand\" and you can change it and add a line underneath. It's ${PRICE} with delivery across India.`,
     },
   ],
   body: `
@@ -100,7 +103,7 @@ Atlaso's [Thailand photo book](/photobook/thailand) has an illustrated stamp cov
 3. **Pick the Thailand cover** and set your title.
 4. **Let it build the book.** It picks the highlights and lays out 50 pages in minutes.
 5. **Fix what you want.** Swap photos, reframe, reorder spreads.
-6. **Order it.** ₹2,499 for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
+6. **Order it.** ${PRICE} for a 6.9 × 9.8 inch hardcover on matte photo paper, shipping included, delivered across India.
 
 Drowning in island photos? Start with [how to pick the best photos for a photo book](/blog/how-to-choose-photos-for-a-photo-book). Heading to Bali next? We wrote [Bali photo book ideas](/blog/bali-photo-book-ideas) too.
 

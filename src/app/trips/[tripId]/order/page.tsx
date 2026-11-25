@@ -1,5 +1,6 @@
 "use client";
 
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL } from "@/lib/site";
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, exportBook, type Book } from "@/lib/api";
@@ -9,7 +10,7 @@ import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 
 // Single product: one hardcover photobook, flat all-inclusive price.
-const BOOK_PRICE = 2499; // ₹ per copy
+const BOOK_PRICE = BOOK_PRICE_INR; // ₹ per copy, all-inclusive (shipping + taxes included)
 
 const INCLUDED_FEATURES = [
   "6.9 × 9.8 inch photo-wrap hardcover",
@@ -87,8 +88,13 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
                 <div style={{ fontSize: 13, color: "var(--sb-muted)", marginTop: 4 }}>{pageCount || 48} pages · one premium edition</div>
               </div>
               <div style={{ textAlign: "right" }}>
+                {LAUNCH_OFFER_ACTIVE && (
+                  <div style={{ fontSize: 14, color: "var(--sb-muted)", textDecoration: "line-through" }}>₹{BOOK_LIST_PRICE_INR.toLocaleString("en-IN")}</div>
+                )}
                 <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{BOOK_PRICE.toLocaleString("en-IN")}</div>
-                <div style={{ fontSize: 11, color: "var(--sb-muted)" }}>all-inclusive</div>
+                <div style={{ fontSize: 11, color: LAUNCH_OFFER_ACTIVE ? "var(--sb-gold)" : "var(--sb-muted)" }}>
+                  {LAUNCH_OFFER_ACTIVE ? `launch price until ${LAUNCH_OFFER_ENDS_LABEL} · all-inclusive` : "all-inclusive"}
+                </div>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: DASH, paddingTop: 18 }}>

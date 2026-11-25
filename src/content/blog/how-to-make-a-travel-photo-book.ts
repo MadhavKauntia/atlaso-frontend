@@ -1,4 +1,7 @@
 import type { BlogPost } from "@/lib/blog";
+import { BOOK_PRICE_INR, formatInr } from "@/lib/site";
+
+const PRICE = formatInr(BOOK_PRICE_INR);
 
 const post: BlogPost = {
   slug: "how-to-make-a-travel-photo-book",
@@ -21,7 +24,7 @@ const post: BlogPost = {
     },
     {
       q: "How much does a travel photo book cost in India?",
-      a: "Prices vary by size, paper and page count. An Atlaso book is a 6.9 × 9.8 inch hardcover with 50 pages on matte photo paper, and costs ₹2,499 per copy with shipping and taxes included.",
+      a: `Prices vary by size, paper and page count. An Atlaso book is a 6.9 × 9.8 inch hardcover with 50 pages on matte photo paper, and costs ${PRICE} per copy with shipping and taxes included.`,
     },
     {
       q: "How long does it take to get a printed photo book?",
@@ -112,7 +115,7 @@ Then look at it once more, fast, just flipping. You're checking flow now, not de
 
 For a book you'll keep for years, hardcover and thick photo paper are worth it. Matte paper hides fingerprints and glare better than gloss, which matters for a book people actually pick up.
 
-An Atlaso book is a 6.9 × 9.8 inch hardcover with 50 pages of full-bleed spreads on premium matte photo paper. It's ₹2,499 per copy with shipping and taxes included, delivered anywhere in India. Building the book is free, and you only pay when you order.
+An Atlaso book is a 6.9 × 9.8 inch hardcover with 50 pages of full-bleed spreads on premium matte photo paper. It's ${PRICE} per copy with shipping and taxes included, delivered anywhere in India. Building the book is free, and you only pay when you order.
 
 Order a second copy for whoever you travelled with. It's the easiest gift you'll ever give.
 

@@ -142,3 +142,39 @@
   font-size: 13px;
   color: #a89c8a;
 }
+
+/* ---- Launch offer bar (above the header) ---- */
+.offerBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 9px 16px;
+  background: var(--sb-red);
+  color: var(--sb-cream);
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+}
+.offerBar:hover { color: var(--sb-cream); background: #b52e26; }
+.offerBar s { opacity: 0.75; }
+.offerBar strong { font-weight: 800; }
+.offerTag {
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--sb-gold);
+  color: var(--sb-ink);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.offerArrow { font-weight: 700; }
+@media (max-width: 480px) {
+  .offerUntil { display: none; }
+  .offerBar { font-size: 13px; }
+}
