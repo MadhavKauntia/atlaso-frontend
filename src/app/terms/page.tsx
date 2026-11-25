@@ -3,7 +3,8 @@ import Link from "next/link";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions | Atlaso",
+  title: "Terms & Conditions",
+  alternates: { canonical: "/terms" },
   description: "The terms that govern your use of Atlaso.",
 };
 

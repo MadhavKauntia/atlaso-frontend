@@ -3,6 +3,7 @@ import { Fraunces, Inter_Tight, DM_Sans, Nunito } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import GoogleAuthProvider from "@/components/GoogleAuthProvider";
+import { SITE_URL, SITE_NAME, DEFAULT_TITLE, DEFAULT_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -44,32 +45,26 @@ const nunito = Nunito({
   display: "swap",
 });
 
-const title = "Atlaso";
-const description = "Create beautiful photobooks from your travel photos";
-
+// Pages set their own `title` (the template appends "| Atlaso") and canonical URL.
+// No canonical here: it would be inherited by every page and point them all at "/".
 export const metadata: Metadata = {
-  metadataBase: new URL("https://myatlaso.com"),
-  title,
-  description,
+  metadataBase: new URL(SITE_URL),
+  title: { default: DEFAULT_TITLE, template: "%s | Atlaso" },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
   openGraph: {
-    title,
-    description,
-    url: "https://myatlaso.com",
-    siteName: "Atlaso",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    siteName: SITE_NAME,
+    locale: "en_IN",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Atlaso",
-      },
-    ],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atlaso travel photo books" }],
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description,
+    site: "@myatlaso",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     images: ["/og-image.png"],
   },
 };

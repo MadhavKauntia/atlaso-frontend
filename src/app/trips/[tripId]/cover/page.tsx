@@ -94,10 +94,14 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const trip = await getTrip(tripId);
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
 
-          const prefsRaw = localStorage.getItem("atlaso_cover_prefs");
+          // A destination chosen on a /photobook page wins over the last book's saved
+          // cover prefs (title, colour, description belong to that other trip).
+          let landingPick: string | null = null;
+          try { landingPick = getCountry(sessionStorage.getItem(`atlaso_cover_pick_${tripId}`))?.slug ?? null; } catch { /* storage blocked */ }
+          const prefsRaw = landingPick ? null : localStorage.getItem("atlaso_cover_prefs");
           const prefs = prefsRaw ? JSON.parse(prefsRaw) : {};
 
-          const pickedCountry = prefs.country || matchCountry(inf?.country, inf?.place);
+          const pickedCountry = landingPick || prefs.country || matchCountry(inf?.country, inf?.place);
           setCountry(pickedCountry);
           setBgColor(prefs.bg || null);
           setCategory(getCountry(pickedCountry)?.category ?? "destination");
@@ -174,6 +178,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       "atlaso_cover_prefs",
       JSON.stringify({ title: capitalizeFirstLetter(title), country: country ?? "", description: description.trim(), bg: bgColor ?? "" })
     );
+    // The user's own choices are saved now, so the destination-page pick has done its job.
+    try { sessionStorage.removeItem(`atlaso_cover_pick_${tripId}`); } catch { /* storage blocked */ }
   };
 
   const handleGenerate = async () => {

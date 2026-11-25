@@ -3,8 +3,9 @@ import Link from "next/link";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Shipping & Delivery Policy | Atlaso",
-  description: "How and when Atlaso photobooks are printed and delivered.",
+  title: "Shipping & Delivery Policy",
+  alternates: { canonical: "/shipping" },
+  description: "How and when Atlaso photo books are printed and delivered across India.",
 };
 
 export default function ShippingPolicyPage() {

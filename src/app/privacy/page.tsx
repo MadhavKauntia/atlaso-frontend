@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import PolicyPage from "@/components/PolicyPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Atlaso",
+  title: "Privacy Policy",
+  alternates: { canonical: "/privacy" },
   description: "How Atlaso collects, uses, and protects your information.",
 };
 

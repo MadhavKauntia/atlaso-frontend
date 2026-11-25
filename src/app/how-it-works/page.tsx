@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import s from "./hiw.module.css";
+
+export const metadata: Metadata = {
+  title: "How to Make a Travel Photo Book From Your Phone Photos",
+  description:
+    "Upload your trip photos, pick a country cover, and Atlaso designs a 50-page hardbound photo book in minutes. Review it, order, and we print and deliver across India.",
+  alternates: { canonical: "/how-it-works" },
+};
 
 export default function HowItWorksPage() {
   return (
@@ -52,10 +61,13 @@ export default function HowItWorksPage() {
           <div className={s.tile} style={{ padding: 16 }}>
             <div className={s.tileBook}>
               <div className={s.tileBookSpine} />
-              <img
+              <Image
                 src="/assets/covers/bali.jpg"
                 alt="Illustrated Bali stamp cover"
                 className={s.tileBookImg}
+                width={1414}
+                height={2000}
+                sizes="(max-width: 768px) 60vw, 240px"
               />
             </div>
           </div>
@@ -111,7 +123,7 @@ export default function HowItWorksPage() {
           <div className={s.stepBody}>
             <h2 className={s.stepTitle}>review, order, we ship</h2>
             <p className={s.stepDesc}>
-              Your finished book is ready to see the moment it's built, with no proof to wait on. Order
+              Your finished book is ready to see the moment it&apos;s built, with no proof to wait on. Order
               when you love it, and we print and ship it in about 3 days.
             </p>
           </div>

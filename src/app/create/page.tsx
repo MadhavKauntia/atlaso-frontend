@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createTrip } from "@/lib/api";
 import Brand from "@/components/Brand";
+import { validCoverSlug } from "@/lib/destinations";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -12,8 +13,17 @@ export default function CreatePage() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    // Arriving from a destination page (/create?cover=bali): remember the pick for
+    // this trip so the cover step preselects it. Read from location, not
+    // useSearchParams, so this page doesn't need a Suspense boundary.
+    const cover = validCoverSlug(new URLSearchParams(window.location.search).get("cover"));
     createTrip("Untitled Trip", "")
-      .then((trip) => router.replace(`/trips/${trip.id}/upload`))
+      .then((trip) => {
+        if (cover) {
+          try { sessionStorage.setItem(`atlaso_cover_pick_${trip.id}`, cover); } catch { /* storage blocked */ }
+        }
+        router.replace(`/trips/${trip.id}/upload`);
+      })
       .catch(() => router.replace("/"));
   }, [router]);
 
