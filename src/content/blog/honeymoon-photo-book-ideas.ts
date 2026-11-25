@@ -6,7 +6,7 @@ const post: BlogPost = {
   seoTitle: "Honeymoon Photo Book Ideas",
   description:
     "Ideas for a honeymoon photo book you'll actually want to look at: what to include, how to structure it, cover ideas, and making it a gift.",
-  published: "2026-11-18",
+  published: "2026-10-28",
   keywords: ["honeymoon photo book", "honeymoon photo book ideas", "honeymoon album", "anniversary gift photo book"],
   coverAlt: "Honeymoon photo book with an illustrated Maldives cover, next to a pair of sunglasses",
   related: ["maldives", "bali", "switzerland", "seychelles", "greece", "paris"],

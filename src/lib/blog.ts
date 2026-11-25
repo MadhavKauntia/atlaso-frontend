@@ -6,6 +6,9 @@ import makePhotoBook from "@/content/blog/how-to-make-a-travel-photo-book";
 import choosePhotos from "@/content/blog/how-to-choose-photos-for-a-photo-book";
 import honeymoon from "@/content/blog/honeymoon-photo-book-ideas";
 import bali from "@/content/blog/bali-photo-book-ideas";
+import thailand from "@/content/blog/thailand-photo-book-ideas";
+import japan from "@/content/blog/japan-photo-book-ideas";
+import dubai from "@/content/blog/dubai-photo-book-ideas";
 
 export interface BlogPost {
   slug: string;
@@ -26,7 +29,7 @@ export interface BlogPost {
   body: string;
 }
 
-export const POSTS: BlogPost[] = [makePhotoBook, choosePhotos, honeymoon, bali].sort((a, b) =>
+export const POSTS: BlogPost[] = [makePhotoBook, choosePhotos, honeymoon, bali, thailand, japan, dubai].sort((a, b) =>
   b.published.localeCompare(a.published),
 );
 

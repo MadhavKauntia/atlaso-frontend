@@ -6,7 +6,7 @@ const post: BlogPost = {
   seoTitle: "Bali Photo Book Ideas: Layout, Photos and Cover",
   description:
     "How to build a Bali photo book: the shots worth including, how to split the trip by area, layout ideas for rice terraces and beaches, and cover ideas.",
-  published: "2026-11-25",
+  published: "2026-11-04",
   keywords: ["bali photo book", "bali photo book ideas", "bali trip album", "bali travel photo book"],
   coverAlt: "Bali photo book with a green illustrated cover showing palm trees, cliffs and a sunset beach",
   related: ["bali", "thailand", "maldives", "sri-lanka"],
