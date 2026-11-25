@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createTrip } from "@/lib/api";
+import { rememberLastTrip } from "@/lib/lastTrip";
 import Brand from "@/components/Brand";
 import { validCoverSlug } from "@/lib/destinations";
 
@@ -20,6 +21,7 @@ export default function CreatePage() {
     const cover = validCoverSlug(new URLSearchParams(window.location.search).get("cover"));
     createTrip("Untitled Trip", "")
       .then((trip) => {
+        rememberLastTrip(trip.id);
         if (cover) {
           try {
             sessionStorage.setItem(`atlaso_cover_pick_${trip.id}`, cover);

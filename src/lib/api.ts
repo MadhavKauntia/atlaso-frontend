@@ -1,5 +1,6 @@
 import { getToken, removeToken, setCachedUser } from "@/lib/auth";
 import { guestTokenHeader, removeGuestToken, setGuestToken } from "@/lib/guest";
+import { forgetLastTrip } from "@/lib/lastTrip";
 import { IS_MOCK, mockBook, mockPhotoUrl, mockTrip } from "@/lib/mock";
 import { renderCountryCoverPng, renderCoverBackPng } from "@/lib/covers/renderCountryCover";
 
@@ -171,6 +172,8 @@ export async function claimTrip(tripId: string): Promise<Trip> {
   if (!res.ok) throw new Error(await res.text());
   // The trip is now owned via JWT; the guest token was revoked server-side.
   removeGuestToken(tripId);
+  // It's in the user's account from here on; no more "continue your photobook" prompt.
+  forgetLastTrip(tripId);
   return res.json();
 }
 

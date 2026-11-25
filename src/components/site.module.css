@@ -178,3 +178,56 @@
   .offerUntil { display: none; }
   .offerBar { font-size: 13px; }
 }
+
+/* "Continue your photobook" prompt under the header */
+.resumeBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 16px;
+  background: var(--sb-gold);
+  color: var(--sb-ink);
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.resumeLink {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 10px 0;
+  color: var(--sb-ink);
+  text-decoration: none;
+  text-align: center;
+}
+.resumeLink:hover { color: var(--sb-ink); }
+.resumeLink strong { font-weight: 800; }
+.resumeCta {
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  background: var(--sb-ink);
+  color: var(--sb-cream);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.resumeClose {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--sb-ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.resumeClose:hover { background: rgba(0, 0, 0, 0.08); }
+@media (max-width: 480px) {
+  .resumeBar { font-size: 13px; }
+}

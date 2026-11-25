@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Brand from "@/components/Brand";
+import ResumeBanner from "@/components/ResumeBanner";
 import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr } from "@/lib/site";
 import s from "./site.module.css";
 
@@ -28,6 +29,7 @@ export default function SiteHeader() {
         <Link href="/create" className={s.navCta}>start ›</Link>
       </nav>
     </header>
+    <ResumeBanner />
     </>
   );
 }
