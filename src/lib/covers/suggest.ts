@@ -52,6 +52,7 @@ const DESTINATION_HINTS: Record<string, DestHint> = {
   melbourne:    { type: "city",     region: "oceania",     climate: "temperate", coordinates: "37.8136° S, 144.9631° E" },
   "new zealand":{ type: "mountain", region: "oceania",     climate: "temperate", coordinates: "40.9006° S, 174.8860° E" },
   maldives:     { type: "island",   region: "asia",        climate: "tropical",  coordinates: "3.2028° N, 73.2207° E" },
+  seychelles:   { type: "island",   region: "africa",      climate: "tropical",  coordinates: "4.6796° S, 55.4920° E" },
   santorini:    { type: "island",   region: "europe",      climate: "temperate", coordinates: "36.3932° N, 25.4615° E" },
   mykonos:      { type: "island",   region: "europe",      climate: "temperate", coordinates: "37.4467° N, 25.3289° E" },
   amalfi:       { type: "beach",    region: "europe",      climate: "temperate", coordinates: "40.6340° N, 14.6027° E" },

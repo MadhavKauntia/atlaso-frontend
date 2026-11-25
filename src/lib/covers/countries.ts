@@ -36,6 +36,7 @@ export const COUNTRIES: CoverCountry[] = [
   { slug: "dubai", name: "Dubai", bg: "#22476B", ink: "#f3ead8", stamp: "dubai", category: "destination" },
   { slug: "malaysia", name: "Malaysia", bg: "#015E4B", ink: "#f3ead8", stamp: "malaysia", category: "destination" },
   { slug: "maldives", name: "Maldives", bg: "#F1C66D", ink: "#262220", stamp: "maldives", category: "destination" },
+  { slug: "seychelles", name: "Seychelles", bg: "#23476B", ink: "#f3ead8", stamp: "seychelles", category: "destination" },
   { slug: "london", name: "London", bg: "#1D4E54", ink: "#f3ead8", stamp: "london", category: "destination" },
   { slug: "newyork", name: "New York", bg: "#135C5C", ink: "#f3ead8", stamp: "newyork", category: "destination" },
   { slug: "usa", name: "USA", bg: "#753429", ink: "#f3ead8", stamp: "usa", category: "destination" },
