@@ -8,8 +8,8 @@ interface FlowTopbarProps {
 }
 
 const STEPS = [
-  { num: 1, label: "photos" },
-  { num: 2, label: "cover" },
+  { num: 1, label: "cover" },
+  { num: 2, label: "photos" },
   { num: 3, label: "preview" },
   { num: 4, label: "order" },
 ];

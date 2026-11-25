@@ -1,62 +1,22 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { use, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import FlowTopbar from "@/components/layout/FlowTopbar";
 import FlowBottomBar from "@/components/layout/FlowBottomBar";
-import { getPhotos } from "@/lib/api";
+import { getPhotos, googleAuth, claimTrip } from "@/lib/api";
+import { getToken, setToken } from "@/lib/auth";
 import { getGuestToken } from "@/lib/guest";
+import { readTripCoverPrefs } from "@/lib/coverPrefs";
 import { MAX_PHOTOS } from "@/lib/upload/pipeline";
-import { usePhotoUpload } from "@/lib/upload/usePhotoUpload";
+import { useUploadSession } from "@/components/upload/UploadSession";
 import { PhotoTile, PendingTile } from "@/components/upload/UploadTiles";
 import PhoneUploadPanel from "@/components/upload/PhoneUploadPanel";
 import DriveImport from "@/components/upload/DriveImport";
-import { setTabText, flashTabDone, ensureNotifyPermission, notify, canNotify } from "@/lib/notify";
+import { ensureNotifyPermission, canNotify } from "@/lib/notify";
 import { isPhoneBrowser } from "@/lib/device";
-
-interface InferredLocation {
-  place: string;
-  country: string;
-  coordStr: string;
-  startDate: string | null;
-  endDate: string | null;
-}
-
-async function inferLocationFromPhotos(
-  coords: { lat: number; lon: number }[],
-  dates: number[]
-): Promise<InferredLocation | null> {
-  if (!coords.length) return null;
-  const sortedLat = [...coords.map((c) => c.lat)].sort((a, b) => a - b);
-  const sortedLon = [...coords.map((c) => c.lon)].sort((a, b) => a - b);
-  const lat = sortedLat[Math.floor(sortedLat.length / 2)];
-  const lon = sortedLon[Math.floor(sortedLon.length / 2)];
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
-      { headers: { "User-Agent": "Atlaso/1.0 (support@myatlaso.com)" } }
-    );
-    const data = await res.json();
-    const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state;
-    const country = data.address?.country || "";
-    const place = [city, country].filter(Boolean).join(", ");
-    const latDir = lat >= 0 ? "N" : "S";
-    const lonDir = lon >= 0 ? "E" : "W";
-    const coordStr = `${Math.abs(lat).toFixed(2)}° ${latDir} / ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
-    let startDate: string | null = null;
-    let endDate: string | null = null;
-    if (dates.length) {
-      const sorted = [...dates].sort((a, b) => a - b);
-      const fmt = (ts: number) => new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      startDate = fmt(sorted[0]);
-      endDate = fmt(sorted[sorted.length - 1]);
-    }
-    return (place || country) ? { place: place || country, country, coordStr, startDate, endDate } : null;
-  } catch {
-    return null;
-  }
-}
 
 const noopSubscribe = () => () => {};
 
@@ -64,8 +24,6 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   const { tripId } = use(params);
   const router = useRouter();
 
-  const [inferred, setInferred] = useState<InferredLocation | null>(null);
-  const wasUploading = useRef(false);
   const [notifyPerm, setNotifyPerm] = useState<NotificationPermission | "unsupported">("default");
 
   // "Upload from your phone" QR panel + live sync of photos arriving from the phone.
@@ -76,21 +34,13 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
   // button never flashes on phones; desktop shows it right after hydration.
   const showPhoneHandoff = useSyncExternalStore(noopSubscribe, () => !isPhoneBrowser(), () => false);
 
-  const upload = usePhotoUpload({ tripId, onBatchSettled: () => runInference() });
-  const { photos, setPhotos, pendingCards, uploading, error, uploadPct, totalCount, handleFiles, deletePhoto, dismissPending, thumbUrls, coordsRef, datesRef } = upload;
+  // The upload itself lives in the trip layout (UploadSession), so it keeps going
+  // if the user steps back to the cover page mid-upload.
+  const { photos, setPhotos, pendingCards, uploading, error, uploadPct, totalCount, handleFiles, deletePhoto, dismissPending, thumbUrls, inferred } = useUploadSession();
 
-  const runInference = useCallback(async () => {
-    const result = await inferLocationFromPhotos(coordsRef.current, datesRef.current);
-    if (result) setInferred(result);
-  }, [coordsRef, datesRef]);
-
-  useEffect(() => {
-    // Keyed per-trip so one trip's inferred location never leaks into another.
-    const raw = sessionStorage.getItem(`atlaso_inferred_${tripId}`);
-    if (raw) {
-      try { setInferred(JSON.parse(raw)); } catch { /* ignore */ }
-    }
-  }, [tripId]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFiles,
@@ -104,24 +54,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     multiple: true,
   });
 
-  const canContinue = photos.length >= 50 && !uploading;
-
-  // Badge the tab with upload progress, and nudge the user when it finishes.
-  useEffect(() => {
-    if (uploading) {
-      wasUploading.current = true;
-      setTabText(`↑ ${uploadPct}%`);
-    } else if (wasUploading.current) {
-      wasUploading.current = false;
-      setTabText(null);
-      flashTabDone("Photos uploaded");
-      // OS notification only fires when the tab isn't focused (suppressed otherwise).
-      notify("Upload complete", `${photos.length} photo${photos.length === 1 ? "" : "s"} finished uploading.`);
-    }
-  }, [uploading, uploadPct, photos.length]);
-
-  // Reset any tab badge when leaving the page.
-  useEffect(() => () => setTabText(null), []);
+  const canContinue = photos.length >= 50 && !uploading && !starting;
 
   // Reflect current notification permission (client-only, no SSR mismatch).
   useEffect(() => {
@@ -164,30 +97,109 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
     setNotifyPerm(canNotify() ? Notification.permission : "unsupported");
   };
 
-  const handleContinue = () => {
-    if (inferred && photos.length > 0) {
-      sessionStorage.setItem(`atlaso_inferred_${tripId}`, JSON.stringify(inferred));
-    } else {
-      sessionStorage.removeItem(`atlaso_inferred_${tripId}`);
+  // Claim the guest trip for the signed-in user, then build the book.
+  const startGeneration = async () => {
+    setStarting(true);
+    setStartError(null);
+    try {
+      await claimTrip(tripId);
+      router.push(`/trips/${tripId}/generating`);
+    } catch {
+      setStartError("Something went wrong. Please try again.");
+      setStarting(false);
     }
-    router.push(`/trips/${tripId}/cover`);
+  };
+
+  const handleContinue = () => {
+    if (!canContinue) return;
+    // The cover is chosen on step 1. If this browser has no cover for the trip
+    // (resumed on another device, or storage cleared), send them to pick one first.
+    if (!readTripCoverPrefs(tripId)) {
+      router.push(`/trips/${tripId}/cover`);
+      return;
+    }
+    if (!getToken()) {
+      setShowLoginModal(true);
+      return;
+    }
+    startGeneration();
+  };
+
+  const handleLoginSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+    setShowLoginModal(false);
+    setStarting(true);
+    setStartError(null);
+    try {
+      const { token } = await googleAuth(response.credential);
+      setToken(token);
+    } catch {
+      setStartError("Sign-in failed. Please try again.");
+      setStarting(false);
+      return;
+    }
+    await startGeneration();
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--sb-bg)", color: "var(--sb-cream)", paddingBottom: 120, fontFamily: "var(--font-dm-sans), sans-serif" }}>
+      {showLoginModal && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(20,17,15,0.7)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            style={{ background: "var(--sb-panel)", borderRadius: 20, padding: "44px 48px", maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--sb-cream)", marginBottom: 12, lineHeight: 1.1 }}>
+              One last step
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.65 }}>
+              Your photos and cover are ready. Sign in to generate your photobook. It takes one click.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <GoogleLogin
+                onSuccess={handleLoginSuccess}
+                onError={() => {
+                  setStartError("Sign-in failed. Please try again.");
+                  setShowLoginModal(false);
+                }}
+                size="large"
+                shape="pill"
+                text="continue_with"
+              />
+            </div>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              style={{ background: "none", border: "none", fontSize: 13, color: "var(--sb-muted-2)", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <FlowTopbar
-        currentStep={1}
+        currentStep={2}
         rightSlot={
-          <span style={{ fontFamily: "var(--font-dm-sans), sans-serif", color: "var(--sb-muted)" }}>
-            Your work is saved as you go
-          </span>
+          <a
+            href={`/trips/${tripId}/cover`}
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(`/trips/${tripId}/cover`);
+            }}
+            style={{ fontSize: 13, color: "var(--sb-muted-2)", textDecoration: "none" }}
+          >
+            ← back to cover
+          </a>
         }
       />
 
       <div className="flow-page-inner">
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.25em", fontWeight: 600, color: "var(--sb-gold)", marginBottom: 14, fontFamily: "var(--font-bricolage), sans-serif" }}>
-            Step 1 of 4
+            Step 2 of 4
           </div>
           <h1 className="flow-hero-h1" style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 14, color: "var(--sb-cream)" }}>
             add your <span style={{ color: "var(--sb-gold)" }}>trip photos</span>
@@ -296,6 +308,9 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
         {error && (
           <p style={{ color: "var(--sb-red)", fontSize: 14, marginTop: 12 }}>{error}</p>
         )}
+        {startError && (
+          <p style={{ color: "var(--sb-red)", fontSize: 14, marginTop: 12 }}>{startError}</p>
+        )}
 
         {totalCount > 0 && (
           <>
@@ -354,7 +369,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
               )}
             </span>
           ) : photos.length >= 50 ? (
-            <span>Looking good. Ready to design your cover.</span>
+            <span>Looking good. Ready to build your book.</span>
           ) : null
         }
         rightButton={
@@ -372,7 +387,7 @@ export default function UploadPage({ params }: { params: Promise<{ tripId: strin
             onMouseEnter={(e) => canContinue && ((e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "")}
           >
-            Continue
+            {starting ? "Starting…" : "build my photobook"}
             <span style={{
               width: 24, height: 24, background: canContinue ? "var(--sb-cream)" : "#8a7f6f", color: "var(--sb-red)",
               borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center",

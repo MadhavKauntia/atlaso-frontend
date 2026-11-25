@@ -8,7 +8,7 @@ import s from "./hiw.module.css";
 export const metadata: Metadata = {
   title: "How to Make a Travel Photo Book From Your Phone Photos",
   description:
-    "Upload your trip photos, pick a country cover, and Atlaso designs a 50-page hardbound photo book in minutes. Review it, order, and we print and deliver across India.",
+    "Pick a country cover, upload your trip photos, and Atlaso designs a 50-page hardbound photo book in minutes. Review it, order, and we print and deliver across India.",
   alternates: { canonical: "/how-it-works" },
 };
 
@@ -32,31 +32,10 @@ export default function HowItWorksPage() {
 
       {/* ── Steps ──────────────────────────────── */}
       <section className={s.steps}>
-        {/* Step 1 — upload the roll */}
-        <div className={s.step}>
-          <div className={s.stepNumber} style={{ background: "var(--sb-orange)" }}>
-            1
-          </div>
-          <div className={`${s.tile} ${s.tile1}`}>
-            <div className={`${s.tilePhoto} ${s.tilePhotoA}`} />
-            <div className={`${s.tilePhoto} ${s.tilePhotoB}`} />
-            <div className={`${s.tilePhoto} ${s.tilePhotoC}`}>
-              <span className={s.tilePlus}>+</span>
-            </div>
-          </div>
-          <div className={s.stepBody}>
-            <h2 className={s.stepTitle}>upload the roll</h2>
-            <p className={s.stepDesc}>
-              Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside
-              automatically. Pull any back in.
-            </p>
-          </div>
-        </div>
-
-        {/* Step 2 — name it, and the cover draws itself */}
+        {/* Step 1: pick the cover */}
         <div className={s.step}>
           <div className={s.stepNumber} style={{ background: "#e8a0b4", color: "var(--sb-ink)" }}>
-            2
+            1
           </div>
           <div className={s.tile} style={{ padding: 16 }}>
             <div className={s.tileBook}>
@@ -76,6 +55,27 @@ export default function HowItWorksPage() {
             <p className={s.stepDesc}>
               The country you pick gets a matching illustrated stamp cover, foil-stamped on the
               spine. Or type your own title.
+            </p>
+          </div>
+        </div>
+
+        {/* Step 2: upload the roll */}
+        <div className={s.step}>
+          <div className={s.stepNumber} style={{ background: "var(--sb-orange)" }}>
+            2
+          </div>
+          <div className={`${s.tile} ${s.tile1}`}>
+            <div className={`${s.tilePhoto} ${s.tilePhotoA}`} />
+            <div className={`${s.tilePhoto} ${s.tilePhotoB}`} />
+            <div className={`${s.tilePhoto} ${s.tilePhotoC}`}>
+              <span className={s.tilePlus}>+</span>
+            </div>
+          </div>
+          <div className={s.stepBody}>
+            <h2 className={s.stepTitle}>upload the roll</h2>
+            <p className={s.stepDesc}>
+              Pick 50 photos or two hundred at once. Duplicates and blurry frames are set aside
+              automatically. Pull any back in.
             </p>
           </div>
         </div>

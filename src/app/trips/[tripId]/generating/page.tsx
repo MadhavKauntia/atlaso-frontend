@@ -2,6 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { readTripCoverPrefs, readLastCoverPrefs, clearCoverPrefs } from "@/lib/coverPrefs";
 import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
@@ -75,12 +76,12 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("atlaso_cover_prefs");
-      if (raw) setCoverPrefs(JSON.parse(raw));
+      const prefs = readTripCoverPrefs(tripId) ?? readLastCoverPrefs();
+      if (prefs) setCoverPrefs(prefs);
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [tripId]);
 
   // Regenerating: fetch the existing book so the animation shows its real cover.
   useEffect(() => {
@@ -142,13 +143,8 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     started.current = true;
 
     const run = async () => {
-      let prefs: CoverPrefs | null = null;
-      try {
-        const raw = localStorage.getItem("atlaso_cover_prefs");
-        if (raw) prefs = JSON.parse(raw);
-      } catch {
-        /* ignore parse errors */
-      }
+      // This trip's cover from step 1 (falls back to the last saved cover, as before).
+      const prefs: CoverPrefs | null = readTripCoverPrefs(tripId) ?? readLastCoverPrefs();
 
       try {
         if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.description || undefined);
@@ -171,7 +167,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
       // Wait for the background worker to finish building the pages.
       await pollBookUntilReady(book.id);
-      localStorage.removeItem("atlaso_cover_prefs");
+      clearCoverPrefs(tripId);
 
       generationDoneAt.current = elapsed;
     };

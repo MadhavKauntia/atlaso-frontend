@@ -6,9 +6,9 @@ import FlowTopbar from "@/components/layout/FlowTopbar";
 import CountryCover from "@/components/covers/CountryCover";
 import { COUNTRIES, getCountry, stampUrl, PALETTE, inkFor, type CoverCategory } from "@/lib/covers/countries";
 import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-import { getToken, setToken } from "@/lib/auth";
-import { googleAuth, getTrip, getBook, saveCoverCountry, claimTrip } from "@/lib/api";
+import { getTrip, getBook, saveCoverCountry } from "@/lib/api";
+import { readTripCoverPrefs, readLastCoverPrefs, saveCoverPrefs } from "@/lib/coverPrefs";
+import { useOptionalUploadSession } from "@/components/upload/UploadSession";
 
 /** How many designs to show per category before the "Show all" toggle. */
 const GRID_CAP = 8;
@@ -46,7 +46,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  // Present for a new book: photos may still be uploading in the background if the
+  // user came back here from the photo step.
+  const uploadSession = useOptionalUploadSession();
   // Whether the user has typed their own title (preserved across country switches).
   const titleCustom = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,6 +72,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
   useEffect(() => {
     const run = async () => {
+      // Set when we hand off straight to the photo step (destination-page start).
+      let handedOff = false;
       try {
         const raw = sessionStorage.getItem(`atlaso_inferred_${tripId}`);
         let inf: { place: string; country?: string; coordStr: string } | null = null;
@@ -101,22 +105,45 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const trip = await getTrip(tripId);
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
 
-          // A destination chosen on a /photobook page wins over the last book's saved
-          // cover prefs (title, colour, description belong to that other trip).
+          // Choices already made for this trip (the user came back from the photo step)
+          // come first. Then a destination chosen on a /photobook page, which wins over
+          // the last book's saved prefs (title, colour, description belong to that trip).
+          const saved = readTripCoverPrefs(tripId);
           let landingPick: string | null = null;
           try { landingPick = getCountry(sessionStorage.getItem(`atlaso_cover_pick_${tripId}`))?.slug ?? null; } catch { /* storage blocked */ }
-          const prefsRaw = landingPick ? null : localStorage.getItem("atlaso_cover_prefs");
-          const prefs = prefsRaw ? JSON.parse(prefsRaw) : {};
+          const prefs = saved ?? (landingPick ? null : readLastCoverPrefs()) ?? { title: "", country: "", description: "", bg: "" };
 
-          const pickedCountry = landingPick || prefs.country || matchCountry(inf?.country, inf?.place);
+          const pickedCountry = (saved ? saved.country || null : null) ?? landingPick ?? (prefs.country || matchCountry(inf?.country, inf?.place));
+          const pickedTitle = prefs.title || tripName;
+
+          // Started from a destination page: the cover is already decided, so save it
+          // with its defaults and go straight to the photo step. The flag is one-shot,
+          // so coming back here later shows the normal cover editor.
+          let handOff = false;
+          try {
+            handOff = sessionStorage.getItem(`atlaso_cover_handoff_${tripId}`) === "1";
+            sessionStorage.removeItem(`atlaso_cover_handoff_${tripId}`);
+          } catch { /* storage blocked */ }
+          if (handOff && pickedCountry) {
+            saveCoverPrefs(tripId, {
+              title: capitalizeFirstLetter(pickedTitle || getCountry(pickedCountry)?.name || ""),
+              country: pickedCountry,
+              description: prefs.description || "",
+              bg: prefs.bg || "",
+            });
+            try { sessionStorage.removeItem(`atlaso_cover_pick_${tripId}`); } catch { /* storage blocked */ }
+            handedOff = true;
+            router.push(`/trips/${tripId}/upload`);
+            return;
+          }
+
           setCountry(pickedCountry);
           setBgColor(prefs.bg || null);
           setCategory(getCountry(pickedCountry)?.category ?? "destination");
           setDescription(prefs.description || "");
           // A saved/trip title is treated as custom; otherwise default to the country.
-          const custom = prefs.title || tripName;
-          if (custom) {
-            setTitle(custom);
+          if (pickedTitle) {
+            setTitle(pickedTitle);
             titleCustom.current = true;
           } else {
             setTitle(getCountry(pickedCountry)?.name || "");
@@ -126,7 +153,8 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       } catch {
         setError("Could not load your trip. Please try again.");
       } finally {
-        setLoading(false);
+        // Keep the spinner up while handing off, so the editor doesn't flash.
+        if (!handedOff) setLoading(false);
       }
     };
     run();
@@ -181,47 +209,32 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   }, [bookId, country, description, title, bgColor]);
 
   const persistPrefs = () => {
-    localStorage.setItem(
-      "atlaso_cover_prefs",
-      JSON.stringify({ title: capitalizeFirstLetter(title), country: country ?? "", description: description.trim(), bg: bgColor ?? "" })
-    );
+    saveCoverPrefs(tripId, {
+      title: capitalizeFirstLetter(title),
+      country: country ?? "",
+      description: description.trim(),
+      bg: bgColor ?? "",
+    });
     // The user's own choices are saved now, so the destination-page pick has done its job.
     try { sessionStorage.removeItem(`atlaso_cover_pick_${tripId}`); } catch { /* storage blocked */ }
   };
 
-  const handleGenerate = async () => {
-    persistPrefs();
-    if (!getToken()) {
-      setShowLoginModal(true);
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await claimTrip(tripId);
-      router.push(`/trips/${tripId}/generating`);
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+  // New book: keep this trip's saved cover in step with the editor, so moving to the
+  // photo step by any route (button, browser forward) carries the latest choices.
+  useEffect(() => {
+    if (bookId || loading) return;
+    saveCoverPrefs(tripId, {
+      title: capitalizeFirstLetter(title),
+      country: country ?? "",
+      description: description.trim(),
+      bg: bgColor ?? "",
+    });
+  }, [bookId, loading, tripId, country, description, title, bgColor]);
 
-  const handleLoginSuccess = async (response: CredentialResponse) => {
-    if (!response.credential) return;
-    setSaving(true);
-    setShowLoginModal(false);
-    setError(null);
-    try {
-      const { token } = await googleAuth(response.credential);
-      setToken(token);
-      await claimTrip(tripId);
-      router.push(`/trips/${tripId}/generating`);
-    } catch {
-      setError("Sign-in failed. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+  // New book: the cover is step 1, photos are step 2.
+  const handleContinueToPhotos = () => {
+    persistPrefs();
+    router.push(`/trips/${tripId}/upload`);
   };
 
   const handleSaveThenPreview = async () => {
@@ -282,83 +295,25 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
         fontFamily: "var(--font-dm-sans), sans-serif",
       }}
     >
-      {showLoginModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(20,17,15,0.7)",
-            zIndex: 300,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-          onClick={() => setShowLoginModal(false)}
-        >
-          <div
-            style={{
-              background: "var(--sb-panel)",
-              borderRadius: 20,
-              padding: "44px 48px",
-              maxWidth: 420,
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2
-              style={{
-                fontFamily: "var(--font-dm-sans), sans-serif",
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                color: "var(--sb-cream)",
-                marginBottom: 12,
-                lineHeight: 1.1,
-              }}
-            >
-              One last step
-            </h2>
-            <p style={{ fontSize: 14, color: "var(--sb-muted)", marginBottom: 32, lineHeight: 1.65 }}>
-              Your photos and cover are ready. Sign in to generate your photobook. It takes one click.
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <GoogleLogin
-                onSuccess={handleLoginSuccess}
-                onError={() => {
-                  setError("Sign-in failed. Please try again.");
-                  setShowLoginModal(false);
-                }}
-                size="large"
-                shape="pill"
-                text="continue_with"
-              />
-            </div>
-            <button
-              onClick={() => setShowLoginModal(false)}
-              style={{ background: "none", border: "none", fontSize: 13, color: "var(--sb-muted-2)", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       <FlowTopbar
-        currentStep={2}
+        currentStep={1}
         rightSlot={
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              router.push(`/trips/${tripId}/upload`);
-            }}
-            style={{ fontSize: 13, color: "var(--sb-muted-2)", textDecoration: "none" }}
-          >
-            ← back to photos
-          </a>
+          bookId ? (
+            <a
+              href={`/trips/${tripId}/preview?bookId=${bookId}`}
+              onClick={(e) => {
+                e.preventDefault();
+                router.push(`/trips/${tripId}/preview?bookId=${bookId}`);
+              }}
+              style={{ fontSize: 13, color: "var(--sb-muted-2)", textDecoration: "none" }}
+            >
+              ← back to preview
+            </a>
+          ) : (
+            <span style={{ fontFamily: "var(--font-dm-sans), sans-serif", color: "var(--sb-muted)" }}>
+              Your work is saved as you go
+            </span>
+          )
         }
       />
 
@@ -390,7 +345,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                 marginBottom: 14,
               }}
             >
-              Step 2 of 4
+              Step 1 of 4
             </div>
             <h1
               className="flow-hero-h1"
@@ -410,6 +365,13 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             </p>
 
             {error && <p style={{ color: "#ef8b7f", fontSize: 14, marginBottom: 16 }}>{error}</p>}
+
+            {uploadSession?.uploading && (
+              <div style={{ marginBottom: 24, padding: "12px 16px", background: "var(--sb-panel)", borderRadius: 12, fontSize: 14, color: "var(--sb-cream)", lineHeight: 1.5 }}>
+                Your photos are still uploading ({uploadSession.uploadPct}%). Keep this tab open; you can
+                carry on with your cover while they finish.
+              </div>
+            )}
 
             {/* 1. Design picker */}
             <div style={{ marginBottom: 30 }}>
@@ -658,7 +620,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
       {/* Sticky continue button (no bar) */}
       <button
-        onClick={bookId ? handleSaveThenPreview : handleGenerate}
+        onClick={bookId ? handleSaveThenPreview : handleContinueToPhotos}
         disabled={saving || loading}
         style={{
           position: "fixed", bottom: 18, right: 48, zIndex: 10,
@@ -672,7 +634,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
         }}
       >
-        {bookId ? (saving ? "Saving…" : "continue →") : saving ? "Starting…" : "build my photobook →"}
+        {bookId ? (saving ? "Saving…" : "continue →") : "add photos →"}
       </button>
     </div>
   );

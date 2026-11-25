@@ -18,7 +18,7 @@ export const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "How does it work?",
     a: (
       <p>
-        Upload your trip photos, pick a cover, and we automatically curate and lay them out across the
+        Pick a cover, upload your trip photos, and we automatically curate and lay them out across the
         pages. You then preview the book and fine-tune anything you like before ordering. See{" "}
         <Link href="/how-it-works">how it works</Link> for a step-by-step walkthrough.
       </p>

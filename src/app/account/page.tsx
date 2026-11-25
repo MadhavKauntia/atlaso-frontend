@@ -18,9 +18,9 @@ interface Cover {
 }
 
 function resumeUrl(trip: Trip): string {
-  return trip.status === "BOOK_GENERATED"
-    ? `/trips/${trip.id}/preview`
-    : `/trips/${trip.id}/upload`;
+  // Cover is step 1 and photos step 2: a trip with no photos yet resumes at the cover.
+  if (trip.status === "BOOK_GENERATED") return `/trips/${trip.id}/preview`;
+  return trip.status === "CREATED" ? `/trips/${trip.id}/cover` : `/trips/${trip.id}/upload`;
 }
 
 function statusLabel(status: string): string {
