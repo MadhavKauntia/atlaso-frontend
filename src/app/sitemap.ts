@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { DESTINATIONS } from "@/lib/destinations";
+import { POSTS } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const page = (path: string, priority: number, changeFrequency: "weekly" | "monthly" | "yearly" = "monthly") => ({
@@ -13,6 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/how-it-works", 0.8),
     page("/photobook", 0.8),
     ...DESTINATIONS.map((d) => page(`/photobook/${d.path}`, 0.7)),
+    page("/blog", 0.7, "weekly"),
+    ...POSTS.map((p) => ({ ...page(`/blog/${p.slug}`, 0.6), lastModified: p.updated ?? p.published })),
     page("/faq", 0.6),
     page("/contact", 0.4, "yearly"),
     page("/shipping", 0.3, "yearly"),

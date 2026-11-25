@@ -48,6 +48,8 @@ export default function Footer() {
             <nav>
               <Link href="/how-it-works" className={s.footerLink}>how it works</Link>
               <Link href="/create" className={s.footerLink}>start a book</Link>
+              <Link href="/photobook" className={s.footerLink}>destinations</Link>
+              <Link href="/blog" className={s.footerLink}>blog</Link>
               <Link href="/account" className={s.footerLink}>account</Link>
             </nav>
           </div>

@@ -42,8 +42,8 @@
   letter-spacing: -0.02em;
   margin: 0 0 14px;
 }
-.card ul { margin: 0; padding-left: 20px; line-height: 1.75; color: #4a4036; }
-.card ol { margin: 0; padding-left: 20px; line-height: 1.75; color: #4a4036; }
+.card ul { list-style: disc; margin: 0; padding-left: 20px; line-height: 1.75; color: #4a4036; }
+.card ol { list-style: decimal; margin: 0; padding-left: 20px; line-height: 1.75; color: #4a4036; }
 
 /* Hub page grid of covers */
 .hubGrid {
