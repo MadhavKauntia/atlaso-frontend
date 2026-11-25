@@ -6,7 +6,7 @@ const post: BlogPost = {
   seoTitle: "How to Make a Travel Photo Book From Phone Photos",
   description:
     "A step-by-step guide to turning your trip photos into a printed travel photo book: gathering photos, picking the best, layout, cover and printing.",
-  published: "2026-11-25",
+  published: "2026-11-04",
   keywords: ["how to make a travel photo book", "travel photo book", "photo book from phone photos", "make a photobook online India"],
   coverAlt: "Hardbound travel photo book open on a table, with trip photos laid out across a spread",
   related: ["bali", "thailand", "japan", "dubai"],

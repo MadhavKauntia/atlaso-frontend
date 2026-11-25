@@ -84,7 +84,8 @@ export default async function BlogPostPage({ params }: Props) {
       <SiteHeader />
 
       <article className={`${l.container} ${s.article}`}>
-        <div className={l.eyebrow}><Link href="/blog" style={{ color: "inherit" }}>Blog</Link></div>
+        <Link href="/blog" className={s.back}>← all guides</Link>
+        <div className={l.eyebrow}>Blog</div>
         <h1 className={l.title}>{post.title}</h1>
         <div className={s.meta}>
           {formatDate(post.published)} · {minutes} min read · by the Atlaso team

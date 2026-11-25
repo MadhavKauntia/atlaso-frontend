@@ -2,6 +2,17 @@
 
 .article { max-width: 70ch; }
 
+.back {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sb-muted);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 160ms ease;
+}
+.back:hover { color: var(--sb-cream); }
+
 .meta {
   font-size: 13px;
   color: var(--sb-muted-2);

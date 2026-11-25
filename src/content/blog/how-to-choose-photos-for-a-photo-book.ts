@@ -6,7 +6,7 @@ const post: BlogPost = {
   seoTitle: "How to Choose Photos for a Photo Book",
   description:
     "Too many trip photos to choose from? A fast, practical method for cutting 1,000 photos down to the 80 that belong in your photo book.",
-  published: "2026-11-25",
+  published: "2026-11-11",
   keywords: ["how to choose photos for a photo book", "how many photos for a photo book", "best photos for photo book", "photo book tips"],
   coverAlt: "Rows of travel photos on a screen, with a handful selected for a photo book",
   related: ["thailand", "italy", "vietnam", "greece"],
