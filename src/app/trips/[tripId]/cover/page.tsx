@@ -7,7 +7,7 @@ import CountryCover from "@/components/covers/CountryCover";
 import { COUNTRIES, getCountry, stampUrl, PALETTE, inkFor, type CoverCategory } from "@/lib/covers/countries";
 import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
 import { getTrip, getBook, saveCoverCountry } from "@/lib/api";
-import { readTripCoverPrefs, readLastCoverPrefs, saveCoverPrefs } from "@/lib/coverPrefs";
+import { readTripCoverPrefs, saveCoverPrefs } from "@/lib/coverPrefs";
 import { useOptionalUploadSession } from "@/components/upload/UploadSession";
 
 /** How many designs to show per category before the "Show all" toggle. */
@@ -18,6 +18,12 @@ function coverRequestHref(place: string): string {
   const subject = place ? `Cover request: ${place}` : "Cover request";
   const body = `Hi Atlaso, please add a cover for: ${place || "(destination)"}`;
   return `mailto:support@myatlaso.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/** A title is the user's own only if it isn't just the design's name (which follows the design). */
+function isCustomTitle(title: string, slug: string | null): boolean {
+  const t = title.trim().toLowerCase();
+  return !!t && t !== (getCountry(slug)?.name ?? "").toLowerCase();
 }
 
 /** Best-effort: preselect a country when we inferred a place from the photos. */
@@ -96,7 +102,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
             : (trip.name && trip.name !== "Untitled Trip" ? trip.name : "");
           if (real) {
             setTitle(real);
-            titleCustom.current = true;
+            titleCustom.current = isCustomTitle(real, pickedCountry);
           } else {
             setTitle(getCountry(pickedCountry)?.name || "");
             titleCustom.current = false;
@@ -106,14 +112,14 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           const tripName = trip.name && trip.name !== "Untitled Trip" ? trip.name : "";
 
           // Choices already made for this trip (the user came back from the photo step)
-          // come first. Then a destination chosen on a /photobook page, which wins over
-          // the last book's saved prefs (title, colour, description belong to that trip).
+          // come first, then a destination chosen on a /photobook page. A new book never
+          // inherits another trip's cover: it starts blank.
           const saved = readTripCoverPrefs(tripId);
           let landingPick: string | null = null;
           try { landingPick = getCountry(sessionStorage.getItem(`atlaso_cover_pick_${tripId}`))?.slug ?? null; } catch { /* storage blocked */ }
-          const prefs = saved ?? (landingPick ? null : readLastCoverPrefs()) ?? { title: "", country: "", description: "", bg: "" };
+          const prefs = saved ?? { title: "", country: "", description: "", bg: "" };
 
-          const pickedCountry = (saved ? saved.country || null : null) ?? landingPick ?? (prefs.country || matchCountry(inf?.country, inf?.place));
+          const pickedCountry = (saved?.country || null) ?? landingPick ?? matchCountry(inf?.country, inf?.place);
           const pickedTitle = prefs.title || tripName;
 
           // Started from a destination page: the cover is already decided, so save it
@@ -141,10 +147,11 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
           setBgColor(prefs.bg || null);
           setCategory(getCountry(pickedCountry)?.category ?? "destination");
           setDescription(prefs.description || "");
-          // A saved/trip title is treated as custom; otherwise default to the country.
+          // A title that's just the design's name keeps following the design; anything else
+          // the user typed is kept when they switch designs.
           if (pickedTitle) {
             setTitle(pickedTitle);
-            titleCustom.current = true;
+            titleCustom.current = isCustomTitle(pickedTitle, pickedCountry);
           } else {
             setTitle(getCountry(pickedCountry)?.name || "");
             titleCustom.current = false;
@@ -182,9 +189,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
 
   const onTitleChange = (val: string) => {
     setTitle(val);
-    // A non-empty value is the user's custom title; clearing it re-enables the
-    // country default on the next country pick.
-    titleCustom.current = val.trim().length > 0;
+    // A typed title is the user's own; clearing it (or typing the design's own name)
+    // lets it follow the next design pick again.
+    titleCustom.current = isCustomTitle(val, country);
   };
 
   const showSaved = () => {

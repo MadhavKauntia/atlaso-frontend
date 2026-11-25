@@ -2,9 +2,9 @@
 // book is generated after the photo step (step 2).
 //
 // Stored per trip so the choices survive going back and forth between the two
-// steps and can't be picked up by another trip open in a second tab. The same
-// value is also written to the legacy global key, which the cover step uses as
-// defaults for the next new book and mock mode reads.
+// steps and can't be picked up by another trip open in a second tab. A new book
+// starts blank; it never inherits another trip's cover. The same value is also
+// written to the legacy global key, which only mock mode reads.
 
 export interface CoverPrefs {
   title: string;
@@ -30,15 +30,6 @@ function parse(raw: string | null): CoverPrefs | null {
 export function readTripCoverPrefs(tripId: string): CoverPrefs | null {
   try {
     return parse(localStorage.getItem(tripKey(tripId)));
-  } catch {
-    return null;
-  }
-}
-
-/** The last cover choices made for any trip (defaults for a brand-new cover). */
-export function readLastCoverPrefs(): CoverPrefs | null {
-  try {
-    return parse(localStorage.getItem(GLOBAL_KEY));
   } catch {
     return null;
   }

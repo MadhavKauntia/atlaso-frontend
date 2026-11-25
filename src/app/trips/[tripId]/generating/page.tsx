@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { readTripCoverPrefs, readLastCoverPrefs, clearCoverPrefs } from "@/lib/coverPrefs";
+import { readTripCoverPrefs, clearCoverPrefs } from "@/lib/coverPrefs";
 import { generateBook, regenerateBook, updateTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
@@ -76,7 +76,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
 
   useEffect(() => {
     try {
-      const prefs = readTripCoverPrefs(tripId) ?? readLastCoverPrefs();
+      const prefs = readTripCoverPrefs(tripId);
       if (prefs) setCoverPrefs(prefs);
     } catch {
       /* ignore */
@@ -143,8 +143,8 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
     started.current = true;
 
     const run = async () => {
-      // This trip's cover from step 1 (falls back to the last saved cover, as before).
-      const prefs: CoverPrefs | null = readTripCoverPrefs(tripId) ?? readLastCoverPrefs();
+      // This trip's cover from step 1 (the photo step guarantees one with a design).
+      const prefs: CoverPrefs | null = readTripCoverPrefs(tripId);
 
       try {
         if (prefs?.title) await updateTrip(tripId, prefs.title, prefs.description || undefined);
