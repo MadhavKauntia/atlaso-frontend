@@ -15,6 +15,7 @@ export const SITE_NAME = "Atlaso";
 export const BOOK_PRICE_INR = 2499;
 export const BOOK_LIST_PRICE_INR = 2999;
 export const LAUNCH_OFFER_ACTIVE = true;
+export const LAUNCH_OFFER_STARTS = "2026-11-25";
 export const LAUNCH_OFFER_ENDS = "2026-12-31";
 export const LAUNCH_OFFER_ENDS_LABEL = "31 December";
 export const BOOK_PAGES = 50;
@@ -42,10 +43,41 @@ export function productJsonLd(opts: { name: string; description: string; url: st
       url: opts.url,
       price: BOOK_PRICE_INR,
       priceCurrency: "INR",
-      ...(LAUNCH_OFFER_ACTIVE ? { priceValidUntil: LAUNCH_OFFER_ENDS } : {}),
+      // Sale price: Google wants the start and end, plus the regular price as a strikethrough.
+      ...(LAUNCH_OFFER_ACTIVE
+        ? {
+            validFrom: `${LAUNCH_OFFER_STARTS}T00:00:00+05:30`,
+            priceValidUntil: LAUNCH_OFFER_ENDS,
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              priceType: "https://schema.org/StrikethroughPrice",
+              price: BOOK_LIST_PRICE_INR,
+              priceCurrency: "INR",
+            },
+          }
+        : {}),
       availability: "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: { "@type": "Organization", name: SITE_NAME },
+      // Free delivery across India: printed in about 3 days, then 4 to 7 in transit (the
+      // "7 to 10 days" promised on the site and in the FAQ).
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "INR" },
+        shippingDestination: { "@type": "DefinedRegion", addressCountry: "IN" },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: { "@type": "QuantitativeValue", minValue: 3, maxValue: 3, unitCode: "DAY" },
+          transitTime: { "@type": "QuantitativeValue", minValue: 4, maxValue: 7, unitCode: "DAY" },
+        },
+      },
+      // Made to order, so no returns (see /refund). Damaged or misprinted books are reprinted free.
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "IN",
+        returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+        merchantReturnLink: `${SITE_URL}/refund`,
+      },
     },
   };
 }
