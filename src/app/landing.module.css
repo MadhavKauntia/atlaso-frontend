@@ -24,6 +24,10 @@
   padding: clamp(28px, 3.5vw, 56px) clamp(20px, 5vw, 64px);
   min-height: calc(100svh - 68px);
 }
+/* Tablets, down to the iPad mini: copy and book side by side, as on desktop. */
+@media (min-width: 700px) and (max-width: 1100px) {
+  .hero { grid-template-columns: minmax(0, 1fr) auto; gap: clamp(16px, 3vw, 40px); }
+}
 
 .heroCopy {
   display: flex;
