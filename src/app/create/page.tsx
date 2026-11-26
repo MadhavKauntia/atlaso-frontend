@@ -23,13 +23,16 @@ export default function CreatePage() {
     // A place typed on the landing hero (/create?cover=mountains&title=Spiti) becomes the
     // trip name, which the cover step uses as the cover title.
     const title = (params.get("title") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+    // The landing hero adds step=cover: open the cover step with the pick preselected
+    // instead of skipping past it.
+    const skipCover = params.get("step") !== "cover";
     createTrip(title || "Untitled Trip", "")
       .then((trip) => {
         rememberLastTrip(trip.id);
         if (cover) {
           try {
             sessionStorage.setItem(`atlaso_cover_pick_${trip.id}`, cover);
-            sessionStorage.setItem(`atlaso_cover_handoff_${trip.id}`, "1");
+            if (skipCover) sessionStorage.setItem(`atlaso_cover_handoff_${trip.id}`, "1");
           } catch { /* storage blocked: the cover step simply shows the pick preselected */ }
         }
         router.replace(`/trips/${trip.id}/cover`);

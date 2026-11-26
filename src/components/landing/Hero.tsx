@@ -123,8 +123,8 @@ export default function Hero() {
   const cover = place ? { slug: place.slug, matched: true } : coverFor(typed);
   const variant = place ? PLACES.indexOf(place) : hash(dest) % 5;
   const href = place
-    ? `/create?cover=${place.slug}`
-    : `/create?cover=${cover.slug}&title=${encodeURIComponent(dest)}`;
+    ? `/create?cover=${place.slug}&step=cover`
+    : `/create?cover=${cover.slug}&title=${encodeURIComponent(dest)}&step=cover`;
   const { spine } = coverColors(cover.slug);
 
   const pick = (i: number) => {
