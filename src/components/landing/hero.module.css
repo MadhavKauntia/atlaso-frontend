@@ -671,6 +671,32 @@
   .overlayHello { font-size: 20px; }
 }
 
+/* Tablets (iPad portrait and landscape): keep the copy and the book side by side, as on
+   desktop, shrinking the book and spacing instead of dropping the book below. */
+@media (min-width: 700px) and (max-width: 1100px) {
+  .inner {
+    flex-wrap: nowrap;
+    gap: clamp(20px, 3.5vw, 48px);
+    padding: 72px clamp(24px, 4vw, 48px) 88px;
+  }
+  .copy { flex: 1 1 0; min-width: 0; }
+  .bookCol { flex: 0 0 auto; }
+  .h1 { font-size: clamp(44px, 6.4vw, 72px); }
+  .hello { font-size: clamp(26px, 3.4vw, 34px); }
+  .chip { font-size: 16px; padding: 11px 20px; }
+  .cta { font-size: 20px; padding: 18px 30px; gap: 16px; }
+  .ctaArrow { font-size: 26px; }
+  .priceNow { font-size: 30px; }
+  .ctaRow { gap: 24px; }
+  .book3d { width: clamp(190px, 26vw, 300px); }
+  .bookBtn { padding: 16px 16px 16px 40px; }
+}
+
+/* the book also sits in narrower columns on the destination pages at these widths */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .book3d { width: clamp(190px, 26vw, 300px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ch { animation: none; opacity: 1; }
   .cr { display: none; }
