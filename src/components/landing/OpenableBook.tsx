@@ -31,11 +31,13 @@ interface Props {
  */
 export default function OpenableBook({ dest, coverSlug, href, doodleVariant, enterDelay = 0, doodleStartAt = 0, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false); // once they've looked inside, the nudge goes
   const bookRef = useRef<HTMLDivElement>(null);
   const { spine } = coverColors(coverSlug);
 
   const setOpenAndTell = (v: boolean) => {
     setOpen(v);
+    if (v) setOpened(true);
     onOpenChange?.(v);
   };
   const closed = useCallback(() => {
@@ -64,6 +66,19 @@ export default function OpenableBook({ dest, coverSlug, href, doodleVariant, ent
           <div aria-hidden="true" className={s.bookShadow} />
         </button>
       </div>
+
+      {/* a quiet nudge that the book opens */}
+      <p
+        aria-hidden="true"
+        className={`${s.peek} ${hand.className} ${opened ? s.peekGone : ""}`}
+        style={{ animationDelay: `${(enterDelay + 1.4).toFixed(2)}s` }}
+      >
+        <svg className={s.peekArrow} viewBox="0 0 40 34" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 31 C 10 18, 18 10, 30 6" />
+          <path d="M22 4 L31 5.5 L28 14" />
+        </svg>
+        peek inside
+      </p>
 
       {/* Portalled: the column's slide-in transform would otherwise trap the fixed overlay. */}
       {open && createPortal(

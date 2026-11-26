@@ -367,6 +367,33 @@
   z-index: -1;
 }
 
+/* "peek inside": a faint pencil note under the book */
+.peek {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 18px 0 0 40px;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--h-gold);
+  opacity: 0;
+  pointer-events: none;
+  animation: peekIn 0.8s ease-out forwards;
+  transition: opacity 0.4s;
+}
+.peekArrow {
+  width: 30px;
+  height: 26px;
+  margin-bottom: 4px;
+  animation: peekBob 2.6s ease-in-out infinite;
+}
+.peekGone { animation: none; opacity: 0; }
+@keyframes peekIn { to { opacity: 0.6; } }
+@keyframes peekBob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 2px -3px; }
+}
+
 /* ─── opened book preview ─── */
 .overlay {
   font-family: var(--font-dm-display), var(--font-dm-sans), system-ui, sans-serif;
@@ -609,4 +636,7 @@
   .doodles path,
   .doodles circle { animation: none; stroke-dashoffset: 0; }
   .cover, .backdrop { animation: none; }
+  .peek { animation: none; opacity: 0.6; }
+  .peek.peekGone { opacity: 0; }
+  .peekArrow { animation: none; }
 }
