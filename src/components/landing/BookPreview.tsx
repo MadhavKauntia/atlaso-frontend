@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import Link from "next/link";
 import CountryCover from "@/components/covers/CountryCover";
 import { coverColors } from "@/lib/covers/countries";
-import { flap, flip, isMuted, setMuted, startRustle, type Rustle } from "./pageSound";
+import { isMuted, setMuted, playCover, playPageTurn, preloadPageSounds } from "./pageSound";
 import BookPage from "./BookPage";
 import { dmDisplay } from "./fonts";
 import { SAMPLE_PAGES } from "./samplePages";
@@ -45,6 +45,12 @@ const N = LEAVES.length;
 // is (while dragging) or toward the side it falls to (after release).
 const STIFFNESS = 260;
 const DAMPING = 2 * Math.sqrt(STIFFNESS);
+
+// Paper bend: a page that can move is built from thin vertical strips, each hinged to
+// the one before it, so it can curve. BEND_MAX is the extra turn at the free edge,
+// in degrees, at mid-turn.
+const STRIPS = 10;
+const BEND_MAX = 42;
 
 interface Rect { left: number; top: number; width: number; height: number }
 
@@ -124,14 +130,14 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
         run(flyBookRef.current, [{ transform: origin.transform }, { transform: "none" }], { duration: FLY_MS, easing: EASE_OUT }),
       ]).then(() => { if (!cancelled) setPhase("cover"); });
     } else if (phase === "cover") {
-      flap(0.6, COVER_MS / 1000 * 0.8);
+      playCover();
       run(flyCoverRef.current, [{ transform: "rotateY(0deg)" }, { transform: "rotateY(-180deg)" }], { duration: COVER_MS, easing: EASE_HINGE })
         .then(() => { if (!cancelled) setPhase("open"); });
     } else if (phase === "open") {
       closeRef.current?.focus();
     } else if (phase === "closingCover") {
       if (reduce || !target || !origin) { onClosed(); return; }
-      flap(0.5, COVER_MS / 1000 * 0.75);
+      playCover();
       run(flyCoverRef.current, [{ transform: "rotateY(-180deg)" }, { transform: "rotateY(0deg)" }], { duration: COVER_MS * 0.85, easing: EASE_HINGE })
         .then(() => { if (!cancelled) setPhase("closingFly"); });
     } else if (phase === "closingFly") {
@@ -153,18 +159,36 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     vel: number;          // degrees per second
     target: number;       // where the spring pulls it
     dragging: boolean;
-    landed: boolean;      // flap already played for this settle
+    start: number;        // the side it set off from (0 or -180)
+    bend: number;         // current extra turn at the free edge (degrees, signed)
+    sounded: boolean;     // page sound already played for this turn
     raf: number;
     last: number;
   } | null>(null);
-  const rustle = useRef<Rustle | null>(null);
+  const stripRefs = useRef<(HTMLDivElement | null)[][]>([]);
 
-  const paint = (idx: number, angle: number) => {
+  /** Draw leaf idx at angle, curved by bend (the free edge turns bend degrees further). */
+  const paint = (idx: number, angle: number, bend = 0) => {
     const el = leafRefs.current[idx];
     if (!el) return;
     const lift = Math.sin((Math.abs(angle) * Math.PI) / 180);
     el.style.transform = `rotateY(${angle}deg)`;
     el.style.setProperty("--lift", lift.toFixed(3));
+    const strips = stripRefs.current[idx];
+    if (strips) {
+      // Spread the bend so it grows toward the edge: a smooth arc, flat at the spine.
+      let cum = 0;
+      for (let i = 0; i < STRIPS; i++) {
+        const d = (bend * (2 * i + 1)) / (STRIPS * STRIPS);
+        cum += d;
+        const st = strips[i];
+        if (!st) continue;
+        st.style.transform = `rotateY(${d.toFixed(3)}deg)`;
+        // Light falls off as each strip turns away from flat, so shading follows the curve.
+        const a = Math.abs(angle + cum);
+        st.style.setProperty("--s", Math.sin((Math.min(180, a) * Math.PI) / 180).toFixed(3));
+      }
+    }
     if (shadowR.current) shadowR.current.style.opacity = angle > -90 ? (lift * 0.9).toFixed(3) : "0";
     if (shadowL.current) shadowL.current.style.opacity = angle <= -90 ? (lift * 0.9).toFixed(3) : "0";
   };
@@ -175,10 +199,8 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     if (!m) return;
     cancelAnimationFrame(m.raf);
     motion.current = null;
-    rustle.current?.stop();
-    rustle.current = null;
     const rest = m.target <= -90 ? -180 : 0;
-    paint(m.idx, rest);
+    paint(m.idx, rest, 0);
     const el = leafRefs.current[m.idx];
     if (el) el.style.zIndex = String(zFor(m.idx, rest));
     if (shadowR.current) shadowR.current.style.opacity = "0";
@@ -198,18 +220,23 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     const acc = STIFFNESS * (m.target - m.angle) - DAMPING * m.vel;
     m.vel += acc * dt;
     m.angle = Math.max(-180, Math.min(0, m.angle + m.vel * dt));
-    paint(m.idx, m.angle);
-    if (m.dragging) {
-      rustle.current?.set(Math.abs(m.vel) / 500);
-    } else {
-      if (!m.landed && Math.abs(m.target - m.angle) < 7) {
-        m.landed = true;
-        flap(Math.min(1, 0.45 + Math.abs(m.vel) / 900));
-        rustle.current?.stop();
-        rustle.current = null;
-      }
-      if (Math.abs(m.target - m.angle) < 0.3 && Math.abs(m.vel) < 8) { finish(); return; }
+
+    // How the paper curves: most at mid-turn, more when moving fast. Held by the edge
+    // (dragging) the edge leads; swinging free it trails behind, like real paper in air.
+    const p = Math.abs(m.angle) / 180;
+    const speed = Math.min(1, Math.abs(m.vel) / 700);
+    const heading = m.dragging ? (m.target < m.angle ? -1 : m.target > m.angle ? 1 : (m.start === 0 ? -1 : 1)) : Math.sign(m.vel) || (m.start === 0 ? -1 : 1);
+    const lead = m.dragging ? 1 : -0.75;
+    const want = BEND_MAX * Math.sin(Math.PI * p) * (0.45 + 0.55 * speed) * heading * lead;
+    m.bend += (want - m.bend) * Math.min(1, dt * 14);
+    paint(m.idx, m.angle, m.bend);
+
+    // The page sound plays as the page goes over the top.
+    if (!m.sounded && Math.abs(m.angle - m.start) > 70) {
+      m.sounded = true;
+      playPageTurn(speed);
     }
+    if (!m.dragging && Math.abs(m.target - m.angle) < 0.3 && Math.abs(m.vel) < 8) { finish(); return; }
     m.raf = requestAnimationFrame(tick);
   }, [finish]);
 
@@ -219,7 +246,7 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     const start = idx < turnedRef.current ? -180 : 0;
     const el = leafRefs.current[idx];
     if (el) el.style.zIndex = String(N + 2);
-    motion.current = { idx, angle: start, vel: 0, target, dragging, landed: false, raf: 0, last: performance.now() };
+    motion.current = { idx, angle: start, vel: 0, target, dragging, start, bend: 0, sounded: false, raf: 0, last: performance.now() };
     motion.current.raf = requestAnimationFrame(tick);
   };
 
@@ -230,10 +257,8 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     const t = turnedRef.current;
     if (dir === 1 && t >= N) return;
     if (dir === -1 && t <= 0) return;
-    flip(0.55);
     const idx = dir === 1 ? t : t - 1;
     begin(idx, false, dir === 1 ? -180 : 0);
-    if (motion.current) motion.current.landed = true; // flip() brings its own flap
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finish, tick]);
 
@@ -268,7 +293,6 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
       if (Math.abs(e.clientX - d.startX) < 6) return;
       d.moved = true;
       begin(d.idx, true, d.dir === 1 ? 0 : -180);
-      rustle.current = startRustle();
     }
     const x = Math.max(-1, Math.min(1, (e.clientX + d.offset - d.spineX) / d.w));
     if (motion.current) motion.current.target = (-Math.acos(x) * 180) / Math.PI;
@@ -290,7 +314,10 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     m.vel += vx * 400; // carry the flick into the fall
   };
 
-  useEffect(() => () => { if (motion.current) cancelAnimationFrame(motion.current.raf); rustle.current?.stop(); }, []);
+  useEffect(() => {
+    preloadPageSounds();
+    return () => { if (motion.current) cancelAnimationFrame(motion.current.raf); };
+  }, []);
 
   const requestClose = useCallback(() => {
     if (phaseRef.current !== "open") return;
@@ -377,15 +404,22 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
                   visibility: phase !== "open" && i < turned ? "hidden" : undefined,
                 }}
               >
-                <div className={`${s.face} ${s.faceFront}`}>
-                  <BookPage page={leaf.front} side="right" />
-                  <span aria-hidden="true" className={s.shade} />
-                </div>
-                {leaf.back && (
-                  <div className={`${s.face} ${s.faceBack}`}>
-                    <BookPage page={leaf.back} side="left" />
-                    <span aria-hidden="true" className={`${s.shade} ${s.shadeL}`} />
-                  </div>
+                {i >= turned - 2 && i <= turned + 1 ? (
+                  // Pages that can move (and the ones next in line): strips that bend.
+                  <Strip leafIdx={i} at={0} front={leaf.front} back={leaf.back} refs={stripRefs} />
+                ) : (
+                  <>
+                    <div className={`${s.face} ${s.faceFront}`}>
+                      <BookPage page={leaf.front} side="right" />
+                      <span aria-hidden="true" className={s.shade} />
+                    </div>
+                    {leaf.back && (
+                      <div className={`${s.face} ${s.faceBack}`}>
+                        <BookPage page={leaf.back} side="left" />
+                        <span aria-hidden="true" className={`${s.shade} ${s.shadeL}`} />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -433,6 +467,42 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * One vertical strip of a bendable page, hinged to the previous strip, with the next
+ * strip nested inside it. Each face shows its slice of the page (the back face shows
+ * the matching slice of the page on the other side).
+ */
+function Strip({ leafIdx, at, front, back, refs }: {
+  leafIdx: number;
+  at: number;
+  front: (typeof LEAVES)[number]["front"];
+  back: (typeof LEAVES)[number]["back"];
+  refs: React.RefObject<(HTMLDivElement | null)[][]>;
+}) {
+  return (
+    <div
+      className={`${s.strip} ${at === 0 ? s.stripFirst : ""}`}
+      ref={(el) => { (refs.current[leafIdx] ??= [])[at] = el; }}
+    >
+      <div className={s.stripFace}>
+        <div className={s.stripPage} style={{ left: `calc(${-at * 100}% + ${at}px)` }}>
+          <BookPage page={front} side="right" />
+        </div>
+        <span aria-hidden="true" className={s.stripShade} />
+      </div>
+      {back && (
+        <div className={`${s.stripFace} ${s.stripBack}`}>
+          <div className={s.stripPage} style={{ left: `calc(${-(STRIPS - 1 - at) * 100}% + ${STRIPS - 1 - at}px)` }}>
+            <BookPage page={back} side="left" />
+          </div>
+          <span aria-hidden="true" className={s.stripShade} />
+        </div>
+      )}
+      {at + 1 < STRIPS && <Strip leafIdx={leafIdx} at={at + 1} front={front} back={back} refs={refs} />}
     </div>
   );
 }

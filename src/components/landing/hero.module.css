@@ -517,6 +517,44 @@
 }
 .faceFront { border-radius: 0 4px 4px 0; }
 .faceBack { border-radius: 4px 0 0 4px; transform: rotateY(180deg); }
+/* A bendable page: STRIPS (10) strips, each nested in and hinged to the one before. */
+.strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  left: 100%;
+  width: 100%;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  --s: 0;
+}
+.stripFirst { left: 0; width: 10%; }
+.stripFace {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: -1px; /* overlap the next strip by a pixel so no hairline shows between them */
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.stripBack { transform: rotateY(180deg); }
+.stripPage {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: calc(1000% - 10px); /* the whole page (10 strips, less the 1px overlaps); this strip shows one slice */
+}
+/* each strip darkens as it turns away from flat, so the shading follows the curve */
+.stripShade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #1a120a;
+  opacity: calc(var(--s) * 0.42);
+}
+
 /* the page darkens toward the spine as it lifts */
 .shade {
   position: absolute;

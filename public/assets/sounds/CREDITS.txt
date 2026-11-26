@@ -1,0 +1,6 @@
+Page sounds for the landing book preview, trimmed from Mixkit sound effects
+(Mixkit Sound Effects Free License: free for commercial use in projects; not for
+redistribution as standalone files). https://mixkit.co/license/
+
+page-turn-1.mp3, page-turn-2.mp3  "Single book paging" (Mixkit sfx #1101), two turns cut apart
+cover.mp3                         "Stiff paper book paging" (Mixkit sfx #1103), 2.9s to 4.3s
