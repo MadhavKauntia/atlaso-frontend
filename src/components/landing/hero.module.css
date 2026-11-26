@@ -189,8 +189,8 @@
   background: var(--h-red);
   color: var(--h-cream);
   text-decoration: none;
-  font-family: var(--font-dm-display), sans-serif;
-  font-weight: 700;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
   font-size: 24px;
   letter-spacing: -0.025em;
   padding: 22px 40px;
@@ -209,6 +209,7 @@
 .ctaLabel > * { grid-area: 1 / 1; white-space: nowrap; }
 .ctaSizer { visibility: hidden; }
 .ctaArrow {
+  font-family: var(--font-dm-display), sans-serif;
   font-weight: 400;
   font-size: 30px;
   line-height: 1;
@@ -238,12 +239,15 @@
   gap: 12px;
 }
 .priceWas {
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 500;
   font-size: 20px;
   color: var(--h-muted);
 }
 .priceNow {
+  font-family: var(--font-bricolage), sans-serif;
   font-size: 36px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--h-cream);
 }

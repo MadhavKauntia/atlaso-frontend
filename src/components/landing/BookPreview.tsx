@@ -183,7 +183,11 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
     if (el) el.style.zIndex = String(zFor(m.idx, rest));
     if (shadowR.current) shadowR.current.style.opacity = "0";
     if (shadowL.current) shadowL.current.style.opacity = "0";
-    setTurned(rest === -180 ? m.idx + 1 : m.idx);
+    const nowTurned = rest === -180 ? m.idx + 1 : m.idx;
+    // Update the ref now, not after React re-renders: a fast second click starts its turn
+    // in this same tick and must see the page that just landed.
+    turnedRef.current = nowTurned;
+    setTurned(nowTurned);
   }, []);
 
   const tick = useCallback((now: number) => {
