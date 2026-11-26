@@ -107,8 +107,9 @@ export const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "What if my destination isn't in the cover list?",
     a: (
       <p>
-        Pick a theme cover for now, or ask us for one: tap &quot;Request a cover&quot; on the cover step,
-        or email{" "}
+        Pick a theme cover for now, or ask us for one. On the cover step, search for your place and
+        tap &quot;Request a cover&quot; (it&apos;s also below the designs, next to &quot;Don&apos;t see your
+        destination?&quot;), or email{" "}
         <a href="mailto:support@myatlaso.com">support@myatlaso.com</a>. We add new destinations based on
         what travellers ask for.
       </p>

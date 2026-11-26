@@ -1,0 +1,123 @@
+/* "Request a cover" dialog, in the cover step's dark palette. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 8, 7, 0.62);
+  backdrop-filter: blur(3px);
+  animation: fade 0.18s ease-out both;
+}
+@keyframes fade { from { opacity: 0; } }
+
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 28px 26px 24px;
+  border-radius: 20px;
+  background: var(--sb-panel);
+  border: 1px solid var(--sb-panel-2);
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.75);
+  color: var(--sb-cream);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  animation: rise 0.24s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(0.97); } }
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--sb-panel-2);
+  background: transparent;
+  color: var(--sb-muted);
+  cursor: pointer;
+}
+.close:hover { color: var(--sb-cream); border-color: var(--sb-muted-2); }
+
+.title {
+  margin: 0;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.text {
+  margin: 8px 0 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sb-muted);
+}
+.label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sb-muted);
+}
+.optional { font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.8; }
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--sb-panel-2);
+  background: var(--sb-bg);
+  color: var(--sb-cream);
+  font: 500 15px var(--font-dm-sans), sans-serif;
+  outline: none;
+}
+.input:focus { border-color: var(--sb-gold); }
+.input::placeholder { color: var(--sb-muted-2); }
+.error {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: #f08b7d;
+}
+.primary {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sb-gold);
+  color: var(--sb-ink);
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.16s;
+}
+.primary:hover:not(:disabled) { transform: translateY(-1px); }
+.primary:disabled { opacity: 0.6; cursor: default; }
+.primary:focus-visible,
+.close:focus-visible { outline: 2px solid var(--sb-gold); outline-offset: 3px; }
+
+.sent { text-align: center; }
+.icon {
+  width: 48px;
+  height: 48px;
+  margin: 4px auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(232, 179, 44, 0.16);
+  color: var(--sb-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .panel { animation: none; }
+}

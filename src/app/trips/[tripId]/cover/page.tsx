@@ -9,15 +9,25 @@ import { capitalizeFirstLetter } from "@/lib/covers/text-utils";
 import { getTrip, getBook, saveCoverCountry, saveTripCover } from "@/lib/api";
 import { readTripCoverPrefs, saveCoverPrefs, coverPrefsFromTrip, type CoverPrefs } from "@/lib/coverPrefs";
 import { useOptionalUploadSession } from "@/components/upload/UploadSession";
+import CoverRequestDialog, { coverRequestMailto, coverRequestsEnabled } from "@/components/covers/CoverRequestDialog";
 
 /** How many designs to show per category before the "Show all" toggle. */
 const GRID_CAP = 8;
 
 /** Prefilled email asking us to design a cover for a destination we don't have yet. */
-function coverRequestHref(place: string): string {
-  const subject = place ? `Cover request: ${place}` : "Cover request";
-  const body = `Hi Atlaso, please add a cover for: ${place || "(destination)"}`;
-  return `mailto:support@myatlaso.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+/** "Request a cover": opens our request form, or (if it isn't configured) an email to support. */
+function RequestCoverLink({ place, onOpen, children }: { place: string; onOpen: (place: string) => void; children: React.ReactNode }) {
+  const style: React.CSSProperties = { color: "var(--sb-gold)", fontWeight: 600 };
+  if (!coverRequestsEnabled) return <a href={coverRequestMailto(place)} style={style}>{children}</a>;
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(place)}
+      style={{ ...style, background: "none", border: 0, padding: 0, font: "inherit", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+    >
+      {children}
+    </button>
+  );
 }
 
 /** A title is the user's own only if it isn't just the design's name (which follows the design). */
@@ -52,6 +62,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
   const [category, setCategory] = useState<CoverCategory>("destination");
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState("");
+  const [requestFor, setRequestFor] = useState<string | null>(null); // open "Request a cover" with this place
   const [inferred, setInferred] = useState<{ place: string; country?: string; coordStr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -489,9 +500,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
                       Browse themes instead →
                     </button>
                     <div style={{ marginTop: 12, fontSize: 13 }}>
-                      <a href={coverRequestHref(query.trim())} style={{ color: "var(--sb-gold)", fontWeight: 600 }}>
+                      <RequestCoverLink place={query.trim()} onOpen={setRequestFor}>
                         Request a {query.trim()} cover
-                      </a>
+                      </RequestCoverLink>
                     </div>
                   </div>
                 )}
@@ -499,9 +510,9 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
               {visible.length > 0 && (
                 <div style={{ marginTop: 12, fontSize: 13, color: "var(--sb-muted)" }}>
                   Don&apos;t see your destination?{" "}
-                  <a href={coverRequestHref("")} style={{ color: "var(--sb-gold)", fontWeight: 600 }}>
+                  <RequestCoverLink place={query.trim()} onOpen={setRequestFor}>
                     Request a cover
-                  </a>
+                  </RequestCoverLink>
                 </div>
               )}
               {(collapsed || (!q && showAll && base.length > GRID_CAP)) && (
@@ -676,6 +687,7 @@ export default function CoverPage({ params }: { params: Promise<{ tripId: string
       >
         {bookId ? (saving ? "Saving…" : "continue →") : country ? "add photos →" : "pick a design first"}
       </button>
+      <CoverRequestDialog open={requestFor !== null} initialPlace={requestFor ?? ""} onClose={() => setRequestFor(null)} />
     </div>
   );
 }
