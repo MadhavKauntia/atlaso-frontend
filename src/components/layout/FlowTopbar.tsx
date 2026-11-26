@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Brand from "@/components/Brand";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { useOptionalUploadSession } from "@/components/upload/UploadSession";
 
 interface FlowTopbarProps {
@@ -19,12 +22,13 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
   // Leaving the cover/photo steps through the logo is an in-app navigation, so the
   // browser's reload/close warning never fires. Ask here instead while photos upload.
   const uploadSession = useOptionalUploadSession();
+  const router = useRouter();
+  const [askLeave, setAskLeave] = useState(false);
   const guardLeave = (e: React.MouseEvent) => {
     if (!uploadSession?.uploading) return;
-    if (!window.confirm("Your photos are still uploading. Leave anyway? Photos that haven't finished won't be saved to this book.")) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    setAskLeave(true);
   };
   return (
     <div
@@ -45,6 +49,15 @@ export default function FlowTopbar({ currentStep, rightSlot }: FlowTopbarProps) 
       <span onClickCapture={guardLeave} style={{ display: "inline-flex" }}>
         <Brand height={26} />
       </span>
+      <ConfirmDialog
+        open={askLeave}
+        title="Photos still uploading"
+        message="If you leave now, photos that haven't finished won't be saved to this book."
+        confirmLabel="leave anyway"
+        cancelLabel="stay"
+        onConfirm={() => { setAskLeave(false); router.push("/"); }}
+        onCancel={() => setAskLeave(false)}
+      />
 
       <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 1.6vw, 18px)", flexWrap: "wrap" }}>
         {STEPS.map((step) => {

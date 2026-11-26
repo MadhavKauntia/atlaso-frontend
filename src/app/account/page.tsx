@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { removeToken, getCachedUser } from "@/lib/auth";
 import { getTrips, getMe, getBookByTripId, deleteTripById, type Trip, type User } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -59,6 +60,9 @@ export default function AccountPage() {
   const [covers, setCovers] = useState<Record<string, Cover>>({});
   const [loading, setLoading] = useState(true);
   const [showPreviewTip, setShowPreviewTip] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Trip | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -87,13 +91,25 @@ export default function AccountPage() {
       .finally(() => setLoading(false));
   }, [ready]);
 
-  const handleDelete = async (tripId: string) => {
-    if (!confirm("Delete this design? This cannot be undone.")) return;
+  const handleDelete = (tripId: string) => {
+    const trip = trips.find((t) => t.id === tripId);
+    if (!trip) return;
+    setDeleteError(null);
+    setPendingDelete(trip);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteTripById(tripId);
-      setTrips((prev) => prev.filter((t) => t.id !== tripId));
+      await deleteTripById(pendingDelete.id);
+      setTrips((prev) => prev.filter((t) => t.id !== pendingDelete.id));
+      setPendingDelete(null);
     } catch {
-      alert("Failed to delete. Please try again.");
+      setDeleteError("Couldn't delete it. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -362,6 +378,19 @@ export default function AccountPage() {
           )}
         </div>
       </section>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        danger
+        title="Delete this book?"
+        message={<><strong>{pendingDelete ? displayName(pendingDelete) : ""}</strong> and its photos will be deleted. This can&apos;t be undone.</>}
+        confirmLabel="delete"
+        busyLabel="deleting…"
+        busy={deleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       <Footer />
     </div>

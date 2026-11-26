@@ -1,0 +1,98 @@
+/* Confirmation dialog in the site's dark palette. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 8, 7, 0.62);
+  backdrop-filter: blur(3px);
+  animation: fade 0.18s ease-out both;
+}
+@keyframes fade { from { opacity: 0; } }
+
+.panel {
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  padding: 28px 26px 22px;
+  border-radius: 20px;
+  background: var(--sb-panel);
+  border: 1px solid var(--sb-panel-2);
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.75);
+  color: var(--sb-cream);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  text-align: center;
+  animation: rise 0.24s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(0.97); } }
+
+.icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(201, 53, 44, 0.14);
+  color: #e0574c;
+}
+.title {
+  margin: 0;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.message {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--sb-muted);
+}
+.message strong { color: var(--sb-cream); font-weight: 600; }
+.error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #f08b7d;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.cancel,
+.confirm {
+  flex: 1 1 0;
+  padding: 13px 16px;
+  border-radius: 999px;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s, transform 0.16s;
+}
+.cancel {
+  background: transparent;
+  color: var(--sb-cream);
+  border: 1.5px solid var(--sb-panel-2);
+}
+.cancel:hover:not(:disabled) { border-color: var(--sb-muted-2); }
+.confirm {
+  border: 0;
+  background: var(--sb-gold);
+  color: var(--sb-ink);
+}
+.confirm.danger { background: var(--sb-red); color: #fff; }
+.confirm:hover:not(:disabled) { transform: translateY(-1px); }
+.cancel:disabled,
+.confirm:disabled { opacity: 0.6; cursor: default; }
+.cancel:focus-visible,
+.confirm:focus-visible { outline: 2px solid var(--sb-gold); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .panel { animation: none; }
+}
