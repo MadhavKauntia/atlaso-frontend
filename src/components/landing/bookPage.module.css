@@ -1,0 +1,56 @@
+/* A printed Atlaso page. Sizes are in cqw (page width) so the layout scales. */
+.page {
+  position: absolute;
+  inset: 0;
+  container-type: inline-size;
+  background: #f3ead8;
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.inner {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+}
+.slot {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.slot img {
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.full .slot { position: absolute; inset: 0; }
+
+.framed { padding: 11.2cqw 9.8cqw; display: grid; grid-template: 1fr / 1fr; }
+
+.twoStacked,
+.twoSide,
+.three,
+.four {
+  display: grid;
+  padding: 2.5cqw;
+  gap: 2.2cqw;
+}
+.twoStacked { grid-template-rows: 1fr 1fr; }
+.twoSide { grid-template-columns: 1fr 1fr; }
+.three,
+.four { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.feature { grid-column: 1 / -1; }
+
+/* the curve of the paper into the spine */
+.gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9%;
+  pointer-events: none;
+}
+.left .gutter { right: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.16)); }
+.right .gutter { left: 0; background: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.16)); }

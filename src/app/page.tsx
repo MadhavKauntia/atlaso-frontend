@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import Hero from "@/components/landing/Hero";
+import GalleryFold from "@/components/landing/GalleryFold";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { DESTINATIONS } from "@/lib/destinations";
-import { SITE_URL, SITE_NAME, DEFAULT_DESCRIPTION, BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, BOOK_PAGES, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr, productJsonLd } from "@/lib/site";
+import { SITE_URL, SITE_NAME, DEFAULT_DESCRIPTION, BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr, productJsonLd } from "@/lib/site";
 import s from "./landing.module.css";
 
 export const metadata: Metadata = {
@@ -36,8 +38,6 @@ const HOME_JSON_LD = [
   }),
 ];
 
-const HERO_ALT = "Travel photo laid out in a sample Atlaso photo book";
-
 const TICKER = [
   ["high quality photo paper", "var(--sb-red)"],
   ["hard-bound, coffee table book", "var(--sb-green)"],
@@ -60,67 +60,7 @@ export default function LandingPage() {
       <JsonLd data={HOME_JSON_LD} />
       <SiteHeader />
 
-      <section className={s.hero}>
-        <div className={s.heroCopy}>
-          <h1 className={s.h1}>
-            your camera roll<br />
-            <em>is a photo book</em><br />
-            waiting to happen
-          </h1>
-          <p className={s.lede}>
-            Turn your trip photos into a hardbound travel photo book. Dump in your photos and
-            pick a country, and your photobook designs itself in minutes. You review and order;
-            we print and ship across India.
-          </p>
-          <div className={s.ctaRow}>
-            <div className={s.ctaStack}>
-              <Link href="/create" className={s.cta}>
-                start for free <span>→</span>
-              </Link>
-              <span className={s.ctaSub}>pay only once you like it</span>
-            </div>
-            <div className={s.ctaNote}>
-              {LAUNCH_OFFER_ACTIVE ? (
-                <>
-                  <span className={s.ctaPrice}><s>{formatInr(BOOK_LIST_PRICE_INR)}</s> {formatInr(BOOK_PRICE_INR)}</span>
-                  <br />{BOOK_PAGES} pages · B5 · hardcover
-                </>
-              ) : (
-                <>{BOOK_PAGES} pages · B5 · hardcover<br />delivered in 7 to 10 days</>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={s.heroVisual}>
-          <div className={s.spread}>
-            <div className={s.spreadLeft}>
-              <div className={s.slot}>
-                <Image className={s.slotImg} src="/assets/hero/hero-3.jpg" alt={HERO_ALT} width={900} height={675} sizes="(max-width: 768px) 50vw, 25vw" preload />
-              </div>
-            </div>
-            <div className={s.spreadRight}>
-              <div className={s.slot}>
-                <Image className={s.slotImg} src="/assets/hero/hero-5.jpg" alt={HERO_ALT} width={900} height={675} sizes="(max-width: 768px) 50vw, 25vw" />
-              </div>
-              <div className={s.slot}>
-                <Image className={s.slotImg} src="/assets/hero/hero-2.jpg" alt={HERO_ALT} width={900} height={675} sizes="(max-width: 768px) 50vw, 25vw" />
-              </div>
-              <div className={s.slot}>
-                <Image className={s.slotImg} src="/assets/hero/hero-6.jpg" alt={HERO_ALT} width={900} height={675} sizes="(max-width: 768px) 50vw, 25vw" />
-              </div>
-              <div className={s.slot}>
-                <Image className={s.slotImg} src="/assets/hero/hero-4.jpg" alt={HERO_ALT} width={900} height={675} sizes="(max-width: 768px) 50vw, 25vw" />
-              </div>
-            </div>
-            <div className={s.tapeTop} />
-          </div>
-
-          <div className={s.postcard}>
-            <Image src="/assets/postcard-bali.png" alt="Bali postcard cover illustration" width={772} height={1018} sizes="148px" />
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       <div className={s.ticker}>
         <div className={s.tickerTrack}>
@@ -170,15 +110,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className={s.closing}>
-        <h2>
-          that trip deserves<br />better than a phone
-        </h2>
-        <p className={s.closingNote}>ready in minutes · pay only if you love it</p>
-        <Link href="/create" className={s.closingCta}>
-          start my photo book <span>→</span>
-        </Link>
-      </section>
+      <GalleryFold />
 
       <Footer />
     </div>

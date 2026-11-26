@@ -18,8 +18,12 @@ export default function CreatePage() {
     // cover is already chosen: the cover step saves it and hands straight off to the
     // photo step, leaving itself in history so "back" lands on the cover editor.
     // Read from location, not useSearchParams, so this page needs no Suspense boundary.
-    const cover = validCoverSlug(new URLSearchParams(window.location.search).get("cover"));
-    createTrip("Untitled Trip", "")
+    const params = new URLSearchParams(window.location.search);
+    const cover = validCoverSlug(params.get("cover"));
+    // A place typed on the landing hero (/create?cover=mountains&title=Spiti) becomes the
+    // trip name, which the cover step uses as the cover title.
+    const title = (params.get("title") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+    createTrip(title || "Untitled Trip", "")
       .then((trip) => {
         rememberLastTrip(trip.id);
         if (cover) {

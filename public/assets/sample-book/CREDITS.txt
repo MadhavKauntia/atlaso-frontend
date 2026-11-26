@@ -1,0 +1,25 @@
+Sample photos for the landing page book preview.
+From Unsplash via picsum.photos, under the Unsplash License (https://unsplash.com/license):
+free to use, including commercially, no attribution required. Credited here anyway.
+
+sea-arch.jpg  Stefan Kunze (picsum id 871)
+waterfall.jpg  Andrew Coelho (picsum id 1039)
+old-town.jpg  Lou Levit (picsum id 369)
+yellow-door.jpg  Padurariu Alexandru (picsum id 946)
+white-terrace.jpg  Anthony DELANOIX (picsum id 947)
+canoe.jpg  Roberto Nickson (picsum id 1011)
+fjord.jpg  Alexey Topolyanskiy (picsum id 1015)
+coast-cliffs.jpg  Rob Bye (picsum id 849)
+trams.jpg  POR7O (picsum id 419)
+canal.jpg  Linh Nguyen (picsum id 164)
+city-street.jpg  David Marcu (picsum id 690)
+red-tram.jpg  Gabriel Garcia Marengo (picsum id 670)
+red-brick-street.jpg  Bonnie Meisels (picsum id 437)
+santorini.jpg  Margaret Barley (picsum id 49)
+green-hills.jpg  Andrew Ridley (picsum id 1018)
+photographer.jpg  Benjamin Combs (picsum id 823)
+blue-van.jpg  Kyle Szegedi (picsum id 655)
+dunes.jpg  Luca Zanon (picsum id 525)
+balloon.jpg  Austin Ban (picsum id 401)
+hiker.jpg  Luke Pamer (picsum id 669)
+sea-stacks.jpg  Joseph Barrientos (picsum id 1050)
