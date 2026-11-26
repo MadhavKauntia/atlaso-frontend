@@ -733,7 +733,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                 </div>
                 {isCover ? (
                   <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
-                    <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "88%", aspectRatio: "0.707" }} />
+                    <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} bg={book.coverPaletteId ?? null} spine={false} style={{ height: "88%", aspectRatio: "0.707" }} />
                   </div>
                 ) : firstInterior ? (
                   // First interior page opens on the right, blank on the left.
@@ -816,7 +816,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
                   }}>
                     {isCoverSpread ? (
                       <div style={{ flex: 1, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sb-cream)" }}>
-                        <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} spine={false} style={{ height: "96%", aspectRatio: "0.707" }} />
+                        <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} bg={book.coverPaletteId ?? null} spine={false} style={{ height: "96%", aspectRatio: "0.707" }} />
                       </div>
                     ) : isDoubleSp ? (
                       <>
@@ -941,7 +941,7 @@ export default function PreviewPage({ params }: { params: Promise<{ tripId: stri
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <div style={{ width: 42, flexShrink: 0 }}>
-              <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} style={{ width: 42 }} />
+              <CountryCover country={book.coverCountry} title={book.title} description={book.subtitle ?? ""} bg={book.coverPaletteId ?? null} style={{ width: 42 }} />
             </div>
             <div style={{ flex: 1, fontSize: 12 }}>
               <div style={{ color: "var(--sb-muted)", fontSize: 10, marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "var(--font-dm-sans)" }}>Cover</div>

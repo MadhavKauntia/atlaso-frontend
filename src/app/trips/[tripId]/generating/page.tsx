@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { readTripCoverPrefs, clearCoverPrefs, coverPrefsFromTrip } from "@/lib/coverPrefs";
+import { readTripCoverPrefs, clearCoverPrefs, coverPrefsFromTrip, type CoverPrefs } from "@/lib/coverPrefs";
 import { generateBook, regenerateBook, updateTrip, getTrip, getBook, getPhotos, pollBookUntilReady, ApiError } from "@/lib/api";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { setTabText, flashTabDone, notify } from "@/lib/notify";
@@ -43,12 +43,6 @@ const TIPS = [
   "We remember a printed photo far more vividly than one buried in a camera roll.",
 ];
 
-interface CoverPrefs {
-  title: string;
-  country: string;
-  description: string;
-}
-
 export default function GeneratingPage({ params }: { params: Promise<{ tripId: string }> }) {
   const ready = useRequireAuth();
   const { tripId } = use(params);
@@ -68,7 +62,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const [estimateSec, setEstimateSec] = useState<number | null>(null);
   const [coverPrefs, setCoverPrefs] = useState<CoverPrefs | null>(null);
   // On regenerate, cover prefs aren't in localStorage — show the existing book's cover.
-  const [existingCover, setExistingCover] = useState<{ country: string | null; title: string; subtitle: string } | null>(null);
+  const [existingCover, setExistingCover] = useState<{ country: string | null; title: string; subtitle: string; bg: string | null } | null>(null);
   const started = useRef(false);
   const generationDoneAt = useRef<number | null>(null);
   const bookRef = useRef<{ id: string } | null>(null);
@@ -89,7 +83,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   useEffect(() => {
     if (!regenerateFrom) return;
     getBook(regenerateFrom)
-      .then((b) => setExistingCover({ country: b.coverCountry, title: b.title, subtitle: b.subtitle ?? "" }))
+      .then((b) => setExistingCover({ country: b.coverCountry, title: b.title, subtitle: b.subtitle ?? "", bg: b.coverPaletteId ?? null }))
       .catch(() => {});
   }, [regenerateFrom]);
 
@@ -186,6 +180,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
   const displayTitle = existingCover?.title || coverPrefs?.title || "your trip";
   const displayCountry = existingCover?.country ?? coverPrefs?.country ?? null;
   const displayDescription = existingCover?.subtitle ?? coverPrefs?.description ?? "";
+  const displayBg = existingCover ? existingCover.bg : coverPrefs?.bg || null;
 
   const estimateLabel = regenerateFrom
     ? "about a minute"
@@ -366,7 +361,7 @@ export default function GeneratingPage({ params }: { params: Promise<{ tripId: s
           {/* Floating book */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 48 }}>
             <div style={{ animation: "bookFloat 4s ease-in-out infinite" }}>
-              <CountryCover country={displayCountry} title={displayTitle} description={displayDescription} style={{ width: 210 }} />
+              <CountryCover country={displayCountry} title={displayTitle} description={displayDescription} bg={displayBg} style={{ width: 210 }} />
             </div>
           </div>
 
