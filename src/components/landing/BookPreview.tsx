@@ -6,6 +6,7 @@ import CountryCover from "@/components/covers/CountryCover";
 import { coverColors } from "@/lib/covers/countries";
 import { flap, flip, isMuted, setMuted, startRustle, type Rustle } from "./pageSound";
 import BookPage from "./BookPage";
+import { dmDisplay } from "./fonts";
 import { SAMPLE_PAGES } from "./samplePages";
 import s from "./hero.module.css";
 
@@ -324,7 +325,7 @@ export default function BookPreview({ dest, coverSlug, href, handClass, originRe
   const pageLabel = turned === 0 ? "page 1" : turned === N ? `page ${N * 2}` : `pages ${turned * 2}–${turned * 2 + 1}`;
 
   return (
-    <div className={s.overlay} role="dialog" aria-modal="true" aria-label={`${dest} photo book preview`} onClick={requestClose}>
+    <div className={`${s.overlay} ${s.vars} ${dmDisplay.variable}`} role="dialog" aria-modal="true" aria-label={`${dest} photo book preview`} onClick={requestClose}>
       <div ref={backdropRef} className={s.backdrop} aria-hidden="true" />
 
       <div className={`${s.overlayTop} ${chromeOn ? s.chromeOn : s.chromeOff}`} onClick={stop}>

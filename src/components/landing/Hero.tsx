@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import CountryCover from "@/components/covers/CountryCover";
-import { COUNTRIES, coverColors } from "@/lib/covers/countries";
+import { COUNTRIES } from "@/lib/covers/countries";
 import { DESTINATIONS } from "@/lib/destinations";
 import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, BOOK_PAGES, LAUNCH_OFFER_ACTIVE, formatInr } from "@/lib/site";
-import HeroDoodles from "./HeroDoodles";
-import BookPreview from "./BookPreview";
+import OpenableBook from "./OpenableBook";
 import { dmDisplay, hand } from "./fonts";
 import s from "./hero.module.css";
 
@@ -90,7 +88,6 @@ export default function Hero() {
   const [picked, setPicked] = useState(0); // the chip shown (before the cycle starts: Bali)
   const [custom, setCustom] = useState("");
   const [open, setOpen] = useState(false);
-  const bookRef = useRef<HTMLDivElement>(null);
   const [cycled, setCycled] = useState(false); // first doodles wait for the book to land
   const holdTicks = useRef(0);
   const inputFocused = useRef(false);
@@ -125,7 +122,6 @@ export default function Hero() {
   const href = place
     ? `/create?cover=${place.slug}&step=cover`
     : `/create?cover=${cover.slug}&title=${encodeURIComponent(dest)}&step=cover`;
-  const { spine } = coverColors(cover.slug);
 
   const pick = (i: number) => {
     setCustom("");
@@ -134,7 +130,6 @@ export default function Hero() {
     setCycled(true);
     holdTicks.current = HOLD_TICKS_AFTER_PICK;
   };
-  const closeBook = useCallback(() => setOpen(false), []);
 
   return (
     <section className={`${s.hero} ${dmDisplay.variable}`}>
@@ -207,30 +202,16 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className={s.bookCol} style={{ animationDelay: `${TW.bookAt.toFixed(2)}s` }}>
-          <div className={s.bookStage}>
-            <HeroDoodles key={dest} variant={variant} startAt={cycled || typed ? 0 : TW.bookAt} />
-            <button type="button" className={s.bookBtn} aria-label={`Open a preview of the ${dest} photo book`} onClick={() => setOpen(true)}>
-              <div ref={bookRef} className={s.book3d} style={{ visibility: open ? "hidden" : undefined }}>
-                <div className={s.spine} style={{ background: spine }} />
-                <div key={`${cover.slug}-${dest}`} className={s.cover}>
-                  <CountryCover
-                    country={cover.slug}
-                    title={dest}
-                    spine={false}
-                    style={{ boxShadow: "none", borderRadius: "inherit", width: "100%", height: "100%" }}
-                  />
-                  <div className={s.cloth} aria-hidden="true" />
-                  <div className={s.sheen} aria-hidden="true" />
-                </div>
-              </div>
-              <div aria-hidden="true" className={s.bookShadow} />
-            </button>
-          </div>
-        </div>
+        <OpenableBook
+          dest={dest}
+          coverSlug={cover.slug}
+          href={href}
+          doodleVariant={variant}
+          enterDelay={TW.bookAt}
+          doodleStartAt={cycled || typed ? 0 : TW.bookAt}
+          onOpenChange={setOpen}
+        />
       </div>
-
-      {open && <BookPreview dest={dest} coverSlug={cover.slug} href={href} handClass={hand.className} originRef={bookRef} onClosed={closeBook} />}
     </section>
   );
 }

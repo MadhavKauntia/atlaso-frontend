@@ -1,11 +1,15 @@
 /* ─── Landing hero: "hello traveller" ─── */
 
-.hero {
+/* Palette, shared by the hero, the book and its preview (which is portalled to <body>). */
+.hero,
+.vars {
   --h-bg: #1f1b18;
   --h-cream: #f3ecdd;
   --h-gold: #e5b94b;
   --h-red: #bd4636;
   --h-muted: #a39a8c;
+}
+.hero {
   position: relative;
   overflow: hidden;
   font-family: var(--font-dm-display), system-ui, sans-serif;
@@ -365,6 +369,8 @@
 
 /* ─── opened book preview ─── */
 .overlay {
+  font-family: var(--font-dm-display), var(--font-dm-sans), system-ui, sans-serif;
+  color: var(--h-cream);
   position: fixed;
   inset: 0;
   z-index: 50;

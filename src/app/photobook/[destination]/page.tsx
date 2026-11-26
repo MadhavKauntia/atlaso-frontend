@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import SiteHeader from "@/components/SiteHeader";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
-import CountryCover from "@/components/covers/CountryCover";
+import OpenableBook from "@/components/landing/OpenableBook";
 import { DESTINATIONS, getDestination, type Destination } from "@/lib/destinations";
 import { SITE_URL, BOOK_PAGES, BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, BOOK_SIZE, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr, productJsonLd } from "@/lib/site";
 import l from "../../landing.module.css";
@@ -134,11 +134,13 @@ export default async function DestinationPage({ params }: Props) {
           </div>
         </div>
 
-        <div className={s.heroCover}>
-          <div className={s.heroCoverBook}>
-            <CountryCover country={d.cover} title={d.name} />
-          </div>
-        </div>
+        <OpenableBook
+          dest={d.name}
+          coverSlug={d.cover}
+          href={startHref}
+          doodleVariant={[...d.path].reduce((n, c) => n + c.charCodeAt(0), 0) % 5}
+          doodleStartAt={0.6}
+        />
       </section>
 
       <section className={l.covers}>
