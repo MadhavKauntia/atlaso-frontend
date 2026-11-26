@@ -29,6 +29,29 @@ function fieldStyle(error: boolean): React.CSSProperties {
   };
 }
 
+/** A select styled like the inputs, with our own chevron set in from the right edge
+ *  (the browser's arrow sits flush against the border). */
+const CHEVRON = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5" fill="none" stroke="#b0a593" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>')}")`;
+function selectStyle(error: boolean): React.CSSProperties {
+  const { background, ...rest } = fieldStyle(error);
+  return {
+    ...rest,
+    backgroundColor: background as string,
+    backgroundImage: CHEVRON,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 16px center",
+    backgroundSize: "12px 8px",
+    paddingRight: 42,
+    appearance: "none",
+    WebkitAppearance: "none",
+    MozAppearance: "none",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    cursor: "pointer",
+  };
+}
+
 const digits = (s: string) => s.replace(/\D/g, "");
 
 const INDIAN_STATES = [
@@ -289,7 +312,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               <label style={LABEL_STYLE}>Address line 2 <span style={{ color: "var(--sb-muted-2)", textTransform: "none", letterSpacing: "normal" }}>(optional)</span></label>
               <input value={address2} onChange={(e) => setAddress2(e.target.value)} placeholder="Apartment, suite, etc." maxLength={255} style={fieldStyle(false)} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={LABEL_STYLE}>City</label>
                 <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={blur("city")} maxLength={128} style={fieldStyle(!!err("city"))} />
@@ -297,7 +320,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
               </div>
               <div>
                 <label style={LABEL_STYLE}>State</label>
-                <select value={state} onChange={(e) => setState(e.target.value)} onBlur={blur("state")} style={fieldStyle(!!err("state"))}>
+                <select value={state} onChange={(e) => setState(e.target.value)} onBlur={blur("state")} style={selectStyle(!!err("state"))}>
                   <option value="">Select…</option>
                   {INDIAN_STATES.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -311,10 +334,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
                 {err("pincode") && <FieldError>{err("pincode")}</FieldError>}
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               <div>
                 <label style={LABEL_STYLE}>Country</label>
-                <select value={country} onChange={(e) => setCountry(e.target.value)} style={fieldStyle(false)}>
+                <select value={country} onChange={(e) => setCountry(e.target.value)} style={selectStyle(false)}>
                   <option>India</option>
                 </select>
               </div>
