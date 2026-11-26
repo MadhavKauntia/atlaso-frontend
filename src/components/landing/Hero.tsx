@@ -170,7 +170,7 @@ export default function Hero() {
                 autoComplete="off"
                 maxLength={30}
                 aria-label="Or type where you went"
-                placeholder="Spiti, Lisbon, Hampi…"
+                placeholder="Spiti, Lisbon, Goa…"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 onFocus={() => { inputFocused.current = true; }}
