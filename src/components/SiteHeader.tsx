@@ -4,13 +4,18 @@ import Link from "next/link";
 import Brand from "@/components/Brand";
 import ResumeBanner from "@/components/ResumeBanner";
 import OfferModal from "@/components/promo/OfferModal";
-import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, formatInr } from "@/lib/site";
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, ORDERS_PAUSED, formatInr } from "@/lib/site";
 import s from "./site.module.css";
 
 export default function SiteHeader() {
   return (
     <>
-    {LAUNCH_OFFER_ACTIVE && (
+    {ORDERS_PAUSED ? (
+      <div className={s.offerBar} role="status">
+        <span className={s.offerTag}>heads up</span>
+        <span>New orders are paused for now. You can still make and save a book.</span>
+      </div>
+    ) : LAUNCH_OFFER_ACTIVE && (
       <Link href="/create" className={s.offerBar}>
         <span className={s.offerTag}>launch offer</span>
         <span>
@@ -31,7 +36,7 @@ export default function SiteHeader() {
       </nav>
     </header>
     <ResumeBanner />
-    <OfferModal />
+    {!ORDERS_PAUSED && <OfferModal />}
     </>
   );
 }

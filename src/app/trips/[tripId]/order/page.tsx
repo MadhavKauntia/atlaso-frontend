@@ -1,6 +1,6 @@
 "use client";
 
-import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL } from "@/lib/site";
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, ORDERS_PAUSED, ORDERS_PAUSED_MESSAGE } from "@/lib/site";
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, exportBook, type Book } from "@/lib/api";
@@ -198,6 +198,20 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           <strong style={{ fontFamily: "var(--font-bricolage)", color: "var(--sb-cream)", fontWeight: 800 }}>₹{total.toLocaleString("en-IN")}</strong>
           {" · "}{qty} × {book?.title ?? "book"}, hardbound · free shipping
         </div>
+        {ORDERS_PAUSED ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, maxWidth: 560 }}>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45, color: "var(--sb-cream)" }}>{ORDERS_PAUSED_MESSAGE}</p>
+            <button
+              onClick={() => router.push("/account")}
+              style={{
+                flexShrink: 0, padding: "12px 20px", background: "transparent", color: "var(--sb-cream)",
+                border: "1px solid var(--sb-panel-2)", borderRadius: 999, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-bricolage)",
+              }}
+            >
+              My books
+            </button>
+          </div>
+        ) : (
         <button
           onClick={() => router.push(`/trips/${tripId}/checkout?bookId=${book?.id ?? bookId}&qty=${qty}`)}
           style={{
@@ -209,6 +223,7 @@ export default function OrderPage({ params }: { params: Promise<{ tripId: string
           Proceed to checkout
           <span style={{ width: 24, height: 24, background: "var(--sb-cream)", color: "var(--sb-red)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>→</span>
         </button>
+        )}
       </div>
     </div>
   );

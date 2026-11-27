@@ -1,6 +1,6 @@
 "use client";
 
-import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL } from "@/lib/site";
+import { BOOK_PRICE_INR, BOOK_LIST_PRICE_INR, LAUNCH_OFFER_ACTIVE, LAUNCH_OFFER_ENDS_LABEL, ORDERS_PAUSED, ORDERS_PAUSED_MESSAGE } from "@/lib/site";
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getBook, getBookByTripId, getMe, createRazorpayOrder, verifyRazorpayPayment, validateCoupon, exportBook, type Book, type User, type CouponPreview } from "@/lib/api";
@@ -157,6 +157,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
   const handlePay = async () => {
     setPayError(null);
+    if (ORDERS_PAUSED) { setPayError(ORDERS_PAUSED_MESSAGE); return; }
     if (!isValid) {
       setTouched({ address1: true, city: true, state: true, pincode: true, phone: true });
       setPayError("Please fill in all required shipping details.");
@@ -465,6 +466,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
             <div style={{ fontFamily: "var(--font-bricolage)", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--sb-cream)" }}>₹{money(payableMinor)}</div>
           </div>
 
+          {ORDERS_PAUSED && !payError && (
+            <div role="status" style={{ marginTop: 16, padding: "10px 14px", background: "rgba(232,179,44,0.12)", border: "1px solid rgba(232,179,44,0.4)", borderRadius: 10, fontSize: 13, color: "var(--sb-cream)", lineHeight: 1.4 }}>
+              {ORDERS_PAUSED_MESSAGE}
+            </div>
+          )}
           {payError && (
             <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(201,53,44,0.12)", border: "1px solid rgba(201,53,44,0.4)", borderRadius: 10, fontSize: 13, color: "#f0a39d", lineHeight: 1.4 }}>
               {payError}
@@ -473,15 +479,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ tripId: str
 
           <button
             onClick={handlePay}
-            disabled={paying}
+            disabled={paying || ORDERS_PAUSED}
             style={{
               display: "flex", width: "100%", marginTop: 20,
-              padding: 16, background: paying ? "var(--sb-panel-2)" : "var(--sb-red)", color: paying ? "#8a7f6f" : "var(--sb-cream)",
+              padding: 16, background: paying || ORDERS_PAUSED ? "var(--sb-panel-2)" : "var(--sb-red)", color: paying || ORDERS_PAUSED ? "#8a7f6f" : "var(--sb-cream)",
               border: "none", borderRadius: 999, fontSize: 15, fontWeight: 800,
-              cursor: paying ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
+              cursor: paying || ORDERS_PAUSED ? "default" : "pointer", fontFamily: "var(--font-bricolage)", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >
-            {paying
+            {ORDERS_PAUSED
+              ? "Orders paused"
+              : paying
               ? "Processing…"
               : coupon?.free
                 ? "Place order"

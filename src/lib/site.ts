@@ -18,6 +18,14 @@ export const LAUNCH_OFFER_ACTIVE = true;
 export const LAUNCH_OFFER_STARTS = "2026-11-25";
 export const LAUNCH_OFFER_ENDS = "2026-12-31";
 export const LAUNCH_OFFER_ENDS_LABEL = "31 December";
+/**
+ * New orders are paused. The backend refuses create-order too (atlaso.orders.paused /
+ * ORDERS_PAUSED), so this only shapes the UI: books can still be made, saved and viewed.
+ * To take orders again, set this to false and ORDERS_PAUSED=false on Railway.
+ */
+export const ORDERS_PAUSED = true;
+export const ORDERS_PAUSED_MESSAGE = "We've paused new orders for now. Your book stays saved in your account.";
+
 export const BOOK_PAGES = 50;
 export const BOOK_SIZE = "6.9 × 9.8 inch";
 
@@ -56,7 +64,7 @@ export function productJsonLd(opts: { name: string; description: string; url: st
             },
           }
         : {}),
-      availability: "https://schema.org/InStock",
+      availability: ORDERS_PAUSED ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: { "@type": "Organization", name: SITE_NAME },
       // Free delivery across India: printed in about 3 days, then 4 to 7 in transit (the
