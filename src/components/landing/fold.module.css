@@ -135,7 +135,7 @@
 .pageL,
 .pageR {
   flex: 1 1 0;
-  background: #f1e9d8;
+  background: #f3ead8;
 }
 .pageL {
   border-radius: 4px 0 0 4px;
@@ -154,11 +154,19 @@
   z-index: 3;
   animation: slotFade 9s ease infinite;
 }
-.slot0, .fly0 { left: 48.08%; top: 20.74%; width: 21.15%; height: 29.63%; }
-.slot1, .fly1 { left: 48.08%; top: 52.59%; width: 10%; height: 25.93%; }
-.slot2, .fly2 { left: 59.23%; top: 52.59%; width: 10%; height: 25.93%; }
-.slot3, .fly3 { left: 73.08%; top: 20.74%; width: 21.15%; height: 37.04%; }
-.slot4, .fly4 { left: 73.08%; top: 60%; width: 21.15%; height: 18.52%; }
+.slot0, .fly0 { left: 46.154%; top: 16.667%; width: 25.000%; height: 66.667%; }
+.slot1, .fly1 { left: 71.779%; top: 17.870%; width: 23.750%; height: 31.600%; }
+.slot2, .fly2 { left: 71.779%; top: 50.530%; width: 11.600%; height: 31.600%; }
+.slot3, .fly3 { left: 83.929%; top: 50.530%; width: 11.600%; height: 31.600%; }
+.slot0, .fly0 { border-radius: 4px 0 0 4px; }
+/* the full-bleed photo curves into the spine */
+.fly0::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0) 86%, rgba(40, 25, 10, 0.28));
+}
 
 .flyer {
   position: absolute;
@@ -167,11 +175,10 @@
   box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.45);
   z-index: 6;
 }
-.fly0 { animation: fly0 9s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
-.fly1 { animation: fly1 9s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
-.fly2 { animation: fly2 9s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
-.fly3 { animation: fly3 9s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
-.fly4 { animation: fly4 9s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+.fly0 { animation: fly0 9s linear infinite; }
+.fly1 { animation: fly1 9s linear infinite; }
+.fly2 { animation: fly2 9s linear infinite; }
+.fly3 { animation: fly3 9s linear infinite; }
 
 .badge {
   position: absolute;
@@ -221,39 +228,40 @@
 }
 
 @keyframes fly0 {
-  0%, 10% { left: 5.19%; top: 20.37%; width: 7.12%; height: 13.70%; opacity: 0; transform: rotate(0deg); }
-  11% { opacity: 1; }
-  16% { left: 26.63%; top: 7.41%; width: 12.72%; height: 19.50%; transform: rotate(8deg) scale(1.06); }
-  23%, 86% { left: 48.08%; top: 20.74%; width: 21.15%; height: 29.63%; opacity: 1; transform: rotate(0deg); }
-  94%, 100% { left: 48.08%; top: 20.74%; width: 21.15%; height: 29.63%; opacity: 0; }
+  0%, 10% { left: 5.19%; top: 20.37%; width: 7.12%; height: 13.7%; opacity: 0; transform: none; box-shadow: none; }
+  10.5% { left: 5.19%; top: 20.37%; width: 7.12%; height: 13.7%; opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1); }
+  13% { left: 5.19%; top: 20.37%; width: 7.12%; height: 13.7%; transform: scale(1.14) rotate(-4deg); box-shadow: 0 14px 26px -8px rgba(0, 0, 0, 0.55); animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.45); }
+  17.5% { left: 27.72%; top: 12.67%; width: 15.17%; height: 37.54%; transform: rotate(-2.0deg); animation-timing-function: cubic-bezier(0.15, 0.55, 0.3, 1); }
+  23% { left: 46.154%; top: 16.667%; width: 25.000%; height: 66.667%; transform: scale(1.015); }
+  25%, 86% { left: 46.154%; top: 16.667%; width: 25.000%; height: 66.667%; opacity: 1; transform: none; box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.45); }
+  94%, 100% { left: 46.154%; top: 16.667%; width: 25.000%; height: 66.667%; opacity: 0; }
 }
 @keyframes fly1 {
-  0%, 19% { left: 12.69%; top: 34.81%; width: 7.12%; height: 13.70%; opacity: 0; transform: rotate(0deg); }
-  20% { opacity: 1; }
-  25% { left: 30.38%; top: 21.85%; width: 7.70%; height: 17.83%; transform: rotate(-10deg) scale(1.06); }
-  32%, 86% { left: 48.08%; top: 52.59%; width: 10.00%; height: 25.93%; opacity: 1; transform: rotate(0deg); }
-  94%, 100% { left: 48.08%; top: 52.59%; width: 10.00%; height: 25.93%; opacity: 0; }
+  0%, 19% { left: 12.69%; top: 34.81%; width: 7.12%; height: 13.7%; opacity: 0; transform: none; box-shadow: none; }
+  19.5% { left: 12.69%; top: 34.81%; width: 7.12%; height: 13.7%; opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1); }
+  22% { left: 12.69%; top: 34.81%; width: 7.12%; height: 13.7%; transform: scale(1.14) rotate(4deg); box-shadow: 0 14px 26px -8px rgba(0, 0, 0, 0.55); animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.45); }
+  26.5% { left: 45.19%; top: 13.87%; width: 14.60%; height: 21.76%; transform: rotate(2.0deg); animation-timing-function: cubic-bezier(0.15, 0.55, 0.3, 1); }
+  32% { left: 71.779%; top: 17.870%; width: 23.750%; height: 31.600%; transform: scale(1.015); }
+  34%, 86% { left: 71.779%; top: 17.870%; width: 23.750%; height: 31.600%; opacity: 1; transform: none; box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.45); }
+  94%, 100% { left: 71.779%; top: 17.870%; width: 23.750%; height: 31.600%; opacity: 0; }
 }
 @keyframes fly2 {
-  0%, 28% { left: 20.19%; top: 20.37%; width: 7.12%; height: 13.70%; opacity: 0; transform: rotate(0deg); }
-  29% { opacity: 1; }
-  34% { left: 39.71%; top: 7.41%; width: 7.70%; height: 17.83%; transform: rotate(8deg) scale(1.06); }
-  41%, 86% { left: 59.23%; top: 52.59%; width: 10.00%; height: 25.93%; opacity: 1; transform: rotate(0deg); }
-  94%, 100% { left: 59.23%; top: 52.59%; width: 10.00%; height: 25.93%; opacity: 0; }
+  0%, 28% { left: 20.19%; top: 20.37%; width: 7.12%; height: 13.7%; opacity: 0; transform: none; box-shadow: none; }
+  28.5% { left: 20.19%; top: 20.37%; width: 7.12%; height: 13.7%; opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1); }
+  31% { left: 20.19%; top: 20.37%; width: 7.12%; height: 13.7%; transform: scale(1.14) rotate(-4deg); box-shadow: 0 14px 26px -8px rgba(0, 0, 0, 0.55); animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.45); }
+  35.5% { left: 48.56%; top: 16.37%; width: 9.14%; height: 21.76%; transform: rotate(-2.0deg); animation-timing-function: cubic-bezier(0.15, 0.55, 0.3, 1); }
+  41% { left: 71.779%; top: 50.530%; width: 11.600%; height: 31.600%; transform: scale(1.015); }
+  43%, 86% { left: 71.779%; top: 50.530%; width: 11.600%; height: 31.600%; opacity: 1; transform: none; box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.45); }
+  94%, 100% { left: 71.779%; top: 50.530%; width: 11.600%; height: 31.600%; opacity: 0; }
 }
 @keyframes fly3 {
-  0%, 37% { left: 5.19%; top: 49.26%; width: 7.12%; height: 13.70%; opacity: 0; transform: rotate(0deg); }
-  38% { opacity: 1; }
-  43% { left: 39.13%; top: 7.78%; width: 12.72%; height: 22.83%; transform: rotate(-10deg) scale(1.06); }
-  50%, 86% { left: 73.08%; top: 20.74%; width: 21.15%; height: 37.04%; opacity: 1; transform: rotate(0deg); }
-  94%, 100% { left: 73.08%; top: 20.74%; width: 21.15%; height: 37.04%; opacity: 0; }
-}
-@keyframes fly4 {
-  0%, 46% { left: 20.19%; top: 49.26%; width: 7.12%; height: 13.70%; opacity: 0; transform: rotate(0deg); }
-  47% { opacity: 1; }
-  52% { left: 46.63%; top: 36.30%; width: 12.72%; height: 14.50%; transform: rotate(8deg) scale(1.06); }
-  59%, 86% { left: 73.08%; top: 60.00%; width: 21.15%; height: 18.52%; opacity: 1; transform: rotate(0deg); }
-  94%, 100% { left: 73.08%; top: 60.00%; width: 21.15%; height: 18.52%; opacity: 0; }
+  0%, 37% { left: 5.19%; top: 49.26%; width: 7.12%; height: 13.7%; opacity: 0; transform: none; box-shadow: none; }
+  37.5% { left: 5.19%; top: 49.26%; width: 7.12%; height: 13.7%; opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1); }
+  40% { left: 5.19%; top: 49.26%; width: 7.12%; height: 13.7%; transform: scale(1.14) rotate(4deg); box-shadow: 0 14px 26px -8px rgba(0, 0, 0, 0.55); animation-timing-function: cubic-bezier(0.55, 0, 0.8, 0.45); }
+  44.5% { left: 48.50%; top: 45.26%; width: 9.14%; height: 21.76%; transform: rotate(2.0deg); animation-timing-function: cubic-bezier(0.15, 0.55, 0.3, 1); }
+  50% { left: 83.929%; top: 50.530%; width: 11.600%; height: 31.600%; transform: scale(1.015); }
+  52%, 86% { left: 83.929%; top: 50.530%; width: 11.600%; height: 31.600%; opacity: 1; transform: none; box-shadow: 0 10px 22px -8px rgba(0, 0, 0, 0.45); }
+  94%, 100% { left: 83.929%; top: 50.530%; width: 11.600%; height: 31.600%; opacity: 0; }
 }
 @keyframes badgePop {
   0%, 62% { opacity: 0; scale: 0.6; }
@@ -280,5 +288,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fly0, .fly1, .fly2, .fly3, .fly4, .badge, .slotline, .roll { animation: none; }
+  .fly0, .fly1, .fly2, .fly3, .badge, .slotline, .roll { animation: none; }
 }

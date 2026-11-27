@@ -3,28 +3,35 @@ import Image from "next/image";
 import { dmDisplay } from "./fonts";
 import s from "./fold.module.css";
 
-/** Photos that fly from the camera roll into the book, in landing order. */
+/**
+ * The book spread the photos fly into, laid out like a printed Atlaso book: a full-bleed
+ * photo on the left page, and a feature photo over two on the right page.
+ * Photos fly in this order; each starts from its cell in the camera roll.
+ */
 const FLY = [
-  { src: "/assets/hero/hero-3.jpg", cls: s.fly0 },
-  { src: "/assets/hero/hero-5.jpg", cls: s.fly1 },
-  { src: "/assets/hero/hero-2.jpg", cls: s.fly2 },
-  { src: "/assets/hero/hero-6.jpg", cls: s.fly3 },
-  { src: "/assets/hero/hero-4.jpg", cls: s.fly4 },
+  { src: "/assets/hero/hero-3.jpg", cls: s.fly0 },         // left page, full bleed: the beach through the trees
+  { src: "/assets/fold/hammock-selfie.jpg", cls: s.fly1 }, // right page, top
+  { src: "/assets/hero/hero-2.jpg", cls: s.fly2 },         // right page, bottom left: two glasses on the railing
+  { src: "/assets/fold/hammock-book.jpg", cls: s.fly3 },   // right page, bottom right: hammock and book
 ];
-const SLOTS = [s.slot0, s.slot1, s.slot2, s.slot3, s.slot4];
+const SLOTS = [s.slot0, s.slot1, s.slot2, s.slot3];
 
-// Camera roll: colour swatches with the trip's photos mixed in.
-type Cell = string | { photo: number };
+// Camera roll: the trip's photos (from a real Andaman trip). { fly: i } is the cell that
+// photo i flies out of; { src } is a photo that stays in the roll.
+type Cell = { fly: number } | { src: string };
+const r = (n: number): Cell => ({ src: `/assets/fold/andaman-roll/${String(n).padStart(2, "0")}.jpg` });
 const ROLL: Cell[] = [
-  "#C9A27A", "#A7B58F", "#B5A489",
-  "#9AAFC4", "#C7966B", "#7E9B8A",
-  "#E0C3A0", "#86A3A8", "#B88A72",
-  "#93A9A0", "#D8B98C", "#8D7F96",
-  { photo: 0 }, "#A7B58F", { photo: 2 },
-  "#9AAFC4", { photo: 1 }, "#7E9B8A",
-  { photo: 3 }, "#86A3A8", { photo: 4 },
-  "#93A9A0", "#D8B98C", "#8D7F96",
-  "#C9A27A", "#A7B58F", "#B5A489",
+  // rows above the phone's visible area until the roll scrolls in
+  r(12), r(13), r(14),
+  r(15), r(16), r(17),
+  r(18), r(19), r(20),
+  r(21), r(22), r(23),
+  // visible rows
+  { fly: 0 }, r(1), { fly: 2 },
+  r(2), { fly: 1 }, r(3),
+  { fly: 3 }, r(4), r(5),
+  r(6), r(7), r(8),
+  r(9), r(10), r(11),
 ];
 
 export default function GalleryFold() {
@@ -51,15 +58,11 @@ export default function GalleryFold() {
           </div>
           <div className={s.rollWindow} aria-hidden="true">
             <div className={s.roll}>
-              {ROLL.map((c, i) =>
-                typeof c === "string" ? (
-                  <div key={i} className={s.cell} style={{ background: c }} />
-                ) : (
-                  <div key={i} className={s.cell}>
-                    <Image src={FLY[c.photo].src} alt="" fill sizes="90px" />
-                  </div>
-                )
-              )}
+              {ROLL.map((c, i) => (
+                <div key={i} className={s.cell}>
+                  <Image src={"fly" in c ? FLY[c.fly].src : c.src} alt="" fill sizes="90px" />
+                </div>
+              ))}
             </div>
           </div>
 
