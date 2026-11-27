@@ -52,7 +52,7 @@ export const COUNTRIES: CoverCountry[] = [
   { slug: "egypt", name: "Egypt", bg: "#FABE67", ink: "#262220", stamp: "egypt", category: "destination" },
   { slug: "beach", name: "Beach", bg: "#FABE68", ink: "#262220", stamp: "beach", category: "theme" },
   { slug: "mountains", name: "Mountains", bg: "#145D5C", ink: "#f3ead8", stamp: "mountains", category: "theme" },
-  { slug: "hills", name: "Hills", bg: "#B8BB1B", ink: "#262220", stamp: "hills", category: "theme" },
+  { slug: "hills", name: "Hills", bg: "#2A3F2D", ink: "#f3ead8", stamp: "hills", category: "theme" },
   { slug: "scuba", name: "Scuba", bg: "#1D4E54", ink: "#f3ead8", stamp: "scuba", category: "theme" },
   { slug: "northeast", name: "Northeast", bg: "#025F4C", ink: "#f3ead8", stamp: "northeast", category: "theme" },
   { slug: "nightlife", name: "Nightlife", bg: "#091F39", ink: "#f3ead8", stamp: "nightlife", category: "theme" },
